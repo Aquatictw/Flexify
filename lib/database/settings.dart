@@ -12,7 +12,8 @@ class Settings extends Table {
       boolean().withDefault(const Constant(true))();
   BoolColumn get enableSound => boolean().withDefault(const Constant(true))();
   BoolColumn get explainedPermissions => boolean()();
-  BoolColumn get groupHistory => boolean()();
+  BoolColumn get groupHistory =>
+      boolean().withDefault(const Constant(true))();
   IntColumn get id => integer().autoIncrement()();
   TextColumn get longDateFormat => text()();
   IntColumn get maxSets => integer()();
@@ -20,18 +21,19 @@ class Settings extends Table {
   BoolColumn get peekGraph => boolean().withDefault(const Constant(false))();
   TextColumn get planTrailing => text()();
   BoolColumn get repEstimation =>
-      boolean().withDefault(const Constant(false))();
+      boolean().withDefault(const Constant(true))();
   BoolColumn get restTimers => boolean()();
   TextColumn get shortDateFormat => text()();
   BoolColumn get showBodyWeight =>
-      boolean().withDefault(const Constant(true))();
+      boolean().withDefault(const Constant(false))();
   BoolColumn get showCategories =>
       boolean().withDefault(const Constant(true))();
   BoolColumn get showImages => boolean().withDefault(const Constant(true))();
   BoolColumn get showNotes => boolean().withDefault(const Constant(true))();
   BoolColumn get showGlobalProgress =>
       boolean().withDefault(const Constant(true))();
-  BoolColumn get showUnits => boolean()();
+  BoolColumn get showUnits =>
+      boolean().withDefault(const Constant(false))();
   TextColumn get strengthUnit => text()();
   BoolColumn get systemColors => boolean()();
   TextColumn get tabs => text().withDefault(
