@@ -92,7 +92,7 @@ class AboutPage extends StatelessWidget {
             subtitle: FutureBuilder(
               future: info,
               builder: (context, snapshot) =>
-                  const Text("Check it out on GitHub"),
+                  const Text("View and contribute on GitHub"),
             ),
             onTap: () async {
               const url = 'https://github.com/brandonp2412/Flexify';
