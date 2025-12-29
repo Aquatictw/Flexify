@@ -13,7 +13,6 @@ import 'package:flexify/plan/start_list.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/timer/timer_state.dart';
 import 'package:flexify/utils.dart';
-import 'package:flexify/workouts/active_workout_bar.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' as material;
@@ -91,38 +90,30 @@ class _StartPlanPageState extends State<StartPlanPage>
               ),
             ],
           ),
-          body: material.Column(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 16.0, right: 16),
-                  child: Form(
-                    key: key,
-                    child: material.Column(
-                      children: [
-                        if (!cardio) ...strengthFields(snapshot),
-                        if (cardio) ...cardioFields(snapshot),
-                        unitSelector(),
-                        notesField(),
-                        Expanded(
-                          child: StartList(
-                            exercises: snapshot.data!,
-                            selected: selected,
-                            onSelect: select,
-                            plan: widget.plan,
-                            onMax: () {
-                              planState.updateGymCounts(widget.plan.id, workoutId);
-                            },
-                          ),
-                        ),
-                      ],
+          body: Padding(
+            padding: const EdgeInsets.only(left: 16.0, right: 16, bottom: 180),
+            child: Form(
+              key: key,
+              child: material.Column(
+                children: [
+                  if (!cardio) ...strengthFields(snapshot),
+                  if (cardio) ...cardioFields(snapshot),
+                  unitSelector(),
+                  notesField(),
+                  Expanded(
+                    child: StartList(
+                      exercises: snapshot.data!,
+                      selected: selected,
+                      onSelect: select,
+                      plan: widget.plan,
+                      onMax: () {
+                        planState.updateGymCounts(widget.plan.id, workoutId);
+                      },
                     ),
                   ),
-                ),
+                ],
               ),
-              const ActiveWorkoutBar(),
-              const SizedBox(height: 80),
-            ],
+            ),
           ),
           floatingActionButton: AnimatedFab(
             onPressed: () async => await save(snapshot),
