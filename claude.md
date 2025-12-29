@@ -137,9 +137,35 @@ flutter build ios
 
 ## Migration Notes
 
-When adding new columns or tables:
+When adding new columns or tables, see `docs/DRIFT_MIGRATIONS.md` for detailed instructions.
+
+### Quick Reference
+
 1. Add to table definition (e.g., `lib/database/workouts.dart`)
 2. Update `@DriftDatabase` annotation in `database.dart`
 3. Add migration in `onUpgrade: stepByStep(...)`
 4. Increment `schemaVersion`
-5. Run `dart run build_runner build --delete-conflicting-outputs`
+5. Copy schema files:
+   ```bash
+   cp drift_schemas/db/drift_schema_vN.json drift_schemas/db/drift_schema_vN+1.json
+   cp test/drift/db/generated/schema_vN.dart test/drift/db/generated/schema_vN+1.dart
+   sed -i 's/SchemaN/SchemaN+1/g' test/drift/db/generated/schema_vN+1.dart
+   ```
+6. Run `dart run build_runner build --delete-conflicting-outputs`
+7. If build_runner doesn't generate migration steps, manually add to `database.steps.dart`:
+   - Add `SchemaNN` class (copy from previous, add new columns/tables)
+   - Add `fromN-1ToN` parameter to both `migrationSteps()` and `stepByStep()` functions
+   - Add case N-1 to the switch statement
+
+### Type Usage in Migrations
+
+- **In `constants.dart` `SettingsCompanion.insert()`**: required fields use plain values, optional use `Value()`
+- **In migrations with `RawValuesInsertable()`**: ALL fields use `Variable()`
+- **In table schema `withDefault()`**: use `const Constant(value)`
+
+### Import Conflicts
+
+When using both Drift and Flutter Material, hide Drift's `Column`:
+```dart
+import 'package:drift/drift.dart' hide Column;
+```

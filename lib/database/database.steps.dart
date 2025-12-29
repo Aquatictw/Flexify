@@ -5920,6 +5920,223 @@ final class Schema47 extends i0.VersionedSchema {
       alias: null);
 }
 
+final class Schema48 extends i0.VersionedSchema {
+  Schema48({required super.database}) : super(version: 48);
+  @override
+  late final List<i1.DatabaseSchemaEntity> entities = [
+    plans,
+    gymSets,
+    settings,
+    planExercises,
+    metadata,
+    workouts,
+  ];
+  late final Shape34 plans = Shape34(
+      source: i0.VersionedTable(
+        entityName: 'plans',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [],
+        columns: [
+          _column_2,
+          _column_0,
+          _column_8,
+          _column_9,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape36 gymSets = Shape36(
+      source: i0.VersionedTable(
+        entityName: 'gym_sets',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [],
+        columns: [
+          _column_62,
+          _column_63,
+          _column_45,
+          _column_7,
+          _column_64,
+          _column_65,
+          _column_66,
+          _column_0,
+          _column_43,
+          _column_17,
+          _column_3,
+          _column_67,
+          _column_39,
+          _column_4,
+          _column_18,
+          _column_6,
+          _column_5,
+          _column_85,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape33 settings = Shape33(
+      source: i0.VersionedTable(
+        entityName: 'settings',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [],
+        columns: [
+          _column_36,
+          _column_68,
+          _column_53,
+          _column_37,
+          _column_33,
+          _column_58,
+          _column_69,
+          _column_70,
+          _column_30,
+          _column_35,
+          _column_0,
+          _column_22,
+          _column_25,
+          _column_71,
+          _column_72,
+          _column_21,
+          _column_82,
+          _column_27,
+          _column_23,
+          _column_74,
+          _column_75,
+          _column_76,
+          _column_77,
+          _column_80,
+          _column_28,
+          _column_38,
+          _column_29,
+          _column_78,
+          _column_20,
+          _column_24,
+          _column_26,
+          _column_46,
+          _column_83,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape35 planExercises = Shape35(
+      source: i0.VersionedTable(
+        entityName: 'plan_exercises',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [],
+        columns: [
+          _column_42,
+          _column_79,
+          _column_41,
+          _column_0,
+          _column_19,
+          _column_40,
+          _column_46,
+          _column_84,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape32 metadata = Shape32(
+      source: i0.VersionedTable(
+        entityName: 'metadata',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [],
+        columns: [
+          _column_81,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+  late final Shape37 workouts = Shape37(
+      source: i0.VersionedTable(
+        entityName: 'workouts',
+        withoutRowId: false,
+        isStrict: false,
+        tableConstraints: [],
+        columns: [
+          _column_0,
+          _column_86,
+          _column_87,
+          _column_39,
+          _column_3,
+          _column_67,
+        ],
+        attachedDatabase: database,
+      ),
+      alias: null);
+}
+
+class Shape36 extends i0.VersionedTable {
+  Shape36({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<double> get bodyWeight =>
+      columnsByName['body_weight']! as i1.GeneratedColumn<double>;
+  i1.GeneratedColumn<bool> get cardio =>
+      columnsByName['cardio']! as i1.GeneratedColumn<bool>;
+  i1.GeneratedColumn<String> get category =>
+      columnsByName['category']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<DateTime> get created =>
+      columnsByName['created']! as i1.GeneratedColumn<DateTime>;
+  i1.GeneratedColumn<double> get distance =>
+      columnsByName['distance']! as i1.GeneratedColumn<double>;
+  i1.GeneratedColumn<double> get duration =>
+      columnsByName['duration']! as i1.GeneratedColumn<double>;
+  i1.GeneratedColumn<bool> get hidden =>
+      columnsByName['hidden']! as i1.GeneratedColumn<bool>;
+  i1.GeneratedColumn<int> get id =>
+      columnsByName['id']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get image =>
+      columnsByName['image']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get incline =>
+      columnsByName['incline']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get name =>
+      columnsByName['name']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get notes =>
+      columnsByName['notes']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get planId =>
+      columnsByName['plan_id']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<double> get reps =>
+      columnsByName['reps']! as i1.GeneratedColumn<double>;
+  i1.GeneratedColumn<int> get restMs =>
+      columnsByName['rest_ms']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get unit =>
+      columnsByName['unit']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<double> get weight =>
+      columnsByName['weight']! as i1.GeneratedColumn<double>;
+  i1.GeneratedColumn<int> get workoutId =>
+      columnsByName['workout_id']! as i1.GeneratedColumn<int>;
+}
+
+class Shape37 extends i0.VersionedTable {
+  Shape37({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<int> get id =>
+      columnsByName['id']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<DateTime> get startTime =>
+      columnsByName['start_time']! as i1.GeneratedColumn<DateTime>;
+  i1.GeneratedColumn<DateTime> get endTime =>
+      columnsByName['end_time']! as i1.GeneratedColumn<DateTime>;
+  i1.GeneratedColumn<int> get planId =>
+      columnsByName['plan_id']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get name =>
+      columnsByName['name']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get notes =>
+      columnsByName['notes']! as i1.GeneratedColumn<String>;
+}
+
+i1.GeneratedColumn<int> _column_85(String aliasedName) =>
+    i1.GeneratedColumn<int>('workout_id', aliasedName, true,
+        type: i1.DriftSqlType.int);
+
+i1.GeneratedColumn<DateTime> _column_86(String aliasedName) =>
+    i1.GeneratedColumn<DateTime>('start_time', aliasedName, false,
+        type: i1.DriftSqlType.dateTime);
+
+i1.GeneratedColumn<DateTime> _column_87(String aliasedName) =>
+    i1.GeneratedColumn<DateTime>('end_time', aliasedName, true,
+        type: i1.DriftSqlType.dateTime);
+
 class Shape35 extends i0.VersionedTable {
   Shape35({required super.source, required super.alias}) : super.aliased();
   i1.GeneratedColumn<bool> get enabled =>
@@ -5989,6 +6206,7 @@ i0.MigrationStepWithVersion migrationSteps({
   required Future<void> Function(i1.Migrator m, Schema45 schema) from44To45,
   required Future<void> Function(i1.Migrator m, Schema46 schema) from45To46,
   required Future<void> Function(i1.Migrator m, Schema47 schema) from46To47,
+  required Future<void> Function(i1.Migrator m, Schema48 schema) from47To48,
 }) {
   return (currentVersion, database) async {
     switch (currentVersion) {
@@ -6217,6 +6435,11 @@ i0.MigrationStepWithVersion migrationSteps({
         final migrator = i1.Migrator(database, schema);
         await from46To47(migrator, schema);
         return 47;
+      case 47:
+        final schema = Schema48(database: database);
+        final migrator = i1.Migrator(database, schema);
+        await from47To48(migrator, schema);
+        return 48;
       default:
         throw ArgumentError.value('Unknown migration from $currentVersion');
     }
@@ -6269,6 +6492,7 @@ i1.OnUpgrade stepByStep({
   required Future<void> Function(i1.Migrator m, Schema45 schema) from44To45,
   required Future<void> Function(i1.Migrator m, Schema46 schema) from45To46,
   required Future<void> Function(i1.Migrator m, Schema47 schema) from46To47,
+  required Future<void> Function(i1.Migrator m, Schema48 schema) from47To48,
 }) =>
     i0.VersionedSchema.stepByStepHelper(
         step: migrationSteps(
@@ -6317,4 +6541,5 @@ i1.OnUpgrade stepByStep({
       from44To45: from44To45,
       from45To46: from45To46,
       from46To47: from46To47,
+      from47To48: from47To48,
     ));
