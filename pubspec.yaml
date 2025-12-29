@@ -26,12 +26,7 @@ dependencies:
   url_launcher: ^6.2.6
   badges: ^3.1.2
   flutter_local_notifications: ^19.3.0
-  msvcredist:
-    git:
-      url: https://github.com/insertjokehere/flutter_msvcredist.git
-      ref: main
   timeago: ^3.2.2
-  sqlite3_web: ^0.3.1
 dev_dependencies:
   integration_test:
     sdk: flutter
@@ -41,40 +36,8 @@ dev_dependencies:
   mockito: ^5.4.4
   drift_dev: ^2.28.1
   build_runner: ^2.6.0
-  flutter_launcher_icons: ^0.14.4
-  msix:
-    git:
-      url: https://github.com/insertjokehere/msix.git
-      ref: msvc_redist
 flutter:
   uses-material-design: true
   assets:
     - assets/
     - assets/changelogs/
-flutter_launcher_icons:
-  android: false
-  ios: true
-  image_path: assets/ic_launcher.png
-  min_sdk_android: 21
-  web:
-    generate: true
-    image_path: assets/ic_launcher.png
-    background_color: "#hexcode"
-    theme_color: "#hexcode"
-  windows:
-    generate: true
-    image_path: assets/ic_launcher.png
-    icon_size: 48
-  macos:
-    generate: true
-    image_path: assets/ic_launcher.png
-msix_config:
-  msstore_appId: 9P13THVK7F69
-  display_name: Flexify
-  publisher_display_name: Brandon Dick
-  identity_name: FrisbeeSoftware.Flexify
-  msix_version: 1.0.173.0
-  logo_path: assets/ic_launcher.png
-  trim_logo: false
-  publisher: CN=BB0811CB-EED5-441C-BE1B-D31F391F76DE
-  store: true
