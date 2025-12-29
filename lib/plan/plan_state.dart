@@ -123,8 +123,8 @@ class PlanState extends ChangeNotifier {
     });
   }
 
-  Future<void> updateGymCounts(int planId) {
-    return getGymCounts(planId).then((value) {
+  Future<void> updateGymCounts(int planId, [int? workoutId]) {
+    return getGymCounts(planId, workoutId).then((value) {
       gymCounts = value;
       notifyListeners();
     });
@@ -168,9 +168,20 @@ class PlanState extends ChangeNotifier {
     });
   }
 
-  Future<List<GymCount>> getGymCounts(int planId) async {
-    final count = CustomExpression<int>(
-      """
+  Future<List<GymCount>> getGymCounts(int planId, [int? workoutId]) async {
+    // If workoutId is provided, count sets for that workout only
+    // Otherwise, count sets from the last 24 hours
+    final countExpression = workoutId != null
+        ? """
+      COUNT(
+        CASE
+          WHEN hidden = 0
+               AND gym_sets.workout_id = $workoutId
+          THEN 1
+        END
+      )
+   """
+        : """
       COUNT(
         CASE
           WHEN created >= strftime('%s', 'now', 'localtime', '-24 hours')
@@ -179,8 +190,8 @@ class PlanState extends ChangeNotifier {
           THEN 1
         END
       )
-   """,
-    );
+   """;
+    final count = CustomExpression<int>(countExpression);
 
     final results = await (db.selectOnly(db.planExercises)
           ..addColumns([

@@ -13,6 +13,7 @@ import 'package:flexify/plan/start_list.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/timer/timer_state.dart';
 import 'package:flexify/utils.dart';
+import 'package:flexify/workouts/active_workout_bar.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' as material;
@@ -90,35 +91,43 @@ class _StartPlanPageState extends State<StartPlanPage>
               ),
             ],
           ),
-          body: Padding(
-            padding: const EdgeInsets.only(left: 16.0, right: 16, bottom: 104),
-            child: Form(
-              key: key,
-              child: material.Column(
-                children: [
-                  if (!cardio) ...strengthFields(snapshot),
-                  if (cardio) ...cardioFields(snapshot),
-                  unitSelector(),
-                  notesField(),
-                  Expanded(
-                    child: StartList(
-                      exercises: snapshot.data!,
-                      selected: selected,
-                      onSelect: select,
-                      plan: widget.plan,
-                      onMax: () {
-                        planState.updateGymCounts(widget.plan.id);
-                      },
+          body: material.Column(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 16.0, right: 16),
+                  child: Form(
+                    key: key,
+                    child: material.Column(
+                      children: [
+                        if (!cardio) ...strengthFields(snapshot),
+                        if (cardio) ...cardioFields(snapshot),
+                        unitSelector(),
+                        notesField(),
+                        Expanded(
+                          child: StartList(
+                            exercises: snapshot.data!,
+                            selected: selected,
+                            onSelect: select,
+                            plan: widget.plan,
+                            onMax: () {
+                              planState.updateGymCounts(widget.plan.id, workoutId);
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+              const ActiveWorkoutBar(),
+              const SizedBox(height: 80),
+            ],
           ),
           floatingActionButton: AnimatedFab(
             onPressed: () async => await save(snapshot),
-            label: const Text("Save"),
-            icon: const Icon(Icons.save),
+            label: const Text("Next"),
+            icon: const Icon(Icons.navigate_next),
           ),
         );
       },
@@ -392,6 +401,10 @@ class _StartPlanPageState extends State<StartPlanPage>
     WidgetsBinding.instance.removeObserver(this);
     planState.removeListener(planChanged);
 
+    // Remove workout state listener
+    final workoutState = context.read<WorkoutState>();
+    workoutState.removeListener(_onWorkoutStateChanged);
+
     super.dispose();
   }
 
@@ -420,7 +433,19 @@ class _StartPlanPageState extends State<StartPlanPage>
         ? widget.plan.title!
         : widget.plan.days.replaceAll(",", ", ");
 
+    // Listen for workout state changes to pop when workout ends
+    final workoutState = context.read<WorkoutState>();
+    workoutState.addListener(_onWorkoutStateChanged);
+
     _loadExercises();
+  }
+
+  void _onWorkoutStateChanged() {
+    final workoutState = context.read<WorkoutState>();
+    // If workout was ended (no active workout), pop this page
+    if (!workoutState.hasActiveWorkout && mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   Future<void> _loadExercises() async {
@@ -462,6 +487,9 @@ class _StartPlanPageState extends State<StartPlanPage>
         workoutId = workoutState.activeWorkout!.id;
       });
     }
+
+    // Update gym counts with workoutId to show only this workout's progress
+    await planState.updateGymCounts(widget.plan.id, workoutId);
 
     select(0);
     if (!mounted) return;
@@ -592,7 +620,7 @@ class _StartPlanPageState extends State<StartPlanPage>
         selected < snapshot.data!.length - 1;
 
     var gymSet = await db.into(db.gymSets).insertReturning(gymSetInsert);
-    await planState.updateGymCounts(widget.plan.id);
+    await planState.updateGymCounts(widget.plan.id, workoutId);
     await planState.updateDefaults();
     if (settings.planTrailing == 'PlanTrailing.count' ||
         settings.planTrailing == 'PlanTrailing.ratio' ||
