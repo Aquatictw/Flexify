@@ -7,21 +7,12 @@ import 'package:flexify/database/metadata.dart';
 import 'package:flexify/database/plan_exercises.dart';
 import 'package:flexify/database/plans.dart';
 import 'package:flexify/database/settings.dart';
-import 'package:flutter/foundation.dart';
-
-import 'database_connection_web.dart'
-    if (dart.library.io) 'database_connection_native.dart';
+import 'database_connection_native.dart';
 
 part 'database.g.dart';
 
 LazyDatabase openConnection() {
-  return LazyDatabase(() async {
-    if (kIsWeb) {
-      return createWebConnection();
-    } else {
-      return createNativeConnection();
-    }
-  });
+  return createNativeConnection();
 }
 
 @DriftDatabase(tables: [Plans, GymSets, Settings, PlanExercises, Metadata])

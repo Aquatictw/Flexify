@@ -18,8 +18,6 @@ Flex on people with this swanky, lightning-quick gym tracker!
 
 <a href="https://play.google.com/store/apps/details?id=com.presley.flexify"><img alt="Get it on Google Play" style="height: 80px !important" src="./docs/get-it-on-google-play.png"/></a>
 <a href="https://f-droid.org/packages/com.presley.flexify"><img src="./docs/get-it-on-fdroid.png" alt="Get it on F-Droid" style="height: 80px !important"></a>
-<a href="https://apps.microsoft.com/detail/Flexify/9P13THVK7F69?mode=direct"><img src="./docs/download-msstore.svg" style="height: 80px !important"/></a>
-<a href="https://apps.apple.com/us/app/flexify/id6503730178?itsct=apps_box_badge&itscg=30200"><img src="docs/download-apple.svg" alt="Download on the App Store" style="height: 80px !important"></a>
 
 ## Screenshots
 
@@ -58,48 +56,11 @@ To get started with Flexify, follow these steps:
    flutter pub get
    ```
 
-3. **Run the App**: Launch the Flexify app on your preferred device or emulator:
+3. **Run the App**: Launch the Flexify app on your Android device or emulator:
 
    ```bash
    flutter run
    ```
-
-## ChromeDriver Setup
-
-For automated screenshot testing, you'll need to download ChromeDriver:
-
-### Windows
-
-1. **Download ChromeDriver**: Download the latest ChromeDriver for Windows:
-   ```bash
-   curl -L -o chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.85/win64/chromedriver-win64.zip"
-   ```
-
-2. **Extract**: Extract the downloaded zip file:
-   ```bash
-   tar -xf chromedriver.zip
-   ```
-
-### macOS/Linux
-
-1. **Download ChromeDriver**: Download the appropriate version for your system:
-   ```bash
-   # For macOS (Intel)
-   curl -L -o chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.85/mac-x64/chromedriver-mac-x64.zip"
-   
-   # For macOS (Apple Silicon)
-   curl -L -o chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.85/mac-arm64/chromedriver-mac-arm64.zip"
-   
-   # For Linux
-   curl -L -o chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.85/linux64/chromedriver-linux64.zip"
-   ```
-
-2. **Extract**: Extract the downloaded zip file:
-   ```bash
-   unzip chromedriver.zip
-   ```
-
-**Note**: ChromeDriver files are excluded from git due to their size. You'll need to download them locally for screenshot testing to work.
 
 ## Migrations
 

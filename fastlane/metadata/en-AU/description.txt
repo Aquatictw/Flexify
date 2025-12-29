@@ -1,9 +1,0 @@
-Flex on people with Flexify
-
-Log your workouts quickly - our app is incredibly fast.
-No internet? No worries. We don't use the web at all.
-Visualize your progress with snappy and beautiful graphs.
-Customize everything. Any feature you don't like can be toggled off in settings.
-You don't need to compromise on speed for beauty, get both with Flexify.
-
-Notice a bug? Create an issue on https://github.com/brandonp2412/Flexify/issues
