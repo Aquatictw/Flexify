@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide Column;
 import 'package:flexify/constants.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/main.dart';
@@ -158,7 +158,8 @@ class _PlanTileState extends State<PlanTile> {
               builder: (context) {
                 final trailing = context.select<SettingsState, PlanTrailing>(
                   (settings) => PlanTrailing.values.byName(
-                    settings.value.planTrailing.replaceFirst('PlanTrailing.', ''),
+                    settings.value.planTrailing
+                        .replaceFirst('PlanTrailing.', ''),
                   ),
                 );
                 if (trailing == PlanTrailing.none) return const SizedBox();
@@ -200,44 +201,44 @@ class _PlanTileState extends State<PlanTile> {
               },
             ),
             onTap: () async {
-          if (widget.selected.isNotEmpty)
-            return widget.onSelect(widget.plan.id);
+              if (widget.selected.isNotEmpty)
+                return widget.onSelect(widget.plan.id);
 
-          final workoutState = context.read<WorkoutState>();
+              final workoutState = context.read<WorkoutState>();
 
-          // Check if there's an active workout for a different plan
-          if (workoutState.hasActiveWorkout &&
-              workoutState.activePlan?.id != widget.plan.id) {
-            toast(
-              'Finish your current workout first',
-              action: SnackBarAction(
-                label: 'Resume',
-                onPressed: () {
-                  if (workoutState.activePlan != null) {
-                    widget.navigatorKey.currentState!.push(
-                      MaterialPageRoute(
-                        builder: (context) => StartPlanPage(
-                          plan: workoutState.activePlan!,
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-            );
-            return;
-          }
+              // Check if there's an active workout for a different plan
+              if (workoutState.hasActiveWorkout &&
+                  workoutState.activePlan?.id != widget.plan.id) {
+                toast(
+                  'Finish your current workout first',
+                  action: SnackBarAction(
+                    label: 'Resume',
+                    onPressed: () {
+                      if (workoutState.activePlan != null) {
+                        widget.navigatorKey.currentState!.push(
+                          MaterialPageRoute(
+                            builder: (context) => StartPlanPage(
+                              plan: workoutState.activePlan!,
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                );
+                return;
+              }
 
-          final state = context.read<PlanState>();
-          await state.updateGymCounts(widget.plan.id);
+              final state = context.read<PlanState>();
+              await state.updateGymCounts(widget.plan.id);
 
-          widget.navigatorKey.currentState!.push(
-            MaterialPageRoute(
-              builder: (context) => StartPlanPage(
-                plan: widget.plan,
-              ),
-            ),
-          );
+              widget.navigatorKey.currentState!.push(
+                MaterialPageRoute(
+                  builder: (context) => StartPlanPage(
+                    plan: widget.plan,
+                  ),
+                ),
+              );
             },
             onLongPress: () {
               widget.onSelect(widget.plan.id);
@@ -292,7 +293,9 @@ class _PlanTileState extends State<PlanTile> {
                       label: const Text('Start'),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -320,7 +323,9 @@ class _PlanTileState extends State<PlanTile> {
                     label: const Text('Edit'),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

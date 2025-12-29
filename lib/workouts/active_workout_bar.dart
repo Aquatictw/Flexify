@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flexify/database/database.dart';
 import 'package:flexify/plan/start_plan_page.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
@@ -171,7 +172,8 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                       builder: (context) => AlertDialog(
                         title: const Text('End Workout?'),
                         content: const Text(
-                            'Are you sure you want to end this workout session?'),
+                          'Are you sure you want to end this workout session?',
+                        ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context, false),
