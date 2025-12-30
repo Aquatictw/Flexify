@@ -94,4 +94,10 @@ class WorkoutState extends ChangeNotifier {
     _activePlan = null;
     notifyListeners();
   }
+
+  void setActiveWorkout(Workout workout, Plan? plan) {
+    _activeWorkout = workout;
+    _activePlan = plan;
+    notifyListeners();
+  }
 }

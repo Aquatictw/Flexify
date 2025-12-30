@@ -14,6 +14,7 @@ class AppSearch extends StatefulWidget {
   final Function onSelect;
   final Function onShare;
   final Function? onRefresh;
+  final Function? onAdd;
   final Widget? filter;
   final String? confirmText;
 
@@ -27,6 +28,7 @@ class AppSearch extends StatefulWidget {
     required this.onSelect,
     required this.onShare,
     this.onRefresh,
+    this.onAdd,
     this.filter,
     this.confirmText,
   });
@@ -158,6 +160,17 @@ class _AppSearchState extends State<AppSearch> {
                     context: context,
                     position: position,
                     items: [
+                      if (widget.selected.isEmpty && widget.onAdd != null)
+                        PopupMenuItem(
+                          child: ListTile(
+                            leading: const Icon(Icons.add),
+                            title: const Text('Add'),
+                            onTap: () {
+                              Navigator.pop(context);
+                              widget.onAdd!();
+                            },
+                          ),
+                        ),
                       PopupMenuItem(
                         child: ListTile(
                           leading: const Icon(Icons.done_all),

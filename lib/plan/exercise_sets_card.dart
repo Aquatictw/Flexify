@@ -34,6 +34,7 @@ class ExerciseSetsCard extends StatefulWidget {
   final VoidCallback? onDeleteExercise;
   final String? exerciseNotes;
   final ValueChanged<String>? onNotesChanged;
+  final int sequence; // Exercise order within workout
 
   const ExerciseSetsCard({
     super.key,
@@ -45,6 +46,7 @@ class ExerciseSetsCard extends StatefulWidget {
     required this.onSetCompleted,
     this.onDeleteExercise,
     this.exerciseNotes,
+    this.sequence = 0,
     this.onNotesChanged,
   });
 
@@ -276,6 +278,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
             planId: Value(widget.planId),
             workoutId: Value(widget.workoutId),
             bodyWeight: Value.absentIfNull(bodyWeight),
+            sequence: Value(widget.sequence),
           ),
         );
 
@@ -446,6 +449,31 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
+                        // Exercise notes preview
+                        if (widget.exerciseNotes?.isNotEmpty == true) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.sticky_note_2_outlined,
+                                size: 12,
+                                color: colorScheme.tertiary,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  widget.exerciseNotes!,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: colorScheme.tertiary,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 2),
                         if (_initialized)
                           Row(

@@ -1,11 +1,11 @@
 import 'package:drift/drift.dart' as drift;
-import 'package:flexify/animated_fab.dart';
 import 'package:flexify/app_search.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/plan/edit_plan_page.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/plan/plans_list.dart';
+import 'package:flexify/plan/start_plan_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
@@ -122,15 +122,76 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
     });
   }
 
+  String _getTimeBasedWorkoutTitle() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Morning Workout';
+    if (hour < 14) return 'Noon Workout';
+    if (hour < 18) return 'Afternoon Workout';
+    return 'Evening Workout';
+  }
+
+  Future<void> _startFreeformWorkout() async {
+    final workoutState = context.read<WorkoutState>();
+
+    // Create a temporary plan for freeform workout
+    final freeformPlan = Plan(
+      id: -1, // Temporary ID
+      days: _getTimeBasedWorkoutTitle(),
+      exercises: '',
+      sequence: 0,
+      title: _getTimeBasedWorkoutTitle(),
+    );
+
+    // Start workout directly without a real plan
+    final workoutId = await db.workouts.insertOne(
+      WorkoutsCompanion(
+        startTime: drift.Value(DateTime.now()),
+        name: drift.Value(_getTimeBasedWorkoutTitle()),
+      ),
+    );
+
+    final workout = await (db.workouts.select()
+          ..where((w) => w.id.equals(workoutId)))
+        .getSingle();
+
+    workoutState.setActiveWorkout(workout, null);
+
+    if (context.mounted) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => StartPlanPage(plan: freeformPlan),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     state = context.watch<PlanState>(); // Watch for changes to rebuild
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Column(
         children: [
           AppSearch(
+            onAdd: () async {
+              const plan = PlansCompanion(
+                days: drift.Value(''),
+              );
+              await state!.setExercises(plan);
+              if (context.mounted) {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const EditPlanPage(
+                      plan: plan,
+                    ),
+                  ),
+                );
+              }
+            },
             onShare: () async {
               final plans = (state?.plans)!
                   .where(
@@ -218,27 +279,68 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
               },
             ),
           ),
-        ],
-      ),
-      floatingActionButton: AnimatedFab(
-        onPressed: () async {
-          const plan = PlansCompanion(
-            days: drift.Value(''),
-          );
-          await state!.setExercises(plan);
-          if (context.mounted)
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const EditPlanPage(
-                  plan: plan,
+          // Freeform workout button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+            child: Material(
+              borderRadius: BorderRadius.circular(16),
+              color: colorScheme.secondaryContainer,
+              child: InkWell(
+                onTap: _startFreeformWorkout,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: colorScheme.secondary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.play_arrow_rounded,
+                          color: colorScheme.onSecondary,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Freeform Workout',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSecondaryContainer,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Start with an empty workout',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: colorScheme.onSecondaryContainer.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: colorScheme.onSecondaryContainer.withValues(alpha: 0.5),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            );
-        },
-        label: Text('Add'),
-        icon: Icon(Icons.add),
-        scroll: scroll,
+            ),
+          ),
+        ],
       ),
     );
   }

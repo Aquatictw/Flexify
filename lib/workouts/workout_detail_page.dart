@@ -21,7 +21,6 @@ class WorkoutDetailPage extends StatefulWidget {
 
 class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   late Stream<List<GymSet>> setsStream;
-  Map<String, int> _exerciseSequenceMap = {};
 
   @override
   void initState() {
@@ -32,28 +31,6 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             (s) => OrderingTerm(expression: s.created, mode: OrderingMode.asc)
           ]))
         .watch();
-    _loadPlanExerciseSequence();
-  }
-
-  Future<void> _loadPlanExerciseSequence() async {
-    if (widget.workout.planId == null) return;
-
-    final planExercises = await (db.planExercises.select()
-          ..where((pe) => pe.planId.equals(widget.workout.planId!))
-          ..orderBy([
-            (pe) =>
-                OrderingTerm(expression: pe.sequence, mode: OrderingMode.asc)
-          ]))
-        .get();
-
-    if (mounted) {
-      setState(() {
-        _exerciseSequenceMap = {
-          for (var i = 0; i < planExercises.length; i++)
-            planExercises[i].exercise: i
-        };
-      });
-    }
   }
 
   @override
@@ -82,20 +59,17 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             exerciseGroups.putIfAbsent(set.name, () => []).add(set);
           }
 
-          // Sort exercise groups by plan sequence (plan exercises first, then ad-hoc)
+          // Sort exercise groups by stored sequence (from first set of each exercise)
           final sortedExerciseNames = exerciseGroups.keys.toList()
             ..sort((a, b) {
-              final seqA = _exerciseSequenceMap[a];
-              final seqB = _exerciseSequenceMap[b];
+              // Use the sequence stored in each set (from the first set of each exercise)
+              final seqA = exerciseGroups[a]!.first.sequence;
+              final seqB = exerciseGroups[b]!.first.sequence;
 
-              // Both are plan exercises - sort by sequence
-              if (seqA != null && seqB != null) return seqA.compareTo(seqB);
+              // If sequences are different, use them
+              if (seqA != seqB) return seqA.compareTo(seqB);
 
-              // Plan exercise comes before ad-hoc
-              if (seqA != null) return -1;
-              if (seqB != null) return 1;
-
-              // Both ad-hoc - sort by first set creation time
+              // If sequences are the same (both 0 for old data), fall back to creation time
               final timeA = exerciseGroups[a]!.first.created;
               final timeB = exerciseGroups[b]!.first.created;
               return timeA.compareTo(timeB);

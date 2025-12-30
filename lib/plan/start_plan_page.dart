@@ -47,6 +47,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
   bool _isReorderMode = false; // Reorder mode toggle
   List<_ExerciseItem> _exerciseOrder = []; // Unified ordered list
   Map<int, PlanExercise> _planExercisesMap = {}; // Cache of plan exercises
+  Map<String, String> _exerciseNotes = {}; // Track notes per exercise (key -> notes)
 
   @override
   void initState() {
@@ -339,6 +340,17 @@ class _StartPlanPageState extends State<StartPlanPage> {
             planId: widget.plan.id,
             workoutId: workoutId,
             isExpanded: expandedExercises.contains(item.key),
+            exerciseNotes: _exerciseNotes[item.key],
+            sequence: index, // Pass the visual order
+            onNotesChanged: (notes) {
+              setState(() {
+                if (notes.isEmpty) {
+                  _exerciseNotes.remove(item.key);
+                } else {
+                  _exerciseNotes[item.key] = notes;
+                }
+              });
+            },
             onToggleExpand: () {
               setState(() {
                 if (expandedExercises.contains(item.key)) {
@@ -361,6 +373,17 @@ class _StartPlanPageState extends State<StartPlanPage> {
             exerciseName: item.adHocName!,
             workoutId: workoutId,
             isExpanded: expandedExercises.contains(item.key),
+            exerciseNotes: _exerciseNotes[item.key],
+            sequence: index, // Pass the visual order
+            onNotesChanged: (notes) {
+              setState(() {
+                if (notes.isEmpty) {
+                  _exerciseNotes.remove(item.key);
+                } else {
+                  _exerciseNotes[item.key] = notes;
+                }
+              });
+            },
             onToggleExpand: () {
               setState(() {
                 if (expandedExercises.contains(item.key)) {
@@ -854,6 +877,7 @@ class _AdHocExerciseCard extends StatefulWidget {
   final VoidCallback onRemove;
   final String? exerciseNotes;
   final ValueChanged<String>? onNotesChanged;
+  final int sequence; // Exercise order within workout
 
   const _AdHocExerciseCard({
     super.key,
@@ -864,6 +888,7 @@ class _AdHocExerciseCard extends StatefulWidget {
     required this.onRemove,
     this.exerciseNotes,
     this.onNotesChanged,
+    this.sequence = 0,
   });
 
   @override
@@ -1090,6 +1115,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
             created: DateTime.now().toLocal(),
             workoutId: Value(widget.workoutId),
             bodyWeight: Value.absentIfNull(bodyWeight),
+            sequence: Value(widget.sequence),
           ),
         );
 
@@ -1213,6 +1239,31 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
+                        // Exercise notes preview
+                        if (widget.exerciseNotes?.isNotEmpty == true) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.sticky_note_2_outlined,
+                                size: 12,
+                                color: colorScheme.tertiary,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  widget.exerciseNotes!,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: colorScheme.tertiary,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 2),
                         if (_initialized)
                           Row(
