@@ -117,7 +117,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
     final planState = context.read<PlanState>();
     await planState.updateGymCounts(widget.plan.id, workoutId);
 
-    // Check if this workout has any sets (resuming vs new workout)
+    // Query all sets for this workout to understand its current state
     final existingSets = await (db.gymSets.select()
           ..where((s) => s.workoutId.equals(workoutId!))
           ..orderBy([
@@ -125,72 +125,89 @@ class _StartPlanPageState extends State<StartPlanPage> {
           ]))
         .get();
 
-    if (existingSets.isEmpty) {
-      // New workout - load all exercises from plan (unless it's a freeform workout)
-      if (widget.plan.id != -1) {
-        final exercises = await stream.first;
-        if (exercises.isNotEmpty && mounted) {
-          setState(() {
-            // Build map and ordered list from plan exercises
-            _planExercisesMap = {for (var e in exercises) e.id: e};
-            _exerciseOrder = exercises.map((e) => _ExerciseItem.plan(e)).toList();
+    // Get unique exercise names from existing sets
+    final exercisesWithSets = existingSets.map((s) => s.name).toSet();
 
-            // Expand ALL exercises by default so all sets are visible
-            for (final item in _exerciseOrder) {
-              expandedExercises.add(item.key);
-            }
-          });
+    // Load plan exercises (if not freeform)
+    List<PlanExercise> planExercises = [];
+    if (widget.plan.id != -1) {
+      planExercises = await stream.first;
+    }
+
+    if (mounted) {
+      setState(() {
+        // Build map from plan exercises
+        _planExercisesMap = {for (var e in planExercises) e.id: e};
+
+        // Identify removed exercises (those with only tombstone markers)
+        final removedExercises = <String>{};
+        final exerciseSets = <String, List<GymSet>>{};
+
+        for (final set in existingSets) {
+          exerciseSets.putIfAbsent(set.name, () => []).add(set);
         }
-      }
-      // For freeform workouts (id=-1), start with empty exercise list
-    } else {
-      // Resuming workout - only load exercises that have sets
-      final exerciseNames = existingSets.map((s) => s.name).toSet().toList();
 
-      // Load plan exercises (if not freeform)
-      List<PlanExercise> exercises = [];
-      if (widget.plan.id != -1) {
-        exercises = await stream.first;
-      }
+        for (final entry in exerciseSets.entries) {
+          // If all sets are tombstones (sequence=-1), this exercise was removed
+          if (entry.value.every((s) => s.sequence == -1)) {
+            removedExercises.add(entry.key);
+          }
+        }
 
-      if (mounted) {
-        setState(() {
-          // Build map from plan exercises
-          _planExercisesMap = {for (var e in exercises) e.id: e};
+        // Build exercise order list
+        _exerciseOrder = [];
 
-          // Only add exercises that have sets in this workout
-          _exerciseOrder = [];
-          for (final name in exerciseNames) {
-            // Try to find matching plan exercise
-            final planExercise = exercises.where((e) => e.exercise == name).firstOrNull;
+        if (existingSets.isEmpty || existingSets.every((s) => s.sequence == -1)) {
+          // Brand new workout OR only tombstones - load plan exercises minus removed ones
+          for (final planEx in planExercises) {
+            if (!removedExercises.contains(planEx.exercise)) {
+              _exerciseOrder.add(_ExerciseItem.plan(planEx));
+            }
+          }
+        } else {
+          // Resuming - rebuild exercise list from sets (preserves order and removals)
+          final seenExercises = <String>{};
+          final orderedExercises = <String>[];
+
+          // Only process sets that aren't tombstones
+          for (final set in existingSets.where((s) => s.sequence != -1)) {
+            if (!seenExercises.contains(set.name)) {
+              seenExercises.add(set.name);
+              orderedExercises.add(set.name);
+            }
+          }
+
+          // Add exercises in the order they appear in sets
+          for (final name in orderedExercises) {
+            final planExercise = planExercises.where((e) => e.exercise == name).firstOrNull;
             if (planExercise != null) {
               _exerciseOrder.add(_ExerciseItem.plan(planExercise));
             } else {
-              // Custom exercise not in plan (or freeform workout)
+              // Custom/freeform exercise
               _exerciseOrder.add(_ExerciseItem.adHoc(name));
             }
           }
 
-          // Load notes for each exercise from first set
-          for (final name in exerciseNames) {
-            final firstSet = existingSets.firstWhere((s) => s.name == name);
+          // Restore notes from first non-tombstone set of each exercise
+          for (final name in orderedExercises) {
+            final firstSet = existingSets.firstWhere(
+              (s) => s.name == name && s.sequence != -1,
+            );
             if (firstSet.notes?.isNotEmpty == true) {
-              final key = _exerciseOrder
-                  .firstWhere((item) =>
-                    item.isPlanExercise
-                      ? _planExercisesMap[item.planExerciseId]?.exercise == name
-                      : item.adHocName == name)
-                  .key;
-              _exerciseNotes[key] = firstSet.notes!;
+              final item = _exerciseOrder.firstWhere((item) =>
+                item.isPlanExercise
+                  ? _planExercisesMap[item.planExerciseId]?.exercise == name
+                  : item.adHocName == name);
+              _exerciseNotes[item.key] = firstSet.notes!;
             }
           }
+        }
 
-          // Expand ALL exercises by default so all sets are visible
-          for (final item in _exerciseOrder) {
-            expandedExercises.add(item.key);
-          }
-        });
-      }
+        // Expand all exercises by default
+        for (final item in _exerciseOrder) {
+          expandedExercises.add(item.key);
+        }
+      });
     }
   }
 
@@ -422,9 +439,33 @@ class _StartPlanPageState extends State<StartPlanPage> {
               });
             },
             onSetCompleted: () {},
-            onDeleteExercise: () {
+            onDeleteExercise: () async {
+              final exerciseName = exercise.exercise;
+              // Delete all sets for this exercise from the database
+              await (db.gymSets.delete()
+                    ..where((s) =>
+                      s.workoutId.equals(workoutId!) &
+                      s.name.equals(exerciseName)))
+                  .go();
+
+              // Insert a tombstone marker to remember this exercise was removed
+              // This persists the removal even when no other sets exist
+              await db.gymSets.insertOne(
+                GymSetsCompanion.insert(
+                  name: exerciseName,
+                  reps: -1, // Special marker value
+                  weight: 0,
+                  unit: 'kg',
+                  created: DateTime.now(),
+                  workoutId: Value(workoutId!),
+                  hidden: const Value(true), // Hide from history
+                  sequence: const Value(-1), // Special sequence for tombstones
+                ),
+              );
+
               setState(() {
                 _exerciseOrder.removeAt(index);
+                _exerciseNotes.remove(item.key);
               });
             },
           );
@@ -454,9 +495,32 @@ class _StartPlanPageState extends State<StartPlanPage> {
                 }
               });
             },
-            onRemove: () {
+            onRemove: () async {
+              final exerciseName = item.adHocName!;
+              // Delete all sets for this exercise from the database
+              await (db.gymSets.delete()
+                    ..where((s) =>
+                      s.workoutId.equals(workoutId!) &
+                      s.name.equals(exerciseName)))
+                  .go();
+
+              // Insert a tombstone marker to remember this exercise was removed
+              await db.gymSets.insertOne(
+                GymSetsCompanion.insert(
+                  name: exerciseName,
+                  reps: -1, // Special marker value
+                  weight: 0,
+                  unit: 'kg',
+                  created: DateTime.now(),
+                  workoutId: Value(workoutId!),
+                  hidden: const Value(true), // Hide from history
+                  sequence: const Value(-1), // Special sequence for tombstones
+                ),
+              );
+
               setState(() {
                 _exerciseOrder.removeAt(index);
+                _exerciseNotes.remove(item.key);
               });
             },
           );
