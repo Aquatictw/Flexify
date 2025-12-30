@@ -130,11 +130,12 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
 
   int get completedCount => sets.where((s) => s.completed).length;
 
-  Future<void> _showExerciseMenu(BuildContext context) async {
-    final colorScheme = Theme.of(context).colorScheme;
+  Future<void> _showExerciseMenu(BuildContext parentContext) async {
+    final colorScheme = Theme.of(parentContext).colorScheme;
 
     await showModalBottomSheet(
-      context: context,
+      context: parentContext,
+      useRootNavigator: true,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -178,7 +179,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                   : null,
               onTap: () {
                 Navigator.pop(context);
-                _showNotesDialog(context);
+                _showNotesDialog(parentContext);
               },
             ),
             ListTile(

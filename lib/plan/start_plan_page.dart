@@ -18,14 +18,34 @@ class StartPlanPage extends StatefulWidget {
   createState() => _StartPlanPageState();
 }
 
+// Represents an exercise item in the workout (either from plan or ad-hoc)
+class _ExerciseItem {
+  final bool isPlanExercise;
+  final int? planExerciseId;
+  final String? adHocName;
+
+  _ExerciseItem.plan(PlanExercise exercise)
+      : isPlanExercise = true,
+        planExerciseId = exercise.id,
+        adHocName = null;
+
+  _ExerciseItem.adHoc(String name)
+      : isPlanExercise = false,
+        planExerciseId = null,
+        adHocName = name;
+
+  String get key => isPlanExercise ? 'plan_$planExerciseId' : 'adhoc_$adHocName';
+}
+
 class _StartPlanPageState extends State<StartPlanPage> {
   int? workoutId;
   late Stream<List<PlanExercise>> stream;
   late String title = widget.plan.days.replaceAll(",", ", ");
-  Set<int> expandedExercises = {};
+  Set<String> expandedExercises = {}; // Now uses string keys
   final TextEditingController _notesController = TextEditingController();
   bool _showNotes = false;
-  List<String> _adHocExercises = []; // Exercises added during this workout
+  List<_ExerciseItem> _exerciseOrder = []; // Unified ordered list
+  Map<int, PlanExercise> _planExercisesMap = {}; // Cache of plan exercises
 
   @override
   void initState() {
@@ -95,16 +115,32 @@ class _StartPlanPageState extends State<StartPlanPage> {
     final planState = context.read<PlanState>();
     await planState.updateGymCounts(widget.plan.id, workoutId);
 
-    // Expand ALL exercises by default so all sets are visible
+    // Initialize exercise order with plan exercises
     final exercises = await stream.first;
     if (exercises.isNotEmpty && mounted) {
       setState(() {
-        // Add all indices including plan exercises and ad-hoc exercises
-        for (int i = 0; i < exercises.length + _adHocExercises.length; i++) {
-          expandedExercises.add(i);
+        // Build map and ordered list from plan exercises
+        _planExercisesMap = {for (var e in exercises) e.id: e};
+        _exerciseOrder = exercises.map((e) => _ExerciseItem.plan(e)).toList();
+
+        // Expand ALL exercises by default so all sets are visible
+        for (final item in _exerciseOrder) {
+          expandedExercises.add(item.key);
         }
       });
     }
+  }
+
+  void _onReorder(int oldIndex, int newIndex) {
+    // Adjust newIndex if moving down the list
+    if (newIndex > oldIndex) newIndex--;
+
+    setState(() {
+      final item = _exerciseOrder.removeAt(oldIndex);
+      _exerciseOrder.insert(newIndex, item);
+    });
+
+    HapticFeedback.mediumImpact();
   }
 
   Future<void> _saveNotes() async {
@@ -184,9 +220,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
         }
 
         final exercises = snapshot.data!;
-
-        // Combine plan exercises with ad-hoc exercises
-        final totalExercises = exercises.length + _adHocExercises.length;
+        // Update plan exercises map with latest data
+        _planExercisesMap = {for (var e in exercises) e.id: e};
 
         return Scaffold(
           appBar: AppBar(
@@ -243,64 +278,85 @@ class _StartPlanPageState extends State<StartPlanPage> {
                     : CrossFadeState.showFirst,
                 duration: const Duration(milliseconds: 200),
               ),
-              // Exercises list
+              // Exercises list with reordering
               Expanded(
-                child: ListView.builder(
+                child: ReorderableListView.builder(
                   padding: const EdgeInsets.only(top: 8, bottom: 200),
-                  itemCount: totalExercises + 1, // +1 for add exercise button
-                  itemBuilder: (context, index) {
-                    // First show plan exercises
-                    if (index < exercises.length) {
-                      final exercise = exercises[index];
-                      return ExerciseSetsCard(
-                        key: ValueKey(exercise.id),
-                        exercise: exercise,
-                        planId: widget.plan.id,
-                        workoutId: workoutId,
-                        isExpanded: expandedExercises.contains(index),
-                        onToggleExpand: () {
-                          setState(() {
-                            if (expandedExercises.contains(index)) {
-                              expandedExercises.remove(index);
-                            } else {
-                              expandedExercises.add(index);
-                            }
-                          });
-                        },
-                        onSetCompleted: () {
-                          _checkAutoExpandNext(exercises, index);
-                        },
-                      );
-                    }
-                    // Then ad-hoc exercises
-                    if (index < exercises.length + _adHocExercises.length) {
-                      final adHocIndex = index - exercises.length;
-                      final exerciseName = _adHocExercises[adHocIndex];
-                      return _AdHocExerciseCard(
-                        key: ValueKey('adhoc_$exerciseName'),
-                        exerciseName: exerciseName,
-                        workoutId: workoutId,
-                        isExpanded: expandedExercises.contains(index),
-                        onToggleExpand: () {
-                          setState(() {
-                            if (expandedExercises.contains(index)) {
-                              expandedExercises.remove(index);
-                            } else {
-                              expandedExercises.add(index);
-                            }
-                          });
-                        },
-                        onRemove: () {
-                          setState(() {
-                            _adHocExercises.removeAt(adHocIndex);
-                          });
-                        },
-                      );
-                    }
-                    // Last item: Add Exercise button
-                    return _AddExerciseCard(
-                      onTap: () => _showAddExerciseModal(context),
+                  buildDefaultDragHandles: false,
+                  onReorder: _onReorder,
+                  itemCount: _exerciseOrder.length + 1, // +1 for add exercise button
+                  proxyDecorator: (child, index, animation) {
+                    return AnimatedBuilder(
+                      animation: animation,
+                      builder: (context, child) => Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(16),
+                        child: child,
+                      ),
+                      child: child,
                     );
+                  },
+                  itemBuilder: (context, index) {
+                    // Last item: Add Exercise button (not draggable)
+                    if (index >= _exerciseOrder.length) {
+                      return _AddExerciseCard(
+                        key: const ValueKey('add_exercise'),
+                        onTap: () => _showAddExerciseModal(context),
+                      );
+                    }
+
+                    final item = _exerciseOrder[index];
+
+                    if (item.isPlanExercise) {
+                      final exercise = _planExercisesMap[item.planExerciseId];
+                      if (exercise == null) return const SizedBox.shrink();
+
+                      return _ReorderableExerciseWrapper(
+                        key: ValueKey(item.key),
+                        index: index,
+                        child: ExerciseSetsCard(
+                          exercise: exercise,
+                          planId: widget.plan.id,
+                          workoutId: workoutId,
+                          isExpanded: expandedExercises.contains(item.key),
+                          onToggleExpand: () {
+                            setState(() {
+                              if (expandedExercises.contains(item.key)) {
+                                expandedExercises.remove(item.key);
+                              } else {
+                                expandedExercises.add(item.key);
+                              }
+                            });
+                          },
+                          onSetCompleted: () {},
+                        ),
+                      );
+                    } else {
+                      // Ad-hoc exercise
+                      return _ReorderableExerciseWrapper(
+                        key: ValueKey(item.key),
+                        index: index,
+                        child: _AdHocExerciseCard(
+                          exerciseName: item.adHocName!,
+                          workoutId: workoutId,
+                          isExpanded: expandedExercises.contains(item.key),
+                          onToggleExpand: () {
+                            setState(() {
+                              if (expandedExercises.contains(item.key)) {
+                                expandedExercises.remove(item.key);
+                              } else {
+                                expandedExercises.add(item.key);
+                              }
+                            });
+                          },
+                          onRemove: () {
+                            setState(() {
+                              _exerciseOrder.removeAt(index);
+                            });
+                          },
+                        ),
+                      );
+                    }
                   },
                 ),
               ),
@@ -311,34 +367,70 @@ class _StartPlanPageState extends State<StartPlanPage> {
     );
   }
 
-  void _checkAutoExpandNext(List<PlanExercise> exercises, int currentIndex) {
-    // Auto-expand next exercise could be implemented here
-    // For now, we just let the user manually expand
-  }
-
   Future<void> _showAddExerciseModal(BuildContext context) async {
+    final existingAdHocNames = _exerciseOrder
+        .where((item) => !item.isPlanExercise)
+        .map((item) => item.adHocName!)
+        .toList();
+
     final result = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      useRootNavigator: true,
       builder: (context) => _ExercisePickerModal(
-        existingExercises: _adHocExercises,
+        existingExercises: existingAdHocNames,
       ),
     );
 
     if (result != null && mounted) {
+      final newItem = _ExerciseItem.adHoc(result);
       setState(() {
-        _adHocExercises.add(result);
-        // Expand the new exercise
-        expandedExercises.add(
-          (stream as Stream<List<PlanExercise>>)
-                  .toString()
-                  .hashCode + // Placeholder for plan exercises count
-              _adHocExercises.length -
-              1,
-        );
+        _exerciseOrder.add(newItem);
+        expandedExercises.add(newItem.key);
       });
     }
+  }
+}
+
+// Wrapper widget that adds drag handle to exercises
+class _ReorderableExerciseWrapper extends StatelessWidget {
+  final int index;
+  final Widget child;
+
+  const _ReorderableExerciseWrapper({
+    super.key,
+    required this.index,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Stack(
+      children: [
+        child,
+        Positioned(
+          top: 0,
+          bottom: 0,
+          right: 8,
+          child: Center(
+            child: ReorderableDragStartListener(
+              index: index,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: Icon(
+                  Icons.drag_handle,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -772,11 +864,12 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
 
   int get completedCount => sets.where((s) => s.completed).length;
 
-  Future<void> _showExerciseMenu(BuildContext context) async {
-    final colorScheme = Theme.of(context).colorScheme;
+  Future<void> _showExerciseMenu(BuildContext parentContext) async {
+    final colorScheme = Theme.of(parentContext).colorScheme;
 
     await showModalBottomSheet(
-      context: context,
+      context: parentContext,
+      useRootNavigator: true,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -820,7 +913,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                   : null,
               onTap: () {
                 Navigator.pop(context);
-                _showNotesDialog(context);
+                _showNotesDialog(parentContext);
               },
             ),
             ListTile(
@@ -1510,7 +1603,6 @@ class _SimpleRepsInputState extends State<_SimpleRepsInput> {
     _focusNode = FocusNode();
     _focusNode.addListener(_onFocusChange);
   }
-}
 
   void _onFocusChange() {
     setState(() {

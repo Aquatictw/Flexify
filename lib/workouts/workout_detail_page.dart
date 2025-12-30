@@ -21,6 +21,7 @@ class WorkoutDetailPage extends StatefulWidget {
 
 class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   late Stream<List<GymSet>> setsStream;
+  Map<String, int> _exerciseSequenceMap = {};
 
   @override
   void initState() {
@@ -31,6 +32,28 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             (s) => OrderingTerm(expression: s.created, mode: OrderingMode.asc)
           ]))
         .watch();
+    _loadPlanExerciseSequence();
+  }
+
+  Future<void> _loadPlanExerciseSequence() async {
+    if (widget.workout.planId == null) return;
+
+    final planExercises = await (db.planExercises.select()
+          ..where((pe) => pe.planId.equals(widget.workout.planId!))
+          ..orderBy([
+            (pe) =>
+                OrderingTerm(expression: pe.sequence, mode: OrderingMode.asc)
+          ]))
+        .get();
+
+    if (mounted) {
+      setState(() {
+        _exerciseSequenceMap = {
+          for (var i = 0; i < planExercises.length; i++)
+            planExercises[i].exercise: i
+        };
+      });
+    }
   }
 
   @override
@@ -58,6 +81,25 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
           for (final set in sets) {
             exerciseGroups.putIfAbsent(set.name, () => []).add(set);
           }
+
+          // Sort exercise groups by plan sequence (plan exercises first, then ad-hoc)
+          final sortedExerciseNames = exerciseGroups.keys.toList()
+            ..sort((a, b) {
+              final seqA = _exerciseSequenceMap[a];
+              final seqB = _exerciseSequenceMap[b];
+
+              // Both are plan exercises - sort by sequence
+              if (seqA != null && seqB != null) return seqA.compareTo(seqB);
+
+              // Plan exercise comes before ad-hoc
+              if (seqA != null) return -1;
+              if (seqB != null) return 1;
+
+              // Both ad-hoc - sort by first set creation time
+              final timeA = exerciseGroups[a]!.first.created;
+              final timeB = exerciseGroups[b]!.first.created;
+              return timeA.compareTo(timeB);
+            });
 
           final totalVolume = sets.fold<double>(
             0,
@@ -138,18 +180,18 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                     child: Text('No exercises in this workout'),
                   ),
                 ),
-              // Exercise groups
+              // Exercise groups (sorted by plan sequence)
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final entry = exerciseGroups.entries.elementAt(index);
+                    final exerciseName = sortedExerciseNames[index];
                     return _buildExerciseGroup(
-                      entry.key,
-                      entry.value,
+                      exerciseName,
+                      exerciseGroups[exerciseName]!,
                       showImages,
                     );
                   },
-                  childCount: exerciseGroups.length,
+                  childCount: sortedExerciseNames.length,
                 ),
               ),
               // Bottom padding
