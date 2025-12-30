@@ -118,163 +118,121 @@ class _RestTimerBarState extends State<RestTimerBar>
             ? 1.0 + (_pulseController.value * 0.05)
             : 1.0;
 
-        return Transform.scale(
-          scale: pulseValue,
-          child: GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              setState(() => _isExpanded = !_isExpanded);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isUrgent
-                      ? [
-                          colorScheme.errorContainer,
-                          colorScheme.errorContainer.withValues(alpha: 0.8),
-                        ]
-                      : [
-                          colorScheme.tertiaryContainer,
-                          colorScheme.tertiaryContainer.withValues(alpha: 0.8),
-                        ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+        return Align(
+          alignment: Alignment.centerRight,
+          child: Transform.scale(
+            scale: pulseValue,
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                setState(() => _isExpanded = !_isExpanded);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                margin: const EdgeInsets.only(right: 16, top: 6, bottom: 6),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: _isExpanded ? 12 : 10,
                 ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isUrgent
-                            ? colorScheme.error
-                            : colorScheme.tertiary)
-                        .withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Stack(
+                decoration: BoxDecoration(
+                  color: isUrgent
+                      ? colorScheme.errorContainer
+                      : colorScheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isUrgent
+                              ? colorScheme.error
+                              : colorScheme.tertiary)
+                          .withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Background progress indicator
-                    Positioned.fill(
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 100),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              (isUrgent
-                                      ? colorScheme.error
-                                      : colorScheme.tertiary)
-                                  .withValues(alpha: 0.2),
-                              Colors.transparent,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Circular mini progress
+                        _MiniCircularProgress(
+                          progress: progress,
+                          isUrgent: isUrgent,
+                        ),
+                        const SizedBox(width: 10),
+                        // Timer display
+                        Text(
+                          _formatDuration(remaining),
+                          style: TextStyle(
+                            color: isUrgent
+                                ? colorScheme.onErrorContainer
+                                : colorScheme.onTertiaryContainer,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            fontFeatures: const [
+                              FontFeature.tabularFigures()
                             ],
-                            stops: [progress, progress],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
                           ),
                         ),
-                      ),
+                        const SizedBox(width: 10),
+                        // Time adjustment buttons
+                        _TimeAdjustButton(
+                          label: '-15',
+                          onPressed: () => _adjustTime(-15),
+                          isUrgent: isUrgent,
+                        ),
+                        const SizedBox(width: 6),
+                        _TimeAdjustButton(
+                          label: '+15',
+                          onPressed: () => _adjustTime(15),
+                          isUrgent: isUrgent,
+                          isAdd: true,
+                        ),
+                      ],
                     ),
-                    // Content
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: _isExpanded ? 12 : 10,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            children: [
-                              // Circular mini progress
-                              _MiniCircularProgress(
-                                progress: progress,
-                                isUrgent: isUrgent,
-                              ),
-                              const SizedBox(width: 12),
-                              // Timer display
-                              Expanded(
-                                child: Text(
-                                  _formatDuration(remaining),
-                                  style: TextStyle(
-                                    color: isUrgent
-                                        ? colorScheme.onErrorContainer
-                                        : colorScheme.onTertiaryContainer,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    fontFeatures: const [
-                                      FontFeature.tabularFigures()
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              // Time adjustment buttons (always visible)
-                              _TimeAdjustButton(
-                                label: '-15',
-                                onPressed: () => _adjustTime(-15),
-                                isUrgent: isUrgent,
-                              ),
-                              const SizedBox(width: 8),
-                              _TimeAdjustButton(
-                                label: '+15',
-                                onPressed: () => _adjustTime(15),
-                                isUrgent: isUrgent,
-                                isAdd: true,
-                              ),
-                            ],
-                          ),
-                          // Expanded content with stop button
-                          AnimatedCrossFade(
-                            firstChild: const SizedBox(width: double.infinity),
-                            secondChild: Padding(
-                              padding: const EdgeInsets.only(top: 12),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: _ActionButton(
-                                      icon: Icons.remove_circle_outline,
-                                      label: '-30s',
-                                      onPressed: () => _adjustTime(-30),
-                                      isUrgent: isUrgent,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: _ActionButton(
-                                      icon: Icons.add_circle_outline,
-                                      label: '+1min',
-                                      onPressed: () => _adjustTime(60),
-                                      isUrgent: isUrgent,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: _ActionButton(
-                                      icon: Icons.stop_rounded,
-                                      label: 'Skip',
-                                      onPressed: () async {
-                                        HapticFeedback.mediumImpact();
-                                        await timerState.stopTimer();
-                                      },
-                                      isDestructive: true,
-                                      isUrgent: isUrgent,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                    // Expanded content with stop button
+                    AnimatedCrossFade(
+                      firstChild: const SizedBox.shrink(),
+                      secondChild: Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _CompactActionButton(
+                              icon: Icons.remove,
+                              label: '30s',
+                              onPressed: () => _adjustTime(-30),
+                              isUrgent: isUrgent,
                             ),
-                            crossFadeState: _isExpanded
-                                ? CrossFadeState.showSecond
-                                : CrossFadeState.showFirst,
-                            duration: const Duration(milliseconds: 200),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            _CompactActionButton(
+                              icon: Icons.add,
+                              label: '1m',
+                              onPressed: () => _adjustTime(60),
+                              isUrgent: isUrgent,
+                            ),
+                            const SizedBox(width: 6),
+                            _CompactActionButton(
+                              icon: Icons.close,
+                              label: 'Skip',
+                              onPressed: () async {
+                                HapticFeedback.mediumImpact();
+                                await timerState.stopTimer();
+                              },
+                              isDestructive: true,
+                              isUrgent: isUrgent,
+                            ),
+                          ],
+                        ),
                       ),
+                      crossFadeState: _isExpanded
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 200),
                     ),
                   ],
                 ),
@@ -403,14 +361,14 @@ class _TimeAdjustButton extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
+class _CompactActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onPressed;
   final bool isUrgent;
   final bool isDestructive;
 
-  const _ActionButton({
+  const _CompactActionButton({
     required this.icon,
     required this.label,
     required this.onPressed,
@@ -423,9 +381,9 @@ class _ActionButton extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     final bgColor = isDestructive
-        ? colorScheme.error.withValues(alpha: 0.15)
+        ? colorScheme.error.withValues(alpha: 0.2)
         : (isUrgent ? colorScheme.error : colorScheme.tertiary)
-            .withValues(alpha: 0.1);
+            .withValues(alpha: 0.15);
 
     final fgColor = isDestructive
         ? colorScheme.error
@@ -437,24 +395,24 @@ class _ActionButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: fgColor),
-              const SizedBox(width: 4),
+              Icon(icon, size: 14, color: fgColor),
+              const SizedBox(width: 3),
               Text(
                 label,
                 style: TextStyle(
                   color: fgColor,
                   fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                  fontSize: 12,
                 ),
               ),
             ],
