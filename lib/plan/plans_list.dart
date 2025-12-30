@@ -16,6 +16,7 @@ class PlansList extends StatefulWidget {
   final Function(int) onSelect;
   final String search;
   final ScrollController scroll;
+  final Widget? footer;
 
   const PlansList({
     super.key,
@@ -25,6 +26,7 @@ class PlansList extends StatefulWidget {
     required this.onSelect,
     required this.search,
     required this.scroll,
+    this.footer,
   });
 
   @override
@@ -72,61 +74,86 @@ class _PlansListState extends State<PlansList> {
     final settings = context.read<SettingsState>();
 
     if (settings.value.planTrailing == PlanTrailing.reorder.toString())
-      return ReorderableListView.builder(
-        scrollController: widget.scroll,
-        itemCount: filteredPlans.length,
-        padding: const EdgeInsets.only(bottom: 96, top: 16),
-        itemBuilder: (context, index) {
-          final plan = filteredPlans[index];
+      return CustomScrollView(
+        controller: widget.scroll,
+        slivers: [
+          SliverReorderableList(
+            itemCount: filteredPlans.length,
+            itemBuilder: (context, index) {
+              final plan = filteredPlans[index];
 
-          return PlanTile(
-            key: Key(plan.id.toString()),
-            plan: plan,
-            weekday: weekday,
-            index: index,
-            navigatorKey: widget.navKey,
-            selected: widget.selected,
-            onSelect: (id) => widget.onSelect(id),
-          );
-        },
-        onReorder: (int old, int idx) async {
-          if (old < idx) {
-            idx--;
-          }
+              return PlanTile(
+                key: Key(plan.id.toString()),
+                plan: plan,
+                weekday: weekday,
+                index: index,
+                navigatorKey: widget.navKey,
+                selected: widget.selected,
+                onSelect: (id) => widget.onSelect(id),
+              );
+            },
+            onReorder: (int old, int idx) async {
+              if (old < idx) {
+                idx--;
+              }
 
-          final temp = filteredPlans[old];
-          filteredPlans.removeAt(old);
-          filteredPlans.insert(idx, temp);
+              final temp = filteredPlans[old];
+              filteredPlans.removeAt(old);
+              filteredPlans.insert(idx, temp);
 
-          final state = context.read<PlanState>();
-          state.updatePlans(filteredPlans);
-          await db.transaction(() async {
-            for (int i = 0; i < filteredPlans.length; i++) {
-              final plan = filteredPlans[i];
-              final updated =
-                  plan.toCompanion(false).copyWith(sequence: drift.Value(i));
-              await db.update(db.plans).replace(updated);
-            }
-          });
-        },
+              final state = context.read<PlanState>();
+              state.updatePlans(filteredPlans);
+              await db.transaction(() async {
+                for (int i = 0; i < filteredPlans.length; i++) {
+                  final plan = filteredPlans[i];
+                  final updated =
+                      plan.toCompanion(false).copyWith(sequence: drift.Value(i));
+                  await db.update(db.plans).replace(updated);
+                }
+              });
+            },
+          ),
+          if (widget.footer != null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: widget.footer!,
+              ),
+            ),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 140)),
+        ],
       );
 
-    return ListView.builder(
+    return CustomScrollView(
       controller: widget.scroll,
-      itemCount: filteredPlans.length,
-      padding: const EdgeInsets.only(bottom: 96, top: 8),
-      itemBuilder: (context, index) {
-        final plan = filteredPlans[index];
+      slivers: [
+        const SliverPadding(padding: EdgeInsets.only(top: 8)),
+        SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final plan = filteredPlans[index];
 
-        return PlanTile(
-          plan: plan,
-          weekday: weekday,
-          index: index,
-          navigatorKey: widget.navKey,
-          selected: widget.selected,
-          onSelect: (id) => widget.onSelect(id),
-        );
-      },
+              return PlanTile(
+                plan: plan,
+                weekday: weekday,
+                index: index,
+                navigatorKey: widget.navKey,
+                selected: widget.selected,
+                onSelect: (id) => widget.onSelect(id),
+              );
+            },
+            childCount: filteredPlans.length,
+          ),
+        ),
+        if (widget.footer != null)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: widget.footer!,
+            ),
+          ),
+        const SliverPadding(padding: EdgeInsets.only(bottom: 140)),
+      ],
     );
   }
 }

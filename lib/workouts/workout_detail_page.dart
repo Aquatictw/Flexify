@@ -365,6 +365,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     bool showImages,
   ) {
     final firstSet = sets.first;
+    final exerciseNotes = firstSet.notes;
 
     Widget? leading;
     if (showImages && firstSet.image != null) {
@@ -382,16 +383,61 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       leading = _buildInitialBadge(exerciseName);
     }
 
-    return ExpansionTile(
-      leading: leading,
-      title: Text(exerciseName),
-      subtitle: Text('${sets.length} sets'),
-      initiallyExpanded: true,
-      children: sets.asMap().entries.map((entry) {
+    final children = <Widget>[
+      // Show exercise notes if present
+      if (exerciseNotes?.isNotEmpty == true)
+        Container(
+          margin: const EdgeInsets.fromLTRB(72, 0, 16, 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.notes,
+                size: 14,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  exerciseNotes!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontStyle: FontStyle.italic,
+                      ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      // Show all sets
+      ...sets.asMap().entries.map((entry) {
         final index = entry.key;
         final set = entry.value;
         return _buildSetTile(set, index + 1);
-      }).toList(),
+      }),
+    ];
+
+    return ExpansionTile(
+      leading: leading,
+      title: Text(exerciseName),
+      subtitle: exerciseNotes?.isNotEmpty == true
+          ? Row(
+              children: [
+                Icon(Icons.note, size: 14, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 4),
+                Text('${sets.length} sets'),
+              ],
+            )
+          : Text('${sets.length} sets'),
+      initiallyExpanded: true,
+      children: children,
     );
   }
 
@@ -449,7 +495,6 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         ),
       ),
       title: Text(subtitle),
-      subtitle: set.notes?.isNotEmpty == true ? Text(set.notes!) : null,
       onTap: () {
         Navigator.push(
           context,

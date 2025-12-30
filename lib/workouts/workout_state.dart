@@ -47,6 +47,14 @@ class WorkoutState extends ChangeNotifier {
         _activePlan = await (db.plans.select()
               ..where((p) => p.id.equals(workout.planId!)))
             .getSingleOrNull();
+      } else {
+        // Freeform workout - create temporary plan so overlay click works
+        _activePlan = Plan(
+          id: -1,
+          days: workout.name ?? 'Workout',
+          sequence: 0,
+          title: workout.name ?? 'Workout',
+        );
       }
       notifyListeners();
     }

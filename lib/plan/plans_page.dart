@@ -153,7 +153,8 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
           ..where((w) => w.id.equals(workoutId)))
         .getSingle();
 
-    workoutState.setActiveWorkout(workout, null);
+    // Pass the freeform plan so the active workout overlay can reopen it
+    workoutState.setActiveWorkout(workout, freeformPlan);
 
     if (context.mounted) {
       await Navigator.push(
@@ -165,10 +166,71 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
     }
   }
 
+  Widget _buildFreeformButton(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Material(
+      borderRadius: BorderRadius.circular(16),
+      color: colorScheme.secondaryContainer,
+      child: InkWell(
+        onTap: _startFreeformWorkout,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.play_arrow_rounded,
+                  color: colorScheme.onSecondary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Freeform Workout',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Start with an empty workout',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onSecondaryContainer.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: colorScheme.onSecondaryContainer.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     state = context.watch<PlanState>(); // Watch for changes to rebuild
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -266,6 +328,7 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
               navKey: widget.navKey,
               selected: selected,
               search: search,
+              footer: _buildFreeformButton(context),
               onSelect: (id) {
                 if (selected.contains(id))
                   setState(() {
@@ -276,67 +339,6 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
                     selected.add(id);
                   });
               },
-            ),
-          ),
-          // Freeform workout button
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-            child: Material(
-              borderRadius: BorderRadius.circular(16),
-              color: colorScheme.secondaryContainer,
-              child: InkWell(
-                onTap: _startFreeformWorkout,
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: colorScheme.secondary,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.play_arrow_rounded,
-                          color: colorScheme.onSecondary,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Freeform Workout',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSecondaryContainer,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Start with an empty workout',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: colorScheme.onSecondaryContainer.withValues(alpha: 0.7),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        size: 16,
-                        color: colorScheme.onSecondaryContainer.withValues(alpha: 0.5),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ),
           ),
         ],

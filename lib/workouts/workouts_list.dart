@@ -163,7 +163,7 @@ class _WorkoutsListState extends State<WorkoutsList> {
 
         return ListView.builder(
           controller: widget.scroll,
-          padding: const EdgeInsets.only(bottom: 96, top: 8),
+          padding: const EdgeInsets.only(bottom: 140, top: 8),
           itemCount: workouts.length,
           itemBuilder: (context, index) {
             final workoutWithSets = workouts[index];

@@ -117,15 +117,103 @@ class _StartPlanPageState extends State<StartPlanPage> {
     final planState = context.read<PlanState>();
     await planState.updateGymCounts(widget.plan.id, workoutId);
 
-    // Initialize exercise order with plan exercises
-    final exercises = await stream.first;
-    if (exercises.isNotEmpty && mounted) {
-      setState(() {
-        // Build map and ordered list from plan exercises
-        _planExercisesMap = {for (var e in exercises) e.id: e};
-        _exerciseOrder = exercises.map((e) => _ExerciseItem.plan(e)).toList();
+    // Query all sets for this workout to understand its current state
+    final existingSets = await (db.gymSets.select()
+          ..where((s) => s.workoutId.equals(workoutId!))
+          ..orderBy([
+            (s) => OrderingTerm(expression: s.sequence, mode: OrderingMode.asc)
+          ]))
+        .get();
 
-        // Expand ALL exercises by default so all sets are visible
+    // Get unique exercise names from existing sets
+    final exercisesWithSets = existingSets.map((s) => s.name).toSet();
+
+    // Load plan exercises (if not freeform)
+    List<PlanExercise> planExercises = [];
+    if (widget.plan.id != -1) {
+      planExercises = await stream.first;
+    }
+
+    // Identify removed exercises (those with only tombstone markers)
+    final removedExercises = <String>{};
+    final exerciseSets = <String, List<GymSet>>{};
+
+    for (final set in existingSets) {
+      exerciseSets.putIfAbsent(set.name, () => []).add(set);
+    }
+
+    for (final entry in exerciseSets.entries) {
+      // If all sets are tombstones (sequence=-1), this exercise was removed
+      if (entry.value.every((s) => s.sequence == -1)) {
+        removedExercises.add(entry.key);
+      }
+    }
+
+    // Insert placeholders for new plan exercises (before setState)
+    if (existingSets.isEmpty || existingSets.every((s) => s.sequence == -1)) {
+      for (final planEx in planExercises) {
+        if (!removedExercises.contains(planEx.exercise)) {
+          await _ensureExercisePlaceholder(planEx.exercise, workoutId!);
+        }
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        // Build map from plan exercises
+        _planExercisesMap = {for (var e in planExercises) e.id: e};
+
+        // Build exercise order list
+        _exerciseOrder = [];
+
+        if (existingSets.isEmpty || existingSets.every((s) => s.sequence == -1)) {
+          // Brand new workout OR only tombstones - load plan exercises minus removed ones
+          for (final planEx in planExercises) {
+            if (!removedExercises.contains(planEx.exercise)) {
+              _exerciseOrder.add(_ExerciseItem.plan(planEx));
+            }
+          }
+        } else {
+          // Resuming - rebuild exercise list from sets (preserves order and removals)
+          final seenExercises = <String>{};
+          final orderedExercises = <String>[];
+
+          // Only process sets that aren't tombstones (includes placeholders with sequence=-2)
+          for (final set in existingSets.where((s) => s.sequence != -1)) {
+            if (!seenExercises.contains(set.name)) {
+              seenExercises.add(set.name);
+              orderedExercises.add(set.name);
+            }
+          }
+
+          // Add exercises in the order they appear in sets
+          for (final name in orderedExercises) {
+            final planExercise = planExercises.where((e) => e.exercise == name).firstOrNull;
+            if (planExercise != null) {
+              _exerciseOrder.add(_ExerciseItem.plan(planExercise));
+            } else {
+              // Custom/freeform exercise
+              _exerciseOrder.add(_ExerciseItem.adHoc(name));
+            }
+          }
+
+          // Restore notes from first non-tombstone, non-placeholder set
+          for (final name in orderedExercises) {
+            final realSet = existingSets.where(
+              (s) => s.name == name && s.sequence >= 0, // Real sets have sequence >= 0
+            ).firstOrNull;
+
+            if (realSet?.notes?.isNotEmpty == true) {
+              final item = _exerciseOrder.firstWhere((item) =>
+                item.isPlanExercise
+                  ? _planExercisesMap[item.planExerciseId]?.exercise == name
+                  : item.adHocName == name);
+              _exerciseNotes[item.key] = realSet!.notes!;
+            }
+          }
+        }
+
+        // Expand all exercises by default
         for (final item in _exerciseOrder) {
           expandedExercises.add(item.key);
         }
@@ -143,6 +231,34 @@ class _StartPlanPageState extends State<StartPlanPage> {
     });
 
     HapticFeedback.mediumImpact();
+  }
+
+  /// Ensures an exercise has a placeholder marker in the database so it persists
+  /// even without completed sets. Placeholder has sequence=-2 and hidden=true.
+  Future<void> _ensureExercisePlaceholder(String exerciseName, int workoutId) async {
+    // Check if exercise already has any sets (including placeholders)
+    final existingCount = await (db.gymSets.select()
+          ..where((s) =>
+            s.workoutId.equals(workoutId) &
+            s.name.equals(exerciseName)))
+        .get()
+        .then((sets) => sets.length);
+
+    // Only insert placeholder if exercise has no sets at all
+    if (existingCount == 0) {
+      await db.gymSets.insertOne(
+        GymSetsCompanion.insert(
+          name: exerciseName,
+          reps: 0,
+          weight: 0,
+          unit: 'kg',
+          created: DateTime.now(),
+          workoutId: Value(workoutId),
+          hidden: const Value(true), // Hide from history
+          sequence: const Value(-2), // Placeholder marker (different from tombstone -1)
+        ),
+      );
+    }
   }
 
   Future<void> _saveNotes() async {
@@ -361,9 +477,33 @@ class _StartPlanPageState extends State<StartPlanPage> {
               });
             },
             onSetCompleted: () {},
-            onDeleteExercise: () {
+            onDeleteExercise: () async {
+              final exerciseName = exercise.exercise;
+              // Delete all sets for this exercise from the database
+              await (db.gymSets.delete()
+                    ..where((s) =>
+                      s.workoutId.equals(workoutId!) &
+                      s.name.equals(exerciseName)))
+                  .go();
+
+              // Insert a tombstone marker to remember this exercise was removed
+              // This persists the removal even when no other sets exist
+              await db.gymSets.insertOne(
+                GymSetsCompanion.insert(
+                  name: exerciseName,
+                  reps: -1, // Special marker value
+                  weight: 0,
+                  unit: 'kg',
+                  created: DateTime.now(),
+                  workoutId: Value(workoutId!),
+                  hidden: const Value(true), // Hide from history
+                  sequence: const Value(-1), // Special sequence for tombstones
+                ),
+              );
+
               setState(() {
                 _exerciseOrder.removeAt(index);
+                _exerciseNotes.remove(item.key);
               });
             },
           );
@@ -393,9 +533,32 @@ class _StartPlanPageState extends State<StartPlanPage> {
                 }
               });
             },
-            onRemove: () {
+            onRemove: () async {
+              final exerciseName = item.adHocName!;
+              // Delete all sets for this exercise from the database
+              await (db.gymSets.delete()
+                    ..where((s) =>
+                      s.workoutId.equals(workoutId!) &
+                      s.name.equals(exerciseName)))
+                  .go();
+
+              // Insert a tombstone marker to remember this exercise was removed
+              await db.gymSets.insertOne(
+                GymSetsCompanion.insert(
+                  name: exerciseName,
+                  reps: -1, // Special marker value
+                  weight: 0,
+                  unit: 'kg',
+                  created: DateTime.now(),
+                  workoutId: Value(workoutId!),
+                  hidden: const Value(true), // Hide from history
+                  sequence: const Value(-1), // Special sequence for tombstones
+                ),
+              );
+
               setState(() {
                 _exerciseOrder.removeAt(index);
+                _exerciseNotes.remove(item.key);
               });
             },
           );
@@ -924,14 +1087,14 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     _defaultReps = lastSet?.reps.toInt() ?? 8;
     final defaultUnit = lastSet?.unit ?? settings.strengthUnit;
 
-    // Get sets already completed in this workout for this exercise
-    List<GymSet> completedSets = [];
+    // Get ALL sets (including uncompleted/hidden ones) in this workout for this exercise
+    List<GymSet> existingSets = [];
     if (widget.workoutId != null) {
-      completedSets = await (db.gymSets.select()
+      existingSets = await (db.gymSets.select()
             ..where((tbl) =>
                 tbl.name.equals(widget.exerciseName) &
                 tbl.workoutId.equals(widget.workoutId!) &
-                tbl.hidden.equals(false))
+                tbl.sequence.isBiggerOrEqualValue(0)) // Exclude tombstones and placeholders
             ..orderBy([
               (u) => OrderingTerm(expression: u.created, mode: OrderingMode.asc),
             ]))
@@ -942,24 +1105,25 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
 
     setState(() {
       unit = defaultUnit;
-      // Start with 3 sets or existing completed sets
-      final setCount = completedSets.isEmpty ? 3 : completedSets.length;
-      sets = List.generate(setCount, (index) {
-        if (index < completedSets.length) {
-          final set = completedSets[index];
+
+      if (existingSets.isNotEmpty) {
+        // Load existing sets from database
+        sets = existingSets.map((set) {
           return SetData(
             weight: set.weight,
             reps: set.reps.toInt(),
-            completed: true,
+            completed: !set.hidden, // hidden=false means completed
             savedSetId: set.id,
           );
-        }
-        return SetData(
+        }).toList();
+      } else {
+        // Start with 3 empty sets
+        sets = List.generate(3, (_) => SetData(
           weight: _defaultWeight,
           reps: _defaultReps,
           completed: false,
-        );
-      });
+        ));
+      }
       _initialized = true;
     });
   }
@@ -1090,55 +1254,73 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
   Future<void> _completeSet(int index) async {
     if (sets[index].completed) return;
 
-    final settings = context.read<SettingsState>().value;
-    final setData = sets[index];
+    if (sets[index].savedSetId != null) {
+      // Update existing record - just change hidden to false
+      await (db.gymSets.update()
+            ..where((tbl) => tbl.id.equals(sets[index].savedSetId!)))
+          .write(const GymSetsCompanion(
+            hidden: Value(false),
+          ));
 
-    double? bodyWeight;
-    if (settings.showBodyWeight) {
-      final weightSet = await (db.gymSets.select()
-            ..where((tbl) => tbl.name.equals('Weight'))
-            ..orderBy([
-              (u) =>
-                  OrderingTerm(expression: u.created, mode: OrderingMode.desc),
-            ])
-            ..limit(1))
-          .getSingleOrNull();
-      bodyWeight = weightSet?.weight;
+      setState(() {
+        sets[index].completed = true;
+      });
+    } else {
+      // Fallback: Insert new record (shouldn't happen with auto-save)
+      final settings = context.read<SettingsState>().value;
+      final setData = sets[index];
+
+      double? bodyWeight;
+      if (settings.showBodyWeight) {
+        final weightSet = await (db.gymSets.select()
+              ..where((tbl) => tbl.name.equals('Weight'))
+              ..orderBy([
+                (u) =>
+                    OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+              ])
+              ..limit(1))
+            .getSingleOrNull();
+        bodyWeight = weightSet?.weight;
+      }
+
+      final gymSet = await db.into(db.gymSets).insertReturning(
+            GymSetsCompanion.insert(
+              name: widget.exerciseName,
+              reps: setData.reps.toDouble(),
+              weight: setData.weight,
+              unit: unit,
+              created: DateTime.now().toLocal(),
+              workoutId: Value(widget.workoutId),
+              bodyWeight: Value.absentIfNull(bodyWeight),
+              sequence: Value(widget.sequence),
+              notes: Value(widget.exerciseNotes ?? ''),
+              hidden: const Value(false),
+            ),
+          );
+
+      setState(() {
+        sets[index].completed = true;
+        sets[index].savedSetId = gymSet.id;
+      });
     }
-
-    final gymSet = await db.into(db.gymSets).insertReturning(
-          GymSetsCompanion.insert(
-            name: widget.exerciseName,
-            reps: setData.reps.toDouble(),
-            weight: setData.weight,
-            unit: unit,
-            created: DateTime.now().toLocal(),
-            workoutId: Value(widget.workoutId),
-            bodyWeight: Value.absentIfNull(bodyWeight),
-            sequence: Value(widget.sequence),
-          ),
-        );
-
-    setState(() {
-      sets[index].completed = true;
-      sets[index].savedSetId = gymSet.id;
-    });
   }
 
   Future<void> _uncompleteSet(int index) async {
     if (!sets[index].completed || sets[index].savedSetId == null) return;
 
-    await (db.gymSets.delete()
+    // Update record to mark as uncompleted (hidden=true) instead of deleting
+    await (db.gymSets.update()
           ..where((tbl) => tbl.id.equals(sets[index].savedSetId!)))
-        .go();
+        .write(const GymSetsCompanion(
+          hidden: Value(true),
+        ));
 
     setState(() {
       sets[index].completed = false;
-      sets[index].savedSetId = null;
     });
   }
 
-  void _addSet({bool isWarmup = false}) {
+  Future<void> _addSet({bool isWarmup = false}) async {
     int insertIndex;
     if (isWarmup) {
       insertIndex = sets.where((s) => s.isWarmup).length;
@@ -1148,19 +1330,63 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
 
     final baseWeight = sets.isNotEmpty ? sets.last.weight : _defaultWeight;
     final weight = isWarmup ? (baseWeight * 0.5).roundToDouble() : baseWeight;
+    final reps = sets.isNotEmpty ? sets.last.reps : _defaultReps;
 
-    setState(() {
-      sets.insert(insertIndex, SetData(
-        weight: weight,
-        reps: sets.isNotEmpty ? sets.last.reps : _defaultReps,
-        completed: false,
-        isWarmup: isWarmup,
-      ));
-    });
+    // Insert to database immediately with hidden=true
+    if (widget.workoutId != null) {
+      final settings = context.read<SettingsState>().value;
+      double? bodyWeight;
+      if (settings.showBodyWeight) {
+        final weightSet = await (db.gymSets.select()
+              ..where((tbl) => tbl.name.equals('Weight'))
+              ..orderBy([
+                (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+              ])
+              ..limit(1))
+            .getSingleOrNull();
+        bodyWeight = weightSet?.weight;
+      }
+
+      final gymSet = await db.into(db.gymSets).insertReturning(
+        GymSetsCompanion.insert(
+          name: widget.exerciseName,
+          reps: reps.toDouble(),
+          weight: weight,
+          unit: unit,
+          created: DateTime.now().toLocal(),
+          workoutId: Value(widget.workoutId),
+          bodyWeight: Value.absentIfNull(bodyWeight),
+          sequence: Value(widget.sequence),
+          notes: Value(widget.exerciseNotes ?? ''),
+          hidden: const Value(true), // Uncompleted by default
+        ),
+      );
+
+      setState(() {
+        sets.insert(insertIndex, SetData(
+          weight: weight,
+          reps: reps,
+          completed: false,
+          isWarmup: isWarmup,
+          savedSetId: gymSet.id, // Save the ID
+        ));
+      });
+    } else {
+      // No workout ID - fallback to in-memory only
+      setState(() {
+        sets.insert(insertIndex, SetData(
+          weight: weight,
+          reps: reps,
+          completed: false,
+          isWarmup: isWarmup,
+        ));
+      });
+    }
   }
 
   Future<void> _deleteSet(int index) async {
-    if (sets[index].completed && sets[index].savedSetId != null) {
+    // Delete from database if it has been saved
+    if (sets[index].savedSetId != null) {
       await (db.gymSets.delete()
             ..where((tbl) => tbl.id.equals(sets[index].savedSetId!)))
           .go();
@@ -1168,9 +1394,9 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     setState(() => sets.removeAt(index));
   }
 
-  Future<void> _updateCompletedSet(int index) async {
+  Future<void> _updateSet(int index) async {
     final setData = sets[index];
-    if (!setData.completed || setData.savedSetId == null) return;
+    if (setData.savedSetId == null) return;
 
     await (db.gymSets.update()
           ..where((tbl) => tbl.id.equals(setData.savedSetId!)))
@@ -1350,14 +1576,14 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                             unit: unit,
                             onWeightChanged: (value) {
                               setState(() => sets[index].weight = value);
-                              if (sets[index].completed) {
-                                _updateCompletedSet(index);
+                              if (sets[index].savedSetId != null) {
+                                _updateSet(index);
                               }
                             },
                             onRepsChanged: (value) {
                               setState(() => sets[index].reps = value);
-                              if (sets[index].completed) {
-                                _updateCompletedSet(index);
+                              if (sets[index].savedSetId != null) {
+                                _updateSet(index);
                               }
                             },
                             onToggle: () => _toggleSet(index),
