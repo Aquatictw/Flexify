@@ -1087,14 +1087,14 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     _defaultReps = lastSet?.reps.toInt() ?? 8;
     final defaultUnit = lastSet?.unit ?? settings.strengthUnit;
 
-    // Get sets already completed in this workout for this exercise
-    List<GymSet> completedSets = [];
+    // Get ALL sets (including uncompleted/hidden ones) in this workout for this exercise
+    List<GymSet> existingSets = [];
     if (widget.workoutId != null) {
-      completedSets = await (db.gymSets.select()
+      existingSets = await (db.gymSets.select()
             ..where((tbl) =>
                 tbl.name.equals(widget.exerciseName) &
                 tbl.workoutId.equals(widget.workoutId!) &
-                tbl.hidden.equals(false))
+                tbl.sequence.isBiggerOrEqualValue(0)) // Exclude tombstones and placeholders
             ..orderBy([
               (u) => OrderingTerm(expression: u.created, mode: OrderingMode.asc),
             ]))
@@ -1105,24 +1105,25 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
 
     setState(() {
       unit = defaultUnit;
-      // Start with 3 sets or existing completed sets
-      final setCount = completedSets.isEmpty ? 3 : completedSets.length;
-      sets = List.generate(setCount, (index) {
-        if (index < completedSets.length) {
-          final set = completedSets[index];
+
+      if (existingSets.isNotEmpty) {
+        // Load existing sets from database
+        sets = existingSets.map((set) {
           return SetData(
             weight: set.weight,
             reps: set.reps.toInt(),
-            completed: true,
+            completed: !set.hidden, // hidden=false means completed
             savedSetId: set.id,
           );
-        }
-        return SetData(
+        }).toList();
+      } else {
+        // Start with 3 empty sets
+        sets = List.generate(3, (_) => SetData(
           weight: _defaultWeight,
           reps: _defaultReps,
           completed: false,
-        );
-      });
+        ));
+      }
       _initialized = true;
     });
   }
@@ -1253,56 +1254,73 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
   Future<void> _completeSet(int index) async {
     if (sets[index].completed) return;
 
-    final settings = context.read<SettingsState>().value;
-    final setData = sets[index];
+    if (sets[index].savedSetId != null) {
+      // Update existing record - just change hidden to false
+      await (db.gymSets.update()
+            ..where((tbl) => tbl.id.equals(sets[index].savedSetId!)))
+          .write(const GymSetsCompanion(
+            hidden: Value(false),
+          ));
 
-    double? bodyWeight;
-    if (settings.showBodyWeight) {
-      final weightSet = await (db.gymSets.select()
-            ..where((tbl) => tbl.name.equals('Weight'))
-            ..orderBy([
-              (u) =>
-                  OrderingTerm(expression: u.created, mode: OrderingMode.desc),
-            ])
-            ..limit(1))
-          .getSingleOrNull();
-      bodyWeight = weightSet?.weight;
+      setState(() {
+        sets[index].completed = true;
+      });
+    } else {
+      // Fallback: Insert new record (shouldn't happen with auto-save)
+      final settings = context.read<SettingsState>().value;
+      final setData = sets[index];
+
+      double? bodyWeight;
+      if (settings.showBodyWeight) {
+        final weightSet = await (db.gymSets.select()
+              ..where((tbl) => tbl.name.equals('Weight'))
+              ..orderBy([
+                (u) =>
+                    OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+              ])
+              ..limit(1))
+            .getSingleOrNull();
+        bodyWeight = weightSet?.weight;
+      }
+
+      final gymSet = await db.into(db.gymSets).insertReturning(
+            GymSetsCompanion.insert(
+              name: widget.exerciseName,
+              reps: setData.reps.toDouble(),
+              weight: setData.weight,
+              unit: unit,
+              created: DateTime.now().toLocal(),
+              workoutId: Value(widget.workoutId),
+              bodyWeight: Value.absentIfNull(bodyWeight),
+              sequence: Value(widget.sequence),
+              notes: Value(widget.exerciseNotes ?? ''),
+              hidden: const Value(false),
+            ),
+          );
+
+      setState(() {
+        sets[index].completed = true;
+        sets[index].savedSetId = gymSet.id;
+      });
     }
-
-    final gymSet = await db.into(db.gymSets).insertReturning(
-          GymSetsCompanion.insert(
-            name: widget.exerciseName,
-            reps: setData.reps.toDouble(),
-            weight: setData.weight,
-            unit: unit,
-            created: DateTime.now().toLocal(),
-            workoutId: Value(widget.workoutId),
-            bodyWeight: Value.absentIfNull(bodyWeight),
-            sequence: Value(widget.sequence),
-            notes: Value(widget.exerciseNotes ?? ''),
-          ),
-        );
-
-    setState(() {
-      sets[index].completed = true;
-      sets[index].savedSetId = gymSet.id;
-    });
   }
 
   Future<void> _uncompleteSet(int index) async {
     if (!sets[index].completed || sets[index].savedSetId == null) return;
 
-    await (db.gymSets.delete()
+    // Update record to mark as uncompleted (hidden=true) instead of deleting
+    await (db.gymSets.update()
           ..where((tbl) => tbl.id.equals(sets[index].savedSetId!)))
-        .go();
+        .write(const GymSetsCompanion(
+          hidden: Value(true),
+        ));
 
     setState(() {
       sets[index].completed = false;
-      sets[index].savedSetId = null;
     });
   }
 
-  void _addSet({bool isWarmup = false}) {
+  Future<void> _addSet({bool isWarmup = false}) async {
     int insertIndex;
     if (isWarmup) {
       insertIndex = sets.where((s) => s.isWarmup).length;
@@ -1312,19 +1330,63 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
 
     final baseWeight = sets.isNotEmpty ? sets.last.weight : _defaultWeight;
     final weight = isWarmup ? (baseWeight * 0.5).roundToDouble() : baseWeight;
+    final reps = sets.isNotEmpty ? sets.last.reps : _defaultReps;
 
-    setState(() {
-      sets.insert(insertIndex, SetData(
-        weight: weight,
-        reps: sets.isNotEmpty ? sets.last.reps : _defaultReps,
-        completed: false,
-        isWarmup: isWarmup,
-      ));
-    });
+    // Insert to database immediately with hidden=true
+    if (widget.workoutId != null) {
+      final settings = context.read<SettingsState>().value;
+      double? bodyWeight;
+      if (settings.showBodyWeight) {
+        final weightSet = await (db.gymSets.select()
+              ..where((tbl) => tbl.name.equals('Weight'))
+              ..orderBy([
+                (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+              ])
+              ..limit(1))
+            .getSingleOrNull();
+        bodyWeight = weightSet?.weight;
+      }
+
+      final gymSet = await db.into(db.gymSets).insertReturning(
+        GymSetsCompanion.insert(
+          name: widget.exerciseName,
+          reps: reps.toDouble(),
+          weight: weight,
+          unit: unit,
+          created: DateTime.now().toLocal(),
+          workoutId: Value(widget.workoutId),
+          bodyWeight: Value.absentIfNull(bodyWeight),
+          sequence: Value(widget.sequence),
+          notes: Value(widget.exerciseNotes ?? ''),
+          hidden: const Value(true), // Uncompleted by default
+        ),
+      );
+
+      setState(() {
+        sets.insert(insertIndex, SetData(
+          weight: weight,
+          reps: reps,
+          completed: false,
+          isWarmup: isWarmup,
+          savedSetId: gymSet.id, // Save the ID
+        ));
+      });
+    } else {
+      // No workout ID - fallback to in-memory only
+      setState(() {
+        sets.insert(insertIndex, SetData(
+          weight: weight,
+          reps: reps,
+          completed: false,
+          isWarmup: isWarmup,
+        ));
+      });
+    }
   }
 
   Future<void> _deleteSet(int index) async {
-    if (sets[index].completed && sets[index].savedSetId != null) {
+    // Delete from database if it has been saved
+    if (sets[index].savedSetId != null) {
       await (db.gymSets.delete()
             ..where((tbl) => tbl.id.equals(sets[index].savedSetId!)))
           .go();
@@ -1332,9 +1394,9 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     setState(() => sets.removeAt(index));
   }
 
-  Future<void> _updateCompletedSet(int index) async {
+  Future<void> _updateSet(int index) async {
     final setData = sets[index];
-    if (!setData.completed || setData.savedSetId == null) return;
+    if (setData.savedSetId == null) return;
 
     await (db.gymSets.update()
           ..where((tbl) => tbl.id.equals(setData.savedSetId!)))
@@ -1514,14 +1576,14 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                             unit: unit,
                             onWeightChanged: (value) {
                               setState(() => sets[index].weight = value);
-                              if (sets[index].completed) {
-                                _updateCompletedSet(index);
+                              if (sets[index].savedSetId != null) {
+                                _updateSet(index);
                               }
                             },
                             onRepsChanged: (value) {
                               setState(() => sets[index].reps = value);
-                              if (sets[index].completed) {
-                                _updateCompletedSet(index);
+                              if (sets[index].savedSetId != null) {
+                                _updateSet(index);
                               }
                             },
                             onToggle: () => _toggleSet(index),
