@@ -137,7 +137,6 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
     final freeformPlan = Plan(
       id: -1, // Temporary ID
       days: _getTimeBasedWorkoutTitle(),
-      exercises: '',
       sequence: 0,
       title: _getTimeBasedWorkoutTitle(),
     );
