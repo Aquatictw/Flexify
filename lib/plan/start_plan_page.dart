@@ -134,25 +134,34 @@ class _StartPlanPageState extends State<StartPlanPage> {
       planExercises = await stream.first;
     }
 
+    // Identify removed exercises (those with only tombstone markers)
+    final removedExercises = <String>{};
+    final exerciseSets = <String, List<GymSet>>{};
+
+    for (final set in existingSets) {
+      exerciseSets.putIfAbsent(set.name, () => []).add(set);
+    }
+
+    for (final entry in exerciseSets.entries) {
+      // If all sets are tombstones (sequence=-1), this exercise was removed
+      if (entry.value.every((s) => s.sequence == -1)) {
+        removedExercises.add(entry.key);
+      }
+    }
+
+    // Insert placeholders for new plan exercises (before setState)
+    if (existingSets.isEmpty || existingSets.every((s) => s.sequence == -1)) {
+      for (final planEx in planExercises) {
+        if (!removedExercises.contains(planEx.exercise)) {
+          await _ensureExercisePlaceholder(planEx.exercise, workoutId!);
+        }
+      }
+    }
+
     if (mounted) {
       setState(() {
         // Build map from plan exercises
         _planExercisesMap = {for (var e in planExercises) e.id: e};
-
-        // Identify removed exercises (those with only tombstone markers)
-        final removedExercises = <String>{};
-        final exerciseSets = <String, List<GymSet>>{};
-
-        for (final set in existingSets) {
-          exerciseSets.putIfAbsent(set.name, () => []).add(set);
-        }
-
-        for (final entry in exerciseSets.entries) {
-          // If all sets are tombstones (sequence=-1), this exercise was removed
-          if (entry.value.every((s) => s.sequence == -1)) {
-            removedExercises.add(entry.key);
-          }
-        }
 
         // Build exercise order list
         _exerciseOrder = [];
@@ -162,9 +171,6 @@ class _StartPlanPageState extends State<StartPlanPage> {
           for (final planEx in planExercises) {
             if (!removedExercises.contains(planEx.exercise)) {
               _exerciseOrder.add(_ExerciseItem.plan(planEx));
-
-              // Insert placeholder marker so exercise persists even without completed sets
-              await _ensureExercisePlaceholder(planEx.exercise, workoutId!);
             }
           }
         } else {
