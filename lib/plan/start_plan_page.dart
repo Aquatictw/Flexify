@@ -1510,6 +1510,7 @@ class _SimpleRepsInputState extends State<_SimpleRepsInput> {
     _focusNode = FocusNode();
     _focusNode.addListener(_onFocusChange);
   }
+}
 
   void _onFocusChange() {
     setState(() {
