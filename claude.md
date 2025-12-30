@@ -11,7 +11,7 @@ Flexify is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, 
 
 ## Database Architecture
 
-### Current Schema (v48)
+### Current Schema (v49)
 
 #### Tables
 
@@ -33,6 +33,7 @@ Flexify is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, 
    - `planId` (nullable - plan template reference)
    - `workoutId` (nullable int - **links to Workouts.id** for session grouping)
    - `image`, `category`, `notes`
+   - `sequence` (int, default 0 - **preserves exercise display order in history**)
 
 3. **Plans** (workout templates)
    - `id`, `days`, `sequence`, `title`
@@ -61,18 +62,23 @@ Workout Session (e.g., "Monday Chest - Dec 29, 5pm")
 | File | Purpose |
 |------|---------|
 | `lib/main.dart` | App entry, database init, Provider setup |
-| `lib/database/database.dart` | Drift DB definition, all migrations (v1-v48) |
+| `lib/database/database.dart` | Drift DB definition, all migrations (v1-v49) |
+| `lib/database/database.steps.dart` | **Generated** migration steps, Schema classes, Shape classes |
 | `lib/database/workouts.dart` | Workouts table definition |
 | `lib/database/gym_sets.dart` | GymSets table + graph utilities |
 | `lib/database/plans.dart` | Plans table |
 | `lib/database/plan_exercises.dart` | PlanExercises junction table |
 | `lib/sets/history_page.dart` | History tab - toggle between Workouts/Sets view |
 | `lib/workouts/workouts_list.dart` | Workout cards list for history |
-| `lib/workouts/workout_detail_page.dart` | View a complete workout session |
+| `lib/workouts/workout_detail_page.dart` | View a complete workout session (sorts by sequence) |
 | `lib/workouts/workout_state.dart` | WorkoutState provider - manages single active workout |
 | `lib/workouts/active_workout_bar.dart` | Floating bar showing ongoing workout |
 | `lib/plan/start_plan_page.dart` | Workout execution UI - creates workout sessions |
+| `lib/plan/exercise_sets_card.dart` | Exercise card with sets, popup menu, notes dialog |
+| `lib/plan/plans_page.dart` | Plans list page with freeform workout option |
 | `lib/plan/plan_tile.dart` | Plan list tile - checks for active workout before starting |
+| `lib/app_search.dart` | Reusable search AppBar with optional Add menu item |
+| `drift_schemas/db/drift_schema_vN.json` | Schema JSON files for each version |
 
 ## Workout Session Feature
 
@@ -152,27 +158,149 @@ flutter build ios
 - **Offline-first**: Pure SQLite, no network dependency
 - **Workout Grouping**: Sets are grouped into workout sessions via `workoutId` foreign key
 
+## UI/UX Implementation Patterns
+
+### Modal Dialogs Over Overlays
+
+When showing dialogs/bottom sheets that need to appear above other overlays (like the ActiveWorkoutBar), use `useRootNavigator: true`:
+
+```dart
+// Bottom sheet that appears above all overlays
+showModalBottomSheet(
+  context: parentContext,
+  useRootNavigator: true,  // Critical for overlay visibility
+  builder: (context) => ...
+);
+
+// Dialog that appears above all overlays
+showDialog(
+  context: parentContext,
+  useRootNavigator: true,  // Critical for overlay visibility
+  builder: (context) => AlertDialog(...)
+);
+```
+
+### TextEditingController in Dialogs
+
+**DO NOT** manually dispose TextEditingController in dialog callbacks. Flutter manages the dialog lifecycle automatically:
+
+```dart
+// CORRECT - let Flutter manage lifecycle
+Future<void> _showNotesDialog(BuildContext parentContext) async {
+  final controller = TextEditingController(text: existingNotes);
+  final result = await showDialog<String>(
+    context: parentContext,
+    useRootNavigator: true,
+    builder: (context) => AlertDialog(
+      content: TextField(controller: controller),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, controller.text),
+          child: Text('Save'),
+        ),
+      ],
+    ),
+  );
+  // DO NOT call controller.dispose() here - causes "_dependents.isEmpty" error
+  if (result != null) onNotesChanged(result);
+}
+```
+
+### Exercise Reordering
+
+Exercise reordering uses a dedicated mode toggle in the AppBar rather than always-visible drag handles:
+- `_isReorderMode` state variable toggles between normal and reorder views
+- `ReorderableListView` used only in reorder mode
+- Pass `sequence: index` when saving sets to preserve order in history
+
+### Freeform Workouts
+
+Freeform workouts use time-based titles:
+```dart
+String _getTimeBasedWorkoutTitle() {
+  final hour = DateTime.now().hour;
+  if (hour < 12) return 'Morning Workout';
+  if (hour < 14) return 'Noon Workout';
+  if (hour < 18) return 'Afternoon Workout';
+  return 'Evening Workout';
+}
+```
+
+Create with a temporary Plan object (id: -1) that has no exercises.
+
 ## Migration Notes
 
 When adding new columns or tables, see `docs/DRIFT_MIGRATIONS.md` for detailed instructions.
 
 ### Quick Reference
 
-1. Add to table definition (e.g., `lib/database/workouts.dart`)
-2. Update `@DriftDatabase` annotation in `database.dart`
-3. Add migration in `onUpgrade: stepByStep(...)`
-4. Increment `schemaVersion`
-5. Copy schema files:
-   ```bash
-   cp drift_schemas/db/drift_schema_vN.json drift_schemas/db/drift_schema_vN+1.json
-   cp test/drift/db/generated/schema_vN.dart test/drift/db/generated/schema_vN+1.dart
-   sed -i 's/SchemaN/SchemaN+1/g' test/drift/db/generated/schema_vN+1.dart
+1. Add to table definition (e.g., `lib/database/gym_sets.dart`):
+   ```dart
+   IntColumn get sequence => integer().withDefault(const Constant(0))();
    ```
+
+2. Update `@DriftDatabase` annotation in `database.dart` if adding new tables
+
+3. Add migration in `onUpgrade: stepByStep(...)`:
+   ```dart
+   from48To49: (Migrator m, Schema49 schema) async {
+     await m.addColumn(schema.gymSets, schema.gymSets.sequence);
+   },
+   ```
+
+4. Increment `schemaVersion` in `database.dart`
+
+5. Copy and update schema JSON file:
+   ```bash
+   cp drift_schemas/db/drift_schema_v48.json drift_schemas/db/drift_schema_v49.json
+   # Edit v49.json to add the new column to the appropriate table
+   ```
+
 6. Run `dart run build_runner build --delete-conflicting-outputs`
-7. If build_runner doesn't generate migration steps, manually add to `database.steps.dart`:
-   - Add `SchemaNN` class (copy from previous, add new columns/tables)
-   - Add `fromN-1ToN` parameter to both `migrationSteps()` and `stepByStep()` functions
-   - Add case N-1 to the switch statement
+
+7. **If build_runner doesn't generate Schema class**, manually add to `database.steps.dart`:
+
+   a. Add new column definition (if needed):
+   ```dart
+   i1.GeneratedColumn<int> _column_88(String aliasedName) =>
+       i1.GeneratedColumn<int>('sequence', aliasedName, false,
+           type: i1.DriftSqlType.int, defaultValue: const CustomExpression('0'));
+   ```
+
+   b. Add new Shape class (if table structure changes):
+   ```dart
+   class Shape38 extends i0.VersionedTable {
+     Shape38({required super.source, required super.alias}) : super.aliased();
+     // Copy getters from previous Shape, add new column getter
+     i1.GeneratedColumn<int> get sequence =>
+         columnsByName['sequence']! as i1.GeneratedColumn<int>;
+   }
+   ```
+
+   c. Add Schema class (copy previous, update shape references):
+   ```dart
+   final class Schema49 extends i0.VersionedSchema {
+     Schema49({required super.database}) : super(version: 49);
+     @override
+     late final List<i1.DatabaseSchemaEntity> entities = [...];
+     // Use new Shape for updated tables, add new column to columns list
+   }
+   ```
+
+   d. Update `migrationSteps()` function:
+   - Add parameter: `required Future<void> Function(i1.Migrator m, Schema49 schema) from48To49,`
+   - Add switch case:
+     ```dart
+     case 48:
+       final schema = Schema49(database: database);
+       final migrator = i1.Migrator(database, schema);
+       await from48To49(migrator, schema);
+       return 49;
+     ```
+
+   e. Update `stepByStep()` function:
+   - Add parameter: `required Future<void> Function(i1.Migrator m, Schema49 schema) from48To49,`
+   - Add to migrationSteps call: `from48To49: from48To49,`
 
 ### Type Usage in Migrations
 
@@ -186,3 +314,10 @@ When using both Drift and Flutter Material, hide Drift's `Column`:
 ```dart
 import 'package:drift/drift.dart' hide Column;
 ```
+
+## Common Gotchas
+
+1. **Plan constructor**: The `Plan` class has no `exercises` field - exercises are in the separate `PlanExercises` table
+2. **Popup menu context**: When showing dialogs from bottom sheets, capture the parent context before the bottom sheet opens
+3. **Exercise order in history**: Use the `sequence` column in GymSets to sort, not creation time
+4. **Schema JSON structure**: The JSON includes all tables and their columns - ensure column order matches the schema class
