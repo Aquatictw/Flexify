@@ -14,6 +14,7 @@ import 'package:flexify/main.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/settings/settings_page.dart';
 import 'package:flexify/settings/settings_state.dart';
+import 'package:flexify/utils.dart';
 import 'package:flexify/weight_page.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
@@ -350,7 +351,7 @@ class GraphsPageState extends State<GraphsPage>
           await db.gymSets.insertOne(
             GymSetsCompanion.insert(
               name: exercises[i],
-              reps: 10 - setNum,
+              reps: (10 - setNum).toDouble(),
               weight: 50.0 + (monthOffset * 5) + (setNum * 2.5),
               unit: 'kg',
               created: workoutDate.add(Duration(minutes: i * 10 + setNum * 2)),
