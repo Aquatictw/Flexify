@@ -8,7 +8,6 @@ import 'package:flexify/sets/history_page.dart';
 import 'package:flexify/settings/settings_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/settings/whats_new.dart';
-import 'package:flexify/timer/rest_timer_bar.dart';
 import 'package:flexify/timer/timer_page.dart';
 import 'package:flexify/timer/timer_progress_widgets.dart';
 import 'package:flexify/utils.dart';
@@ -157,7 +156,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const RestTimerBar(),
                   const ActiveWorkoutBar(),
                   ValueListenableBuilder(
                     valueListenable: controller.animation!,

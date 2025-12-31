@@ -393,7 +393,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
   Widget _buildExerciseList(ColorScheme colorScheme) {
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 8, bottom: 200),
+      padding: const EdgeInsets.only(top: 8, bottom: 100),
       itemCount: _exerciseOrder.length + 1,
       itemBuilder: (context, index) {
         if (index >= _exerciseOrder.length) {

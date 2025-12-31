@@ -119,7 +119,7 @@ class _RestTimerBarState extends State<RestTimerBar>
             : 1.0;
 
         return Align(
-          alignment: Alignment.centerRight,
+          alignment: Alignment.centerLeft,
           child: Transform.scale(
             scale: pulseValue,
             child: GestureDetector(
@@ -130,7 +130,7 @@ class _RestTimerBarState extends State<RestTimerBar>
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
-                margin: const EdgeInsets.only(right: 16, top: 6, bottom: 6),
+                margin: const EdgeInsets.only(left: 16, top: 6, bottom: 6),
                 padding: EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: _isExpanded ? 12 : 10,
