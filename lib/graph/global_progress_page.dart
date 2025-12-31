@@ -18,11 +18,8 @@ class _GlobalProgressPageState extends State<GlobalProgressPage> {
   StrengthMetric metric = StrengthMetric.bestWeight;
   List<StrengthData> data = [];
   List<String?> categories = [];
-  Period period = Period.day;
-  DateTime? startDate;
-  DateTime? endDate;
+  Period period = Period.days30;
   String targetUnit = 'kg';
-  int limit = 100;
   TabController? tabController;
 
   @override
@@ -55,9 +52,6 @@ class _GlobalProgressPageState extends State<GlobalProgressPage> {
       target: targetUnit,
       metric: metric,
       period: period,
-      start: startDate,
-      end: endDate,
-      limit: limit,
     );
     final newCategories = await getCategories();
     setState(() {
@@ -202,20 +196,24 @@ class _GlobalProgressPageState extends State<GlobalProgressPage> {
               initialValue: period,
               items: const [
                 DropdownMenuItem(
-                  value: Period.day,
-                  child: Text("Daily"),
+                  value: Period.days30,
+                  child: Text("30 Days"),
                 ),
                 DropdownMenuItem(
-                  value: Period.week,
-                  child: Text("Weekly"),
+                  value: Period.months3,
+                  child: Text("3 Months"),
                 ),
                 DropdownMenuItem(
-                  value: Period.month,
-                  child: Text("Monthly"),
+                  value: Period.months6,
+                  child: Text("6 Months"),
                 ),
                 DropdownMenuItem(
                   value: Period.year,
-                  child: Text("Yearly"),
+                  child: Text("1 Year"),
+                ),
+                DropdownMenuItem(
+                  value: Period.allTime,
+                  child: Text("All Time"),
                 ),
               ],
               onChanged: (value) {

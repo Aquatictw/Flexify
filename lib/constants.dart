@@ -15,10 +15,11 @@ const weekdays = [
 enum CardioMetric { pace, distance, duration, incline, inclineAdjustedPace }
 
 enum Period {
-  day,
-  week,
-  month,
+  days30,
+  months3,
+  months6,
   year,
+  allTime,
 }
 
 enum PlanTrailing { reorder, ratio, count, percent, none }

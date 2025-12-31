@@ -39,13 +39,21 @@ class GraphsPageState extends State<GraphsPage>
 
   final Set<String> selected = {};
   final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
+  String search = '';
   String? category;
   final scroll = ScrollController();
+  final searchController = TextEditingController();
   bool extendFab = true;
   int total = 0;
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -280,9 +288,17 @@ class GraphsPageState extends State<GraphsPage>
           if (snapshot.hasError) return ErrorWidget(snapshot.error.toString());
           if (!snapshot.hasData) return const SizedBox();
 
+          final searchTerms = search.toLowerCase().split(' ').where((t) => t.isNotEmpty);
           var filteredStream = snapshot.data!.where((gymSet) {
-            if (category != null) {
-              return gymSet.category.value == category;
+            // Filter by category
+            if (category != null && gymSet.category.value != category) {
+              return false;
+            }
+            // Filter by search
+            for (final term in searchTerms) {
+              if (!gymSet.name.value.toLowerCase().contains(term)) {
+                return false;
+              }
             }
             return true;
           });
@@ -291,6 +307,30 @@ class GraphsPageState extends State<GraphsPage>
 
           return material.Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search exercises...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: search.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              searchController.clear();
+                              setState(() => search = '');
+                            },
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  onChanged: (value) => setState(() => search = value),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: GraphsFilters(
@@ -305,7 +345,7 @@ class GraphsPageState extends State<GraphsPage>
               if (gymSets.isEmpty)
                 const Expanded(
                   child: Center(
-                    child: Text("No exercises yet. Add one to get started!"),
+                    child: Text("No exercises found"),
                   ),
                 ),
               if (gymSets.isNotEmpty)
@@ -332,40 +372,52 @@ class GraphsPageState extends State<GraphsPage>
   Future<void> _addDebugWorkouts() async {
     final exercises = ['Bench Press', 'Squat', 'Deadlift'];
     final now = DateTime.now();
+    int workoutCount = 0;
 
+    // Create workouts spread across the last 4 months
+    // 2-3 workouts per month on different days
     for (var monthOffset = 0; monthOffset < 4; monthOffset++) {
-      final workoutDate = DateTime(now.year, now.month - monthOffset, 15);
+      final daysInMonth = [5, 12, 20, 27];
+      for (var dayIndex = 0; dayIndex < 3; dayIndex++) {
+        final day = daysInMonth[dayIndex];
+        final workoutDate = DateTime(now.year, now.month - monthOffset, day, 10);
 
-      // Create a workout
-      final workoutId = await db.workouts.insertOne(
-        WorkoutsCompanion.insert(
-          startTime: workoutDate,
-          endTime: Value(workoutDate.add(const Duration(hours: 1))),
-          name: Value('Debug Workout ${monthOffset + 1}'),
-        ),
-      );
+        // Skip dates in the future
+        if (workoutDate.isAfter(now)) continue;
 
-      // Add sets for each exercise
-      for (var i = 0; i < exercises.length; i++) {
-        for (var setNum = 0; setNum < 3; setNum++) {
-          await db.gymSets.insertOne(
-            GymSetsCompanion.insert(
-              name: exercises[i],
-              reps: (10 - setNum).toDouble(),
-              weight: 50.0 + (monthOffset * 5) + (setNum * 2.5),
-              unit: 'kg',
-              created: workoutDate.add(Duration(minutes: i * 10 + setNum * 2)),
-              workoutId: Value(workoutId),
-              category: Value(i == 2 ? 'Back' : 'Chest'),
-            ),
-          );
+        // Create a workout
+        final workoutId = await db.workouts.insertOne(
+          WorkoutsCompanion.insert(
+            startTime: workoutDate,
+            endTime: Value(workoutDate.add(const Duration(hours: 1))),
+            name: Value('Workout ${workoutDate.month}/${workoutDate.day}'),
+          ),
+        );
+
+        // Add sets for each exercise with progressive weights
+        final progressMultiplier = (4 - monthOffset) * 3 + dayIndex;
+        for (var i = 0; i < exercises.length; i++) {
+          for (var setNum = 0; setNum < 3; setNum++) {
+            await db.gymSets.insertOne(
+              GymSetsCompanion.insert(
+                name: exercises[i],
+                reps: (10 - setNum).toDouble(),
+                weight: 40.0 + (progressMultiplier * 2.5) + (setNum * 2.5),
+                unit: 'kg',
+                created: workoutDate.add(Duration(minutes: i * 10 + setNum * 2)),
+                workoutId: Value(workoutId),
+                category: Value(i == 2 ? 'Back' : 'Chest'),
+              ),
+            );
+          }
         }
+        workoutCount++;
       }
     }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Added 4 debug workouts')),
+        SnackBar(content: Text('Added $workoutCount debug workouts')),
       );
     }
   }
@@ -427,10 +479,7 @@ class GraphsPageState extends State<GraphsPage>
                         target: gymSets.first.unit.value,
                         name: gymSets.first.name.value,
                         metric: StrengthMetric.bestWeight,
-                        period: Period.day,
-                        start: null,
-                        end: null,
-                        limit: 20,
+                        period: Period.months3,
                       ),
               );
             },

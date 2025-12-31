@@ -143,9 +143,7 @@ class GraphTile extends StatelessWidget {
               target: gymSet.unit.value,
               name: gymSet.name.value,
               metric: CardioMetric.pace,
-              period: Period.day,
-              start: null,
-              end: null,
+              period: Period.months3,
             );
             if (!context.mounted) return;
             Navigator.push(
@@ -166,10 +164,7 @@ class GraphTile extends StatelessWidget {
             target: gymSet.unit.value,
             name: gymSet.name.value,
             metric: StrengthMetric.bestWeight,
-            period: Period.day,
-            start: null,
-            end: null,
-            limit: 20,
+            period: Period.months3,
           );
           if (!context.mounted) return;
 
