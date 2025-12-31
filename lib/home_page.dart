@@ -157,6 +157,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  const SizedBox(height: 8),
                   const RestTimerBar(),
                   const ActiveWorkoutBar(),
                   ValueListenableBuilder(
