@@ -140,7 +140,10 @@ await workoutState.stopWorkout();
 ## Development Commands
 
 ```bash
-# Generate Drift database code after schema changes
+# Run database migrations after schema changes (recommended)
+./scripts/migrate.sh
+
+# Generate Drift database code manually (if not using migrate.sh)
 dart run build_runner build --delete-conflicting-outputs
 
 # Run the app
@@ -230,77 +233,84 @@ Create with a temporary Plan object (id: -1) that has no exercises.
 
 ## Migration Notes
 
-When adding new columns or tables, see `docs/DRIFT_MIGRATIONS.md` for detailed instructions.
+When adding new columns or tables, follow these steps:
 
-### Quick Reference
+### Standard Migration Process
 
-1. Add to table definition (e.g., `lib/database/gym_sets.dart`):
+1. **Edit table definition** (e.g., `lib/database/gym_sets.dart`):
    ```dart
    IntColumn get sequence => integer().withDefault(const Constant(0))();
    ```
 
-2. Update `@DriftDatabase` annotation in `database.dart` if adding new tables
+2. **Update `@DriftDatabase` annotation** in `database.dart` if adding new tables
 
-3. Add migration in `onUpgrade: stepByStep(...)`:
+3. **Increment `schemaVersion`** in `lib/database/database.dart`:
+   ```dart
+   int get schemaVersion => 49;  // Bump from 48 to 49
+   ```
+
+4. **Run the migration script**:
+   ```bash
+   ./scripts/migrate.sh
+   ```
+
+   This script automatically:
+   - Runs build_runner to generate code
+   - Generates migration code with `drift_dev make-migrations`
+   - Updates schema JSON files in `drift_schemas/`
+
+5. **Add the migration step** in `onUpgrade: stepByStep(...)` in `database.dart`:
    ```dart
    from48To49: (Migrator m, Schema49 schema) async {
      await m.addColumn(schema.gymSets, schema.gymSets.sequence);
    },
    ```
 
-4. Increment `schemaVersion` in `database.dart`
+### Manual Migration (Fallback)
 
-5. Copy and update schema JSON file:
-   ```bash
-   cp drift_schemas/db/drift_schema_v48.json drift_schemas/db/drift_schema_v49.json
-   # Edit v49.json to add the new column to the appropriate table
-   ```
+If the automatic migration script doesn't generate the Schema class properly, you'll need to manually update `database.steps.dart`:
 
-6. Run `dart run build_runner build --delete-conflicting-outputs`
+**a. Add new column definition (if needed):**
+```dart
+i1.GeneratedColumn<int> _column_88(String aliasedName) =>
+    i1.GeneratedColumn<int>('sequence', aliasedName, false,
+        type: i1.DriftSqlType.int, defaultValue: const CustomExpression('0'));
+```
 
-7. **If build_runner doesn't generate Schema class**, manually add to `database.steps.dart`:
+**b. Add new Shape class (if table structure changes):**
+```dart
+class Shape38 extends i0.VersionedTable {
+  Shape38({required super.source, required super.alias}) : super.aliased();
+  // Copy getters from previous Shape, add new column getter
+  i1.GeneratedColumn<int> get sequence =>
+      columnsByName['sequence']! as i1.GeneratedColumn<int>;
+}
+```
 
-   a. Add new column definition (if needed):
-   ```dart
-   i1.GeneratedColumn<int> _column_88(String aliasedName) =>
-       i1.GeneratedColumn<int>('sequence', aliasedName, false,
-           type: i1.DriftSqlType.int, defaultValue: const CustomExpression('0'));
-   ```
+**c. Add Schema class (copy previous, update shape references):**
+```dart
+final class Schema49 extends i0.VersionedSchema {
+  Schema49({required super.database}) : super(version: 49);
+  @override
+  late final List<i1.DatabaseSchemaEntity> entities = [...];
+  // Use new Shape for updated tables, add new column to columns list
+}
+```
 
-   b. Add new Shape class (if table structure changes):
-   ```dart
-   class Shape38 extends i0.VersionedTable {
-     Shape38({required super.source, required super.alias}) : super.aliased();
-     // Copy getters from previous Shape, add new column getter
-     i1.GeneratedColumn<int> get sequence =>
-         columnsByName['sequence']! as i1.GeneratedColumn<int>;
-   }
-   ```
+**d. Update `migrationSteps()` function:**
+- Add parameter: `required Future<void> Function(i1.Migrator m, Schema49 schema) from48To49,`
+- Add switch case:
+  ```dart
+  case 48:
+    final schema = Schema49(database: database);
+    final migrator = i1.Migrator(database, schema);
+    await from48To49(migrator, schema);
+    return 49;
+  ```
 
-   c. Add Schema class (copy previous, update shape references):
-   ```dart
-   final class Schema49 extends i0.VersionedSchema {
-     Schema49({required super.database}) : super(version: 49);
-     @override
-     late final List<i1.DatabaseSchemaEntity> entities = [...];
-     // Use new Shape for updated tables, add new column to columns list
-   }
-   ```
-
-   d. Update `migrationSteps()` function:
-   - Add parameter: `required Future<void> Function(i1.Migrator m, Schema49 schema) from48To49,`
-   - Add switch case:
-     ```dart
-     case 48:
-       final schema = Schema49(database: database);
-       final migrator = i1.Migrator(database, schema);
-       await from48To49(migrator, schema);
-       return 49;
-     ```
-
-   e. Update `stepByStep()` function:
-   - Add parameter: `required Future<void> Function(i1.Migrator m, Schema49 schema) from48To49,`
-   - Add to migrationSteps call: `from48To49: from48To49,`
+**e. Update `stepByStep()` function:**
+- Add parameter: `required Future<void> Function(i1.Migrator m, Schema49 schema) from48To49,`
+- Add to migrationSteps call: `from48To49: from48To49,`
 
 ### Type Usage in Migrations
 
