@@ -65,7 +65,7 @@ class _BottomNavState extends State<BottomNav> with TickerProviderStateMixin {
     return Container(
       color: Colors.transparent,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 16),
         child: Stack(
           children: [
             // Background sliding indicator

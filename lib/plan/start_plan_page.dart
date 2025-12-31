@@ -255,7 +255,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
         await workoutState.refresh();
       }
     }
-    titleController.dispose();
+    // Don't dispose controller - Flutter manages the dialog lifecycle
   }
 
   @override
@@ -1278,12 +1278,11 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
       });
     }
 
-    // Start rest timer if not last set
+    // Start rest timer
     final completedCount = sets.where((s) => s.completed).length;
-    final isLastSet = completedCount == sets.length;
     final settings = context.read<SettingsState>().value;
 
-    if (!isLastSet && settings.restTimers) {
+    if (settings.restTimers) {
       final timerState = context.read<TimerState>();
       final restMs = settings.timerDuration;
       timerState.startTimer(

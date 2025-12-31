@@ -130,7 +130,7 @@ class _RestTimerBarState extends State<RestTimerBar>
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
-                margin: const EdgeInsets.only(left: 16, top: 2, bottom: 2),
+                margin: const EdgeInsets.only(left: 16, top: 2, bottom: 0),
                 padding: EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: _isExpanded ? 12 : 10,

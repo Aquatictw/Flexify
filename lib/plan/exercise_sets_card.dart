@@ -330,9 +330,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       });
     }
 
-    // Start rest timer if not last set
-    final isLastSet = completedCount == sets.length;
-    if (!isLastSet && settings.restTimers) {
+    // Start rest timer
+    if (settings.restTimers) {
       final timerState = context.read<TimerState>();
       final restMs = settings.timerDuration;
       timerState.startTimer(
