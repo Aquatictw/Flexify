@@ -9,6 +9,7 @@ import 'package:flexify/settings/settings_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/settings/whats_new.dart';
 import 'package:flexify/timer/timer_page.dart';
+import 'package:flexify/timer/rest_timer_bar.dart';
 import 'package:flexify/timer/timer_progress_widgets.dart';
 import 'package:flexify/utils.dart';
 import 'package:flexify/workouts/active_workout_bar.dart';
@@ -124,12 +125,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       resizeToAvoidBottomInset: false,
       extendBodyBehindAppBar: true,
       extendBody: true,
-      bottomSheet: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 48.0),
-          child: const TimerProgressIndicator(),
-        ),
-      ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -162,6 +157,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  const RestTimerBar(),
                   const ActiveWorkoutBar(),
                   ValueListenableBuilder(
                     valueListenable: controller.animation!,

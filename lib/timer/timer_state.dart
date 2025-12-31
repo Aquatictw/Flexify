@@ -46,9 +46,16 @@ class TimerState extends ChangeNotifier {
     String alarmSound,
     bool vibrate,
   ) async {
-    final updated = timer.increaseDuration(
-      const Duration(minutes: 1),
-    );
+    await addSeconds(60, alarmSound, vibrate);
+  }
+
+  Future<void> addSeconds(
+    int seconds,
+    String alarmSound,
+    bool vibrate,
+  ) async {
+    final addDuration = Duration(seconds: seconds);
+    final updated = timer.increaseDuration(addDuration);
     updateTimer(updated);
     final args = {
       'timestamp': updated.getTimeStamp(),
@@ -59,7 +66,41 @@ class TimerState extends ChangeNotifier {
       androidChannel.invokeMethod('add', args);
     } else {
       next?.cancel();
-      next = Timer(const Duration(minutes: 1), () => notify(null, alarmSound));
+      next = Timer(updated.getRemaining(), () => notify(null, alarmSound));
+    }
+  }
+
+  Future<void> subtractSeconds(
+    int seconds,
+    String alarmSound,
+    bool vibrate,
+  ) async {
+    final remaining = timer.getRemaining();
+    if (remaining.inSeconds <= seconds) {
+      // Timer would go to zero or negative, just stop it
+      await stopTimer();
+      return;
+    }
+
+    final subtractDuration = Duration(seconds: seconds);
+    final updated = NativeTimerWrapper(
+      timer.total - subtractDuration,
+      timer.elapsed,
+      timer.stamp,
+      timer.state,
+    );
+    updateTimer(updated);
+
+    final args = {
+      'timestamp': updated.getTimeStamp(),
+      'alarmSound': alarmSound,
+      'vibrate': vibrate,
+    };
+    if (!kIsWeb && Platform.isAndroid) {
+      androidChannel.invokeMethod('add', args);
+    } else {
+      next?.cancel();
+      next = Timer(updated.getRemaining(), () => notify(null, alarmSound));
     }
   }
 

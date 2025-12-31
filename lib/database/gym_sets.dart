@@ -180,6 +180,7 @@ Stream<List<GymSetsCompanion>> watchGraphs() {
           db.gymSets.image,
           db.gymSets.category,
         ])
+        ..where(db.gymSets.hidden.equals(false))
         ..orderBy([
           OrderingTerm(
             expression: db.gymSets.created.max(),

@@ -4,6 +4,7 @@ import 'package:flexify/main.dart';
 import 'package:flexify/plan/exercise_sets_card.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/settings/settings_state.dart';
+import 'package:flexify/timer/timer_state.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -349,25 +350,29 @@ class _StartPlanPageState extends State<StartPlanPage> {
               ],
             ],
           ),
-          body: Column(
+          body: Stack(
             children: [
-              // Notes section
-              AnimatedCrossFade(
-                firstChild: const SizedBox(width: double.infinity),
-                secondChild: _NotesSection(
-                  controller: _notesController,
-                  onChanged: _saveNotes,
-                ),
-                crossFadeState: _showNotes
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-                duration: const Duration(milliseconds: 200),
-              ),
-              // Exercises list
-              Expanded(
-                child: _isReorderMode
-                    ? _buildReorderableList(colorScheme)
-                    : _buildExerciseList(colorScheme),
+              Column(
+                children: [
+                  // Notes section
+                  AnimatedCrossFade(
+                    firstChild: const SizedBox(width: double.infinity),
+                    secondChild: _NotesSection(
+                      controller: _notesController,
+                      onChanged: _saveNotes,
+                    ),
+                    crossFadeState: _showNotes
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
+                    duration: const Duration(milliseconds: 200),
+                  ),
+                  // Exercises list
+                  Expanded(
+                    child: _isReorderMode
+                        ? _buildReorderableList(colorScheme)
+                        : _buildExerciseList(colorScheme),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1235,6 +1240,9 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
   Future<void> _completeSet(int index) async {
     if (sets[index].completed) return;
 
+    // Haptic feedback
+    HapticFeedback.mediumImpact();
+
     if (sets[index].savedSetId != null) {
       // Update existing record - just change hidden to false
       await (db.gymSets.update()
@@ -1268,6 +1276,22 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
         sets[index].completed = true;
         sets[index].savedSetId = gymSet.id;
       });
+    }
+
+    // Start rest timer if not last set
+    final completedCount = sets.where((s) => s.completed).length;
+    final isLastSet = completedCount == sets.length;
+    final settings = context.read<SettingsState>().value;
+
+    if (!isLastSet && settings.restTimers) {
+      final timerState = context.read<TimerState>();
+      final restMs = settings.timerDuration;
+      timerState.startTimer(
+        "${widget.exerciseName} ($completedCount)",
+        Duration(milliseconds: restMs),
+        settings.alarmSound,
+        settings.vibrate,
+      );
     }
   }
 
