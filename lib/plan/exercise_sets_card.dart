@@ -92,14 +92,14 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     _defaultReps = lastSet?.reps.toInt() ?? 8;
     final defaultUnit = lastSet?.unit ?? settings.strengthUnit;
 
-    // Get ALL sets (including uncompleted/hidden ones) in this workout
+    // Get ALL sets (including uncompleted/hidden ones) in this workout for this specific exercise instance
     List<GymSet> existingSets = [];
     if (widget.workoutId != null) {
       existingSets = await (db.gymSets.select()
             ..where((tbl) =>
                 tbl.name.equals(widget.exercise.exercise) &
                 tbl.workoutId.equals(widget.workoutId!) &
-                tbl.sequence.isBiggerOrEqualValue(0)) // Exclude tombstones and placeholders
+                tbl.sequence.equals(widget.sequence)) // Filter by sequence to get only this instance
             ..orderBy([
               (u) => OrderingTerm(expression: u.created, mode: OrderingMode.asc),
             ]))
