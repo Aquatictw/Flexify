@@ -103,91 +103,71 @@ class _AddExercisePageState extends State<AddExercisePage> {
                 ),
                 const SizedBox(height: 12),
 
-                // Exercise Type Cards
-                ...exerciseTypes.map((type) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: InkWell(
-                    onTap: () {
-                      setState(() {
-                        exerciseType = type.value;
-                      });
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: exerciseType == type.value
-                            ? LinearGradient(
-                                colors: [
-                                  colorScheme.primaryContainer,
-                                  colorScheme.primaryContainer.withOpacity(0.7),
-                                ],
-                              )
-                            : null,
-                        color: exerciseType != type.value
-                            ? colorScheme.surface
-                            : null,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: exerciseType == type.value
-                              ? colorScheme.primary
-                              : colorScheme.outline.withOpacity(0.3),
-                          width: exerciseType == type.value ? 2 : 1,
-                        ),
-                        boxShadow: exerciseType == type.value
-                            ? [
-                                BoxShadow(
-                                  color: colorScheme.primary.withOpacity(0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: exerciseType == type.value
-                                    ? colorScheme.primary.withOpacity(0.2)
-                                    : colorScheme.surfaceVariant,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
+                // Compact Exercise Type Selection
+                Row(
+                  children: exerciseTypes.map((type) => Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            exerciseType = type.value;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          decoration: BoxDecoration(
+                            gradient: exerciseType == type.value
+                                ? LinearGradient(
+                                    colors: [
+                                      colorScheme.primaryContainer,
+                                      colorScheme.primaryContainer.withOpacity(0.7),
+                                    ],
+                                  )
+                                : null,
+                            color: exerciseType != type.value
+                                ? colorScheme.surfaceVariant.withOpacity(0.5)
+                                : null,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: exerciseType == type.value
+                                  ? colorScheme.primary
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
                                 type.icon,
                                 color: exerciseType == type.value
                                     ? colorScheme.primary
                                     : colorScheme.onSurfaceVariant,
-                                size: 28,
+                                size: 32,
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            Text(
-                              type.label,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: exerciseType == type.value
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
-                                color: exerciseType == type.value
-                                    ? colorScheme.onPrimaryContainer
-                                    : colorScheme.onSurface,
+                              const SizedBox(height: 8),
+                              Text(
+                                type.label,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: exerciseType == type.value
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: exerciseType == type.value
+                                      ? colorScheme.onPrimaryContainer
+                                      : colorScheme.onSurfaceVariant,
+                                ),
                               ),
-                            ),
-                            const Spacer(),
-                            if (exerciseType == type.value)
-                              Icon(
-                                Icons.check_circle,
-                                color: colorScheme.primary,
-                                size: 28,
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                )).toList(),
+                  )).toList(),
+                ),
 
                 // Brand Name (only for machines)
                 if (exerciseType == 'machine') ...[
