@@ -166,8 +166,28 @@ Future<List<Rpm>> getRpms() async {
       .toList();
 }
 
-Stream<List<GymSetsCompanion>> watchGraphs() {
-  final countCol = db.gymSets.name.count();
+// Typedef for graph list items with workout count
+typedef GraphExercise = ({
+  String name,
+  String unit,
+  double weight,
+  double reps,
+  bool cardio,
+  double duration,
+  double distance,
+  DateTime created,
+  String? image,
+  String? category,
+  int setCount,
+  int workoutCount,
+});
+
+Stream<List<GraphExercise>> watchGraphs() {
+  final setCountCol = db.gymSets.name.count();
+  final workoutCountCol = const CustomExpression<int>(
+    'COUNT(DISTINCT workout_id)',
+  );
+
   return (db.gymSets.selectOnly()
         ..addColumns([
           db.gymSets.name,
@@ -180,12 +200,13 @@ Stream<List<GymSetsCompanion>> watchGraphs() {
           db.gymSets.created.max(),
           db.gymSets.image,
           db.gymSets.category,
-          countCol,
+          setCountCol,
+          workoutCountCol,
         ])
         ..where(db.gymSets.hidden.equals(false))
         ..orderBy([
           OrderingTerm(
-            expression: countCol,
+            expression: workoutCountCol,
             mode: OrderingMode.desc,
           ),
         ])
@@ -194,17 +215,19 @@ Stream<List<GymSetsCompanion>> watchGraphs() {
       .map(
         (results) => results
             .map(
-              (result) => GymSetsCompanion(
-                name: Value(result.read(db.gymSets.name)!),
-                weight: Value(result.read(db.gymSets.weight)!),
-                unit: Value(result.read(db.gymSets.unit)!),
-                reps: Value(result.read(db.gymSets.reps)!),
-                cardio: Value(result.read(db.gymSets.cardio)!),
-                duration: Value(result.read(db.gymSets.duration)!),
-                distance: Value(result.read(db.gymSets.distance)!),
-                created: Value(result.read(db.gymSets.created.max())!),
-                image: Value(result.read(db.gymSets.image)),
-                category: Value(result.read(db.gymSets.category)),
+              (result) => (
+                name: result.read(db.gymSets.name)!,
+                weight: result.read(db.gymSets.weight)!,
+                unit: result.read(db.gymSets.unit)!,
+                reps: result.read(db.gymSets.reps)!,
+                cardio: result.read(db.gymSets.cardio)!,
+                duration: result.read(db.gymSets.duration)!,
+                distance: result.read(db.gymSets.distance)!,
+                created: result.read(db.gymSets.created.max())!,
+                image: result.read(db.gymSets.image),
+                category: result.read(db.gymSets.category),
+                setCount: result.read(setCountCol)!,
+                workoutCount: result.read(workoutCountCol)!,
               ),
             )
             .toList(),
@@ -234,61 +257,89 @@ Future<List<StrengthData>> getStrengthData({
   required StrengthMetric metric,
   required Period period,
 }) async {
-  Expression<String> col = getCreated(period);
   final periodStart = getPeriodStart(period);
 
-  var query = (db.selectOnly(db.gymSets)
-    ..addColumns([
-      db.gymSets.weight.max(),
-      volumeCol,
-      ormCol,
-      bestVolumeCol,
-      db.gymSets.created,
-      db.gymSets.reps,
-      db.gymSets.unit,
-      relativeCol,
-    ])
-    ..where(db.gymSets.name.equals(name))
-    ..where(db.gymSets.hidden.equals(false))
-    ..orderBy([
-      OrderingTerm(
-        expression: col,
-        mode: OrderingMode.desc,
-      ),
-    ])
-    ..groupBy([col]));
-
-  if (periodStart != null) {
-    query = query
-      ..where(
-        db.gymSets.created.isBiggerOrEqualValue(periodStart),
-      );
+  // Build the metric-specific SQL expression and ordering
+  String metricExpression;
+  String orderColumn;
+  switch (metric) {
+    case StrengthMetric.bestWeight:
+      metricExpression = 'weight';
+      orderColumn = 'weight';
+      break;
+    case StrengthMetric.oneRepMax:
+      metricExpression = 'CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END';
+      orderColumn = metricExpression;
+      break;
+    case StrengthMetric.volume:
+      metricExpression = 'weight * reps';
+      orderColumn = metricExpression;
+      break;
+    case StrengthMetric.relativeStrength:
+      metricExpression = 'weight / NULLIF(body_weight, 0)';
+      orderColumn = metricExpression;
+      break;
+    case StrengthMetric.bestVolume:
+      metricExpression = 'weight * reps';
+      orderColumn = metricExpression;
+      break;
   }
 
-  final results = await query.get();
+  // Use a custom SQL query to get the best set for each day along with its workout_id
+  final whereClause = periodStart != null
+      ? 'AND created >= ${periodStart.millisecondsSinceEpoch ~/ 1000}'
+      : '';
+
+  final sql = '''
+    SELECT
+      created,
+      weight,
+      reps,
+      unit,
+      workout_id,
+      $metricExpression as metric_value
+    FROM gym_sets
+    WHERE name = ?
+      AND hidden = 0
+      $whereClause
+    GROUP BY STRFTIME('%Y-%m-%d', DATE(created, 'unixepoch', 'localtime'))
+    HAVING $metricExpression = MAX($orderColumn)
+    ORDER BY created DESC
+  ''';
+
+  final results = await db.customSelect(
+    sql,
+    variables: [Variable.withString(name)],
+  ).get();
 
   List<StrengthData> list = [];
   for (final result in results.reversed) {
-    final unit = result.read(db.gymSets.unit)!;
-    var value = getStrength(result, metric);
+    final unit = result.read<String>('unit');
+    var value = result.read<double>('metric_value');
+    var weight = result.read<double>('weight');
 
     if (unit == 'lb' && target == 'kg') {
       value *= 0.45359237;
+      weight *= 0.45359237;
     } else if (unit == 'kg' && target == 'lb') {
       value *= 2.20462262;
+      weight *= 2.20462262;
     }
 
-    double reps = 0.0;
-    try {
-      reps = result.read(db.gymSets.reps)!;
-    } catch (_) {}
+    final reps = result.read<double>('reps');
+    final created = DateTime.fromMillisecondsSinceEpoch(
+      result.read<int>('created') * 1000,
+    ).toLocal();
+    final workoutId = result.read<int?>('workout_id');
 
     list.add(
       StrengthData(
-        created: result.read(db.gymSets.created)!.toLocal(),
+        created: created,
         value: value,
         unit: unit,
         reps: reps,
+        workoutId: workoutId,
+        weight: weight,
       ),
     );
   }
@@ -310,62 +361,88 @@ Future<List<StrengthData>> getGlobalData({
   required StrengthMetric metric,
   required Period period,
 }) async {
-  Expression<String> col = getCreated(period);
   final periodStart = getPeriodStart(period);
 
-  var query = (db.selectOnly(db.gymSets)
-    ..addColumns([
-      db.gymSets.weight.max(),
-      volumeCol,
-      ormCol,
-      bestVolumeCol,
-      db.gymSets.created,
-      db.gymSets.reps,
-      db.gymSets.unit,
-      relativeCol,
-      db.gymSets.category,
-    ])
-    ..where(db.gymSets.hidden.equals(false) & db.gymSets.category.isNotNull())
-    ..orderBy([
-      OrderingTerm(
-        expression: col,
-        mode: OrderingMode.desc,
-      ),
-    ])
-    ..groupBy([db.gymSets.category, col]));
-
-  if (periodStart != null) {
-    query = query
-      ..where(
-        db.gymSets.created.isBiggerOrEqualValue(periodStart),
-      );
+  // Build the metric-specific SQL expression and ordering
+  String metricExpression;
+  String orderColumn;
+  switch (metric) {
+    case StrengthMetric.bestWeight:
+      metricExpression = 'weight';
+      orderColumn = 'weight';
+      break;
+    case StrengthMetric.oneRepMax:
+      metricExpression = 'CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END';
+      orderColumn = metricExpression;
+      break;
+    case StrengthMetric.volume:
+      metricExpression = 'weight * reps';
+      orderColumn = metricExpression;
+      break;
+    case StrengthMetric.relativeStrength:
+      metricExpression = 'weight / NULLIF(body_weight, 0)';
+      orderColumn = metricExpression;
+      break;
+    case StrengthMetric.bestVolume:
+      metricExpression = 'weight * reps';
+      orderColumn = metricExpression;
+      break;
   }
 
-  final results = await query.get();
+  final whereClause = periodStart != null
+      ? 'AND created >= ${periodStart.millisecondsSinceEpoch ~/ 1000}'
+      : '';
+
+  final sql = '''
+    SELECT
+      created,
+      weight,
+      reps,
+      unit,
+      category,
+      workout_id,
+      $metricExpression as metric_value
+    FROM gym_sets
+    WHERE hidden = 0
+      AND category IS NOT NULL
+      $whereClause
+    GROUP BY category, STRFTIME('%Y-%m-%d', DATE(created, 'unixepoch', 'localtime'))
+    HAVING $metricExpression = MAX($orderColumn)
+    ORDER BY created DESC
+  ''';
+
+  final results = await db.customSelect(sql).get();
 
   List<StrengthData> list = [];
   for (final result in results.reversed) {
-    final unit = result.read(db.gymSets.unit)!;
-    var value = getStrength(result, metric);
+    final unit = result.read<String>('unit');
+    var value = result.read<double>('metric_value');
+    var weight = result.read<double>('weight');
 
     if (unit == 'lb' && target == 'kg') {
       value *= 0.45359237;
+      weight *= 0.45359237;
     } else if (unit == 'kg' && target == 'lb') {
       value *= 2.20462262;
+      weight *= 2.20462262;
     }
 
-    double reps = 0.0;
-    try {
-      reps = result.read(db.gymSets.reps)!;
-    } catch (_) {}
+    final reps = result.read<double>('reps');
+    final created = DateTime.fromMillisecondsSinceEpoch(
+      result.read<int>('created') * 1000,
+    ).toLocal();
+    final category = result.read<String?>('category');
+    final workoutId = result.read<int?>('workout_id');
 
     list.add(
       StrengthData(
-        created: result.read(db.gymSets.created)!.toLocal(),
+        created: created,
         value: value,
         unit: unit,
         reps: reps,
-        category: result.read(db.gymSets.category),
+        category: category,
+        workoutId: workoutId,
+        weight: weight,
       ),
     );
   }
@@ -422,7 +499,7 @@ Future<bool> isBest(GymSet gymSet) async {
 typedef Rpm = ({String name, double rpm, double weight});
 
 /// Rep record: best weight achieved at a specific rep count
-typedef RepRecord = ({int reps, double weight, DateTime created});
+typedef RepRecord = ({int reps, double weight, DateTime created, int? workoutId});
 
 /// Get best weight for each rep count (1-15) for a specific exercise
 Future<List<RepRecord>> getRepRecords({
@@ -434,7 +511,8 @@ Future<List<RepRecord>> getRepRecords({
       CAST(reps AS INTEGER) as rep_count,
       MAX(weight) as max_weight,
       created,
-      unit
+      unit,
+      workout_id
     FROM gym_sets
     WHERE name = ?
       AND hidden = 0
@@ -452,6 +530,7 @@ Future<List<RepRecord>> getRepRecords({
     final created = DateTime.fromMillisecondsSinceEpoch(
       row.read<int>('created') * 1000,
     );
+    final workoutId = row.read<int?>('workout_id');
 
     // Convert units if needed
     if (unit == 'lb' && targetUnit == 'kg') {
@@ -460,7 +539,7 @@ Future<List<RepRecord>> getRepRecords({
       weight *= 2.20462262;
     }
 
-    records.add((reps: reps, weight: weight, created: created));
+    records.add((reps: reps, weight: weight, created: created, workoutId: workoutId));
   }
 
   return records;
@@ -474,6 +553,13 @@ typedef ExerciseRecords = ({
   DateTime? bestWeightDate,
   DateTime? best1RMDate,
   DateTime? bestVolumeDate,
+  int? bestWeightWorkoutId,
+  int? best1RMWorkoutId,
+  int? bestVolumeWorkoutId,
+  double? bestWeightReps,
+  double? best1RMReps,
+  double? bestVolumeReps,
+  double? bestVolumeWeight,
 });
 
 /// Get all-time records for a specific exercise
@@ -498,6 +584,13 @@ Future<ExerciseRecords> getExerciseRecords({
       bestWeightDate: null,
       best1RMDate: null,
       bestVolumeDate: null,
+      bestWeightWorkoutId: null,
+      best1RMWorkoutId: null,
+      bestVolumeWorkoutId: null,
+      bestWeightReps: null,
+      best1RMReps: null,
+      bestVolumeReps: null,
+      bestVolumeWeight: null,
     );
   }
 
@@ -505,22 +598,22 @@ Future<ExerciseRecords> getExerciseRecords({
   var best1RM = result.read<double?>('best_1rm') ?? 0.0;
   var bestVolume = result.read<double?>('best_volume') ?? 0.0;
 
-  // Get dates for each record
+  // Get dates, workout IDs, and set details for each record
   final weightDate = await db.customSelect("""
-    SELECT created FROM gym_sets
+    SELECT created, workout_id, reps FROM gym_sets
     WHERE name = ? AND hidden = 0 AND weight = (SELECT MAX(weight) FROM gym_sets WHERE name = ? AND hidden = 0)
     LIMIT 1
   """, variables: [Variable.withString(name), Variable.withString(name)]).getSingleOrNull();
 
   final ormDate = await db.customSelect("""
-    SELECT created FROM gym_sets
+    SELECT created, workout_id, reps FROM gym_sets
     WHERE name = ? AND hidden = 0
     ORDER BY CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END DESC
     LIMIT 1
   """, variables: [Variable.withString(name)]).getSingleOrNull();
 
   final volumeDate = await db.customSelect("""
-    SELECT created FROM gym_sets
+    SELECT created, workout_id, reps, weight FROM gym_sets
     WHERE name = ? AND hidden = 0
     ORDER BY weight * reps DESC
     LIMIT 1
@@ -539,6 +632,13 @@ Future<ExerciseRecords> getExerciseRecords({
     bestVolumeDate: volumeDate != null
         ? DateTime.fromMillisecondsSinceEpoch(volumeDate.read<int>('created') * 1000)
         : null,
+    bestWeightWorkoutId: weightDate?.read<int?>('workout_id'),
+    best1RMWorkoutId: ormDate?.read<int?>('workout_id'),
+    bestVolumeWorkoutId: volumeDate?.read<int?>('workout_id'),
+    bestWeightReps: weightDate?.read<double?>('reps'),
+    best1RMReps: ormDate?.read<double?>('reps'),
+    bestVolumeReps: volumeDate?.read<double?>('reps'),
+    bestVolumeWeight: volumeDate?.read<double?>('weight'),
   );
 }
 
