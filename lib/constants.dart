@@ -29,7 +29,7 @@ enum StrengthMetric {
   volume,
   bestWeight,
   relativeStrength,
-  bestReps,
+  bestVolume,
 }
 
 final defaultSettings = SettingsCompanion.insert(

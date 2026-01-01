@@ -9,7 +9,7 @@ import 'package:flexify/graph/edit_graph_page.dart';
 import 'package:flexify/graph/graph_history_page.dart';
 import 'package:flexify/graph/strength_data.dart';
 import 'package:flexify/main.dart';
-import 'package:flexify/sets/edit_set_page.dart';
+import 'package:flexify/workouts/workout_detail_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -43,11 +43,16 @@ class _StrengthPageState extends State<StrengthPage> {
   DateTime lastTap = DateTime.fromMicrosecondsSinceEpoch(0);
   int? selectedIndex;
 
+  // Records data
+  ExerciseRecords? records;
+  List<RepRecord> repRecords = [];
+
   @override
   void initState() {
     super.initState();
     widget.tabCtrl.addListener(_onTabChanged);
     setData();
+    _loadRecords();
   }
 
   @override
@@ -60,6 +65,24 @@ class _StrengthPageState extends State<StrengthPage> {
     final settings = context.read<SettingsState>().value;
     if (widget.tabCtrl.index == settings.tabs.indexOf('GraphsPage')) {
       setData();
+      _loadRecords();
+    }
+  }
+
+  Future<void> _loadRecords() async {
+    final exerciseRecords = await getExerciseRecords(
+      name: widget.name,
+      targetUnit: target,
+    );
+    final reps = await getRepRecords(
+      name: widget.name,
+      targetUnit: target,
+    );
+    if (mounted) {
+      setState(() {
+        records = exerciseRecords;
+        repRecords = reps;
+      });
     }
   }
 
@@ -82,8 +105,8 @@ class _StrengthPageState extends State<StrengthPage> {
     switch (m) {
       case StrengthMetric.bestWeight:
         return 'Best Weight';
-      case StrengthMetric.bestReps:
-        return 'Best Reps';
+      case StrengthMetric.bestVolume:
+        return 'Best Volume';
       case StrengthMetric.oneRepMax:
         return '1RM';
       case StrengthMetric.relativeStrength:
@@ -125,7 +148,10 @@ class _StrengthPageState extends State<StrengthPage> {
                   ),
                 ),
               );
-              Timer(kThemeAnimationDuration, setData);
+              Timer(kThemeAnimationDuration, () {
+                setData();
+                _loadRecords();
+              });
             },
             icon: const Icon(Icons.history),
             tooltip: "History",
@@ -147,8 +173,8 @@ class _StrengthPageState extends State<StrengthPage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -186,7 +212,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 child: Row(
                   children: [
                     StrengthMetric.bestWeight,
-                    StrengthMetric.bestReps,
+                    StrengthMetric.bestVolume,
                     StrengthMetric.oneRepMax,
                     if (settings.showBodyWeight) StrengthMetric.relativeStrength,
                   ].map((m) {
@@ -226,62 +252,354 @@ class _StrengthPageState extends State<StrengthPage> {
                   : Stack(
                       children: [
                         _buildChart(settings, colorScheme),
-                        // Selected value overlay (top right)
+                        // Selected value overlay (top left, ignores pointer)
                         if (selectedIndex != null && selectedIndex! < data.length)
                           Positioned(
                             top: 8,
-                            right: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: colorScheme.primaryContainer.withOpacity(0.95),
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    _formatValue(data[selectedIndex!]),
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: colorScheme.onPrimaryContainer,
+                            left: 56,
+                            child: IgnorePointer(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primaryContainer
+                                      .withOpacity(0.95),
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
                                     ),
-                                  ),
-                                  Text(
-                                    DateFormat(settings.shortDateFormat)
-                                        .format(data[selectedIndex!].created),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: colorScheme.onPrimaryContainer.withOpacity(0.7),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _formatValue(data[selectedIndex!]),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: colorScheme.onPrimaryContainer,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    Text(
+                                      DateFormat(settings.shortDateFormat)
+                                          .format(data[selectedIndex!].created),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: colorScheme.onPrimaryContainer
+                                            .withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                       ],
                     ),
             ),
+
+            const SizedBox(height: 24),
+
+            // Records section
+            if (records != null && name != 'Weight') _buildRecordsSection(colorScheme),
+
+            const SizedBox(height: 24),
+
+            // Rep Records section
+            if (repRecords.isNotEmpty && name != 'Weight')
+              _buildRepRecordsSection(colorScheme),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildRecordsSection(ColorScheme colorScheme) {
+    final formatter = NumberFormat("#,###.##");
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.emoji_events, color: colorScheme.primary, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Personal Records',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildRecordCard(
+                colorScheme: colorScheme,
+                icon: Icons.fitness_center,
+                label: 'Best Weight',
+                value: '${formatter.format(records!.bestWeight)} $target',
+                date: records!.bestWeightDate,
+                color: colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildRecordCard(
+                colorScheme: colorScheme,
+                icon: Icons.trending_up,
+                label: '1RM',
+                value: '${formatter.format(records!.best1RM)} $target',
+                date: records!.best1RMDate,
+                color: colorScheme.tertiary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildRecordCard(
+                colorScheme: colorScheme,
+                icon: Icons.bar_chart,
+                label: 'Best Volume',
+                value: '${formatter.format(records!.bestVolume)}',
+                date: records!.bestVolumeDate,
+                color: colorScheme.secondary,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecordCard({
+    required ColorScheme colorScheme,
+    required IconData icon,
+    required String label,
+    required String value,
+    required DateTime? date,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (date != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              DateFormat('MMM d, yyyy').format(date),
+              style: TextStyle(
+                fontSize: 9,
+                color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRepRecordsSection(ColorScheme colorScheme) {
+    final formatter = NumberFormat("#,###.##");
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.format_list_numbered, color: colorScheme.primary, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Rep Records',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              // Header row
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.1),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 50,
+                      child: Text(
+                        'Reps',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Weight',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      'Date',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Rep rows
+              ...List.generate(15, (index) {
+                final repCount = index + 1;
+                final record = repRecords.where((r) => r.reps == repCount).firstOrNull;
+
+                final isEven = index % 2 == 0;
+                final hasRecord = record != null;
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isEven
+                        ? Colors.transparent
+                        : colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    borderRadius: index == 14
+                        ? const BorderRadius.only(
+                            bottomLeft: Radius.circular(16),
+                            bottomRight: Radius.circular(16),
+                          )
+                        : null,
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 50,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: hasRecord
+                                ? colorScheme.primary.withOpacity(0.15)
+                                : colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '$repCount',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: hasRecord
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurfaceVariant.withOpacity(0.5),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          hasRecord
+                              ? '${formatter.format(record.weight)} $target'
+                              : '-',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: hasRecord ? FontWeight.w600 : FontWeight.normal,
+                            color: hasRecord
+                                ? colorScheme.onSurface
+                                : colorScheme.onSurfaceVariant.withOpacity(0.5),
+                          ),
+                        ),
+                      ),
+                      Text(
+                        hasRecord
+                            ? DateFormat('M/d/yy').format(record.created)
+                            : '-',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: hasRecord
+                              ? colorScheme.onSurfaceVariant
+                              : colorScheme.onSurfaceVariant.withOpacity(0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   String _formatValue(StrengthData row) {
     final formatter = NumberFormat("#,###.##");
     switch (metric) {
-      case StrengthMetric.bestReps:
-        return '${row.value.toInt()} reps';
+      case StrengthMetric.bestVolume:
+        return '${formatter.format(row.value)} vol';
       case StrengthMetric.relativeStrength:
         return '${row.value.toStringAsFixed(2)}x';
       case StrengthMetric.oneRepMax:
@@ -415,19 +733,19 @@ class _StrengthPageState extends State<StrengthPage> {
         lineBarsData: [
           LineChartBarData(
             spots: spots,
-            isCurved: settings.curveLines,
+            isCurved: false,
             color: colorScheme.primary,
             barWidth: 3,
             isStrokeCapRound: true,
-            curveSmoothness: settings.curveSmoothness ?? 0.35,
-            preventCurveOverShooting: true,
             dotData: FlDotData(
               show: true,
               getDotPainter: (spot, percent, bar, index) {
                 final isSelected = index == selectedIndex;
                 return FlDotCirclePainter(
                   radius: isSelected ? 5 : 3,
-                  color: isSelected ? colorScheme.primary : colorScheme.primary.withOpacity(0.7),
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.primary.withOpacity(0.7),
                   strokeWidth: 0,
                 );
               },
@@ -477,7 +795,8 @@ class _StrengthPageState extends State<StrengthPage> {
         gymSet = await (db.gymSets.select()
               ..where(
                 (tbl) =>
-                    tbl.created.equals(row.created) & tbl.name.equals(widget.name),
+                    tbl.created.equals(row.created) &
+                    tbl.name.equals(widget.name),
               )
               ..limit(1))
             .getSingleOrNull();
@@ -505,12 +824,11 @@ class _StrengthPageState extends State<StrengthPage> {
               ..limit(1))
             .getSingleOrNull();
         break;
-      case StrengthMetric.bestReps:
+      case StrengthMetric.bestVolume:
         gymSet = await (db.gymSets.select()
               ..where(
                 (tbl) =>
                     tbl.created.equals(row.created) &
-                    tbl.reps.equals(row.value) &
                     tbl.name.equals(widget.name),
               )
               ..limit(1))
@@ -518,14 +836,23 @@ class _StrengthPageState extends State<StrengthPage> {
         break;
     }
 
-    if (!mounted || gymSet == null) return;
+    if (!mounted || gymSet == null || gymSet.workoutId == null) return;
+
+    final workout = await (db.workouts.select()
+          ..where((w) => w.id.equals(gymSet!.workoutId!)))
+        .getSingleOrNull();
+
+    if (!mounted || workout == null) return;
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EditSetPage(gymSet: gymSet!),
+        builder: (context) => WorkoutDetailPage(workout: workout),
       ),
     );
-    Timer(kThemeAnimationDuration, setData);
+    Timer(kThemeAnimationDuration, () {
+      setData();
+      _loadRecords();
+    });
   }
 
   Future<void> setData() async {

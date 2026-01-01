@@ -525,33 +525,11 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                 ),
         ),
       ),
-      title: Row(
-        children: [
-          if (isWarmup)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: colorScheme.tertiaryContainer,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                'WARMUP',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.tertiary,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-          Text(
-            subtitle,
-            style: isWarmup
-                ? TextStyle(color: colorScheme.onSurfaceVariant)
-                : null,
-          ),
-        ],
+      title: Text(
+        subtitle,
+        style: isWarmup
+            ? TextStyle(color: colorScheme.onSurfaceVariant)
+            : null,
       ),
       onTap: () {
         Navigator.push(

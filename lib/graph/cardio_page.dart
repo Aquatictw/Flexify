@@ -9,7 +9,7 @@ import 'package:flexify/graph/cardio_data.dart';
 import 'package:flexify/graph/edit_graph_page.dart';
 import 'package:flexify/graph/graph_history_page.dart';
 import 'package:flexify/main.dart';
-import 'package:flexify/sets/edit_set_page.dart';
+import 'package:flexify/workouts/workout_detail_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -216,45 +216,47 @@ class _CardioPageState extends State<CardioPage> {
                   : Stack(
                       children: [
                         _buildChart(settings, colorScheme),
-                        // Selected value overlay (top right)
+                        // Selected value overlay (top left, ignores pointer)
                         if (selectedIndex != null && selectedIndex! < data.length)
                           Positioned(
                             top: 8,
-                            right: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: colorScheme.primaryContainer.withOpacity(0.95),
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    _formatValue(data[selectedIndex!]),
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: colorScheme.onPrimaryContainer,
+                            left: 56,
+                            child: IgnorePointer(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primaryContainer.withOpacity(0.95),
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
                                     ),
-                                  ),
-                                  Text(
-                                    DateFormat(settings.shortDateFormat)
-                                        .format(data[selectedIndex!].created),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: colorScheme.onPrimaryContainer.withOpacity(0.7),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _formatValue(data[selectedIndex!]),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: colorScheme.onPrimaryContainer,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    Text(
+                                      DateFormat(settings.shortDateFormat)
+                                          .format(data[selectedIndex!].created),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: colorScheme.onPrimaryContainer.withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -407,12 +409,10 @@ class _CardioPageState extends State<CardioPage> {
         lineBarsData: [
           LineChartBarData(
             spots: spots,
-            isCurved: settings.curveLines,
+            isCurved: false,
             color: colorScheme.primary,
             barWidth: 3,
             isStrokeCapRound: true,
-            curveSmoothness: settings.curveSmoothness ?? 0.35,
-            preventCurveOverShooting: true,
             dotData: FlDotData(
               show: true,
               getDotPainter: (spot, percent, bar, index) {
@@ -458,11 +458,17 @@ class _CardioPageState extends State<CardioPage> {
           ..limit(1))
         .getSingleOrNull();
 
-    if (!mounted || gymSet == null) return;
+    if (!mounted || gymSet == null || gymSet.workoutId == null) return;
+
+    final workout = await (db.workouts.select()
+          ..where((w) => w.id.equals(gymSet!.workoutId!)))
+        .getSingleOrNull();
+
+    if (!mounted || workout == null) return;
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EditSetPage(gymSet: gymSet),
+        builder: (context) => WorkoutDetailPage(workout: workout),
       ),
     );
     Timer(kThemeAnimationDuration, setData);

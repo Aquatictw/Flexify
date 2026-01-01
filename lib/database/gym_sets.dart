@@ -211,6 +211,8 @@ Stream<List<GymSetsCompanion>> watchGraphs() {
       );
 }
 
+const bestVolumeCol = CustomExpression<double>('MAX(weight * reps)');
+
 double getStrength(TypedResult row, StrengthMetric metric) {
   switch (metric) {
     case StrengthMetric.oneRepMax:
@@ -221,12 +223,8 @@ double getStrength(TypedResult row, StrengthMetric metric) {
       return row.read(relativeCol) ?? 0;
     case StrengthMetric.bestWeight:
       return row.read(db.gymSets.weight.max())!;
-    case StrengthMetric.bestReps:
-      try {
-        return row.read(db.gymSets.reps.max())!;
-      } catch (error) {
-        return 0;
-      }
+    case StrengthMetric.bestVolume:
+      return row.read(bestVolumeCol) ?? 0;
   }
 }
 
@@ -244,9 +242,9 @@ Future<List<StrengthData>> getStrengthData({
       db.gymSets.weight.max(),
       volumeCol,
       ormCol,
+      bestVolumeCol,
       db.gymSets.created,
-      if (metric == StrengthMetric.bestReps) db.gymSets.reps.max(),
-      if (metric != StrengthMetric.bestReps) db.gymSets.reps,
+      db.gymSets.reps,
       db.gymSets.unit,
       relativeCol,
     ])
@@ -320,9 +318,9 @@ Future<List<StrengthData>> getGlobalData({
       db.gymSets.weight.max(),
       volumeCol,
       ormCol,
+      bestVolumeCol,
       db.gymSets.created,
-      if (metric == StrengthMetric.bestReps) db.gymSets.reps.max(),
-      if (metric != StrengthMetric.bestReps) db.gymSets.reps,
+      db.gymSets.reps,
       db.gymSets.unit,
       relativeCol,
       db.gymSets.category,
@@ -422,6 +420,127 @@ Future<bool> isBest(GymSet gymSet) async {
 }
 
 typedef Rpm = ({String name, double rpm, double weight});
+
+/// Rep record: best weight achieved at a specific rep count
+typedef RepRecord = ({int reps, double weight, DateTime created});
+
+/// Get best weight for each rep count (1-15) for a specific exercise
+Future<List<RepRecord>> getRepRecords({
+  required String name,
+  required String targetUnit,
+}) async {
+  final results = await db.customSelect("""
+    SELECT
+      CAST(reps AS INTEGER) as rep_count,
+      MAX(weight) as max_weight,
+      created,
+      unit
+    FROM gym_sets
+    WHERE name = ?
+      AND hidden = 0
+      AND reps BETWEEN 1 AND 15
+      AND reps = CAST(reps AS INTEGER)
+    GROUP BY CAST(reps AS INTEGER)
+    ORDER BY rep_count ASC
+  """, variables: [Variable.withString(name)]).get();
+
+  List<RepRecord> records = [];
+  for (final row in results) {
+    final reps = row.read<int>('rep_count');
+    var weight = row.read<double>('max_weight');
+    final unit = row.read<String>('unit');
+    final created = DateTime.fromMillisecondsSinceEpoch(
+      row.read<int>('created') * 1000,
+    );
+
+    // Convert units if needed
+    if (unit == 'lb' && targetUnit == 'kg') {
+      weight *= 0.45359237;
+    } else if (unit == 'kg' && targetUnit == 'lb') {
+      weight *= 2.20462262;
+    }
+
+    records.add((reps: reps, weight: weight, created: created));
+  }
+
+  return records;
+}
+
+/// All-time records for an exercise
+typedef ExerciseRecords = ({
+  double bestWeight,
+  double best1RM,
+  double bestVolume,
+  DateTime? bestWeightDate,
+  DateTime? best1RMDate,
+  DateTime? bestVolumeDate,
+});
+
+/// Get all-time records for a specific exercise
+Future<ExerciseRecords> getExerciseRecords({
+  required String name,
+  required String targetUnit,
+}) async {
+  final result = await db.customSelect("""
+    SELECT
+      MAX(weight) as best_weight,
+      MAX(CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END) as best_1rm,
+      MAX(weight * reps) as best_volume
+    FROM gym_sets
+    WHERE name = ? AND hidden = 0
+  """, variables: [Variable.withString(name)]).getSingleOrNull();
+
+  if (result == null) {
+    return (
+      bestWeight: 0.0,
+      best1RM: 0.0,
+      bestVolume: 0.0,
+      bestWeightDate: null,
+      best1RMDate: null,
+      bestVolumeDate: null,
+    );
+  }
+
+  var bestWeight = result.read<double?>('best_weight') ?? 0.0;
+  var best1RM = result.read<double?>('best_1rm') ?? 0.0;
+  var bestVolume = result.read<double?>('best_volume') ?? 0.0;
+
+  // Get dates for each record
+  final weightDate = await db.customSelect("""
+    SELECT created FROM gym_sets
+    WHERE name = ? AND hidden = 0 AND weight = (SELECT MAX(weight) FROM gym_sets WHERE name = ? AND hidden = 0)
+    LIMIT 1
+  """, variables: [Variable.withString(name), Variable.withString(name)]).getSingleOrNull();
+
+  final ormDate = await db.customSelect("""
+    SELECT created FROM gym_sets
+    WHERE name = ? AND hidden = 0
+    ORDER BY CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END DESC
+    LIMIT 1
+  """, variables: [Variable.withString(name)]).getSingleOrNull();
+
+  final volumeDate = await db.customSelect("""
+    SELECT created FROM gym_sets
+    WHERE name = ? AND hidden = 0
+    ORDER BY weight * reps DESC
+    LIMIT 1
+  """, variables: [Variable.withString(name)]).getSingleOrNull();
+
+  return (
+    bestWeight: bestWeight,
+    best1RM: best1RM,
+    bestVolume: bestVolume,
+    bestWeightDate: weightDate != null
+        ? DateTime.fromMillisecondsSinceEpoch(weightDate.read<int>('created') * 1000)
+        : null,
+    best1RMDate: ormDate != null
+        ? DateTime.fromMillisecondsSinceEpoch(ormDate.read<int>('created') * 1000)
+        : null,
+    bestVolumeDate: volumeDate != null
+        ? DateTime.fromMillisecondsSinceEpoch(volumeDate.read<int>('created') * 1000)
+        : null,
+  );
+}
 
 class GymSets extends Table {
   RealColumn get bodyWeight => real().withDefault(const Constant(0.0))();
