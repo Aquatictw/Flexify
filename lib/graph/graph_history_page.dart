@@ -26,7 +26,6 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
   List<WorkoutSummary> workouts = [];
   int limit = 20;
   final scroll = ScrollController();
-  TabController? ctrl;
 
   @override
   Widget build(BuildContext context) {
@@ -245,20 +244,9 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
   }
 
   @override
-  void dispose() {
-    ctrl?.removeListener(tabListener);
-    super.dispose();
-  }
-
-  @override
   void initState() {
     super.initState();
     loadWorkouts();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ctrl = DefaultTabController.of(context);
-      ctrl?.addListener(tabListener);
-    });
   }
 
   void loadWorkouts() async {
@@ -269,11 +257,17 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
         w.name as workout_name,
         w.start_time as created,
         COUNT(DISTINCT gs.id) as sets,
-        MAX(gs.weight) as best_weight,
-        (SELECT reps FROM gym_sets
-         WHERE workout_id = w.id
-           AND name = ?
-           AND weight = MAX(gs.weight)
+        (SELECT gs2.weight FROM gym_sets gs2
+         WHERE gs2.workout_id = w.id
+           AND gs2.name = ?
+           AND gs2.hidden = 0
+         ORDER BY gs2.weight DESC
+         LIMIT 1) as best_weight,
+        (SELECT gs2.reps FROM gym_sets gs2
+         WHERE gs2.workout_id = w.id
+           AND gs2.name = ?
+           AND gs2.hidden = 0
+         ORDER BY gs2.weight DESC
          LIMIT 1) as best_reps
       FROM workouts w
       INNER JOIN gym_sets gs ON w.id = gs.workout_id
@@ -283,6 +277,7 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
       ORDER BY w.start_time DESC
       LIMIT ?
     """, variables: [
+      Variable.withString(widget.name),
       Variable.withString(widget.name),
       Variable.withString(widget.name),
       Variable.withInt(limit),
@@ -302,14 +297,6 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
         );
       }).toList();
     });
-  }
-
-  void tabListener() {
-    final settings = context.read<SettingsState>().value;
-    final index = settings.tabs.split(',').indexOf('GraphsPage');
-    if (ctrl!.indexIsChanging == true) return;
-    if (ctrl!.index != index) return;
-    loadWorkouts();
   }
 }
 

@@ -296,6 +296,14 @@ class _StrengthPageState extends State<StrengthPage> {
                                       ),
                                     ),
                                     Text(
+                                      _formatSetInfo(data[selectedIndex!]),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: colorScheme.onPrimaryContainer
+                                            .withOpacity(0.8),
+                                      ),
+                                    ),
+                                    Text(
                                       DateFormat(settings.shortDateFormat)
                                           .format(data[selectedIndex!].created),
                                       style: TextStyle(
@@ -361,6 +369,9 @@ class _StrengthPageState extends State<StrengthPage> {
                 date: records!.bestWeightDate,
                 color: colorScheme.primary,
                 workoutId: records!.bestWeightWorkoutId,
+                subtitle: records!.bestWeightReps != null
+                    ? '${records!.bestWeightReps!.toInt()} reps'
+                    : null,
               ),
             ),
             const SizedBox(width: 8),
@@ -373,6 +384,9 @@ class _StrengthPageState extends State<StrengthPage> {
                 date: records!.best1RMDate,
                 color: colorScheme.tertiary,
                 workoutId: records!.best1RMWorkoutId,
+                subtitle: records!.best1RMReps != null
+                    ? '${records!.best1RMReps!.toInt()} reps'
+                    : null,
               ),
             ),
             const SizedBox(width: 8),
@@ -385,6 +399,9 @@ class _StrengthPageState extends State<StrengthPage> {
                 date: records!.bestVolumeDate,
                 color: colorScheme.secondary,
                 workoutId: records!.bestVolumeWorkoutId,
+                subtitle: records!.bestVolumeReps != null && records!.bestVolumeWeight != null
+                    ? '${records!.bestVolumeReps!.toInt()} × ${formatter.format(records!.bestVolumeWeight!)} $target'
+                    : null,
               ),
             ),
           ],
@@ -401,6 +418,7 @@ class _StrengthPageState extends State<StrengthPage> {
     required DateTime? date,
     required Color color,
     int? workoutId,
+    String? subtitle,
   }) {
     return InkWell(
       onTap: workoutId != null
@@ -461,6 +479,16 @@ class _StrengthPageState extends State<StrengthPage> {
               ),
               overflow: TextOverflow.ellipsis,
             ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                ),
+              ),
+            ],
             if (date != null) ...[
               const SizedBox(height: 2),
               Text(
@@ -652,6 +680,11 @@ class _StrengthPageState extends State<StrengthPage> {
       case StrengthMetric.bestWeight:
         return '${row.reps.toInt()}x${formatter.format(row.value)} $target';
     }
+  }
+
+  String _formatSetInfo(StrengthData row) {
+    final formatter = NumberFormat("#,###.##");
+    return '${row.reps.toInt()} × ${formatter.format(row.weight)} $target';
   }
 
   Widget _buildChart(Setting settings, ColorScheme colorScheme) {
