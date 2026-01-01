@@ -171,30 +171,16 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
                 children: [
                   if (isWarmup) ...[
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.all(4),
                       margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
                         color: colorScheme.tertiaryContainer,
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.whatshot,
-                            size: 12,
-                            color: colorScheme.tertiary,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            'W',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.tertiary,
-                            ),
-                          ),
-                        ],
+                      child: Icon(
+                        Icons.whatshot,
+                        size: 12,
+                        color: colorScheme.tertiary,
                       ),
                     ),
                   ],

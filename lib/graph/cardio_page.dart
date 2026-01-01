@@ -9,7 +9,7 @@ import 'package:flexify/graph/cardio_data.dart';
 import 'package:flexify/graph/edit_graph_page.dart';
 import 'package:flexify/graph/graph_history_page.dart';
 import 'package:flexify/main.dart';
-import 'package:flexify/sets/edit_set_page.dart';
+import 'package:flexify/workouts/workout_detail_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -407,12 +407,10 @@ class _CardioPageState extends State<CardioPage> {
         lineBarsData: [
           LineChartBarData(
             spots: spots,
-            isCurved: settings.curveLines,
+            isCurved: false,
             color: colorScheme.primary,
             barWidth: 3,
             isStrokeCapRound: true,
-            curveSmoothness: settings.curveSmoothness ?? 0.35,
-            preventCurveOverShooting: true,
             dotData: FlDotData(
               show: true,
               getDotPainter: (spot, percent, bar, index) {
@@ -458,11 +456,17 @@ class _CardioPageState extends State<CardioPage> {
           ..limit(1))
         .getSingleOrNull();
 
-    if (!mounted || gymSet == null) return;
+    if (!mounted || gymSet == null || gymSet.workoutId == null) return;
+
+    final workout = await (db.workouts.select()
+          ..where((w) => w.id.equals(gymSet!.workoutId!)))
+        .getSingleOrNull();
+
+    if (!mounted || workout == null) return;
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EditSetPage(gymSet: gymSet),
+        builder: (context) => WorkoutDetailPage(workout: workout),
       ),
     );
     Timer(kThemeAnimationDuration, setData);
