@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' as drift;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flexify/constants.dart';
 import 'package:flexify/database/database.dart';
@@ -105,9 +105,9 @@ class _CardioPageState extends State<CardioPage> {
             onPressed: () async {
               final gymSets = await (db.gymSets.select()
                     ..orderBy([
-                      (u) => OrderingTerm(
+                      (u) => drift.OrderingTerm(
                             expression: u.created,
-                            mode: OrderingMode.desc,
+                            mode: drift.OrderingMode.desc,
                           ),
                     ])
                     ..where((tbl) => tbl.name.equals(widget.name))
@@ -270,7 +270,7 @@ class _CardioPageState extends State<CardioPage> {
     }
   }
 
-  Widget _buildChart(Settings settings, ColorScheme colorScheme) {
+  Widget _buildChart(Setting settings, ColorScheme colorScheme) {
     List<FlSpot> spots = [];
     for (var i = 0; i < data.length; i++) {
       spots.add(FlSpot(i.toDouble(), data[i].value));
