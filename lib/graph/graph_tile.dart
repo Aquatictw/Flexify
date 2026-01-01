@@ -68,13 +68,16 @@ class GraphTile extends StatelessWidget {
       );
     }
 
-    leading = AnimatedSwitcher(
-      duration: const Duration(milliseconds: 150),
-      transitionBuilder: (child, animation) {
-        return ScaleTransition(scale: animation, child: child);
-      },
-      child: leading,
-    );
+    // Only wrap in AnimatedSwitcher if leading is not null
+    if (leading != null) {
+      leading = AnimatedSwitcher(
+        duration: const Duration(milliseconds: 150),
+        transitionBuilder: (child, animation) {
+          return ScaleTransition(scale: animation, child: child);
+        },
+        child: leading,
+      );
+    }
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
