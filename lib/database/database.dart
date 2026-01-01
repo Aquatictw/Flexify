@@ -448,10 +448,15 @@ class AppDatabase extends _$AppDatabase {
         from48To49: (Migrator m, Schema49 schema) async {
           await m.addColumn(schema.gymSets, schema.gymSets.sequence);
         },
-        from49To50: (Migrator m, Schema50 schema) async {
-          await m.addColumn(schema.gymSets, schema.gymSets.warmup);
-        },
       ),
+      beforeOpen: (details) async {
+        // Handle migration to version 50 manually since Schema50 isn't generated yet
+        if (details.versionBefore != null && details.versionBefore! < 50 && details.versionNow >= 50) {
+          await customStatement(
+            'ALTER TABLE gym_sets ADD COLUMN warmup INTEGER NOT NULL DEFAULT 0',
+          );
+        }
+      },
     );
   }
 
