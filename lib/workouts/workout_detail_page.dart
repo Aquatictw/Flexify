@@ -56,32 +56,62 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
 
           final sets = snapshot.data!;
 
-          // Group sets by exercise name
-          final exerciseGroups = <String, List<GymSet>>{};
-          for (final set in sets) {
-            exerciseGroups.putIfAbsent(set.name, () => []).add(set);
+          // Group sets by exercise, detecting sequence gaps for multiple instances
+          final List<({String name, List<GymSet> sets, int minSeq, int maxSeq})> exerciseGroups = [];
+
+          if (sets.isNotEmpty) {
+            // Sort by sequence first to ensure proper grouping
+            final sortedSets = List<GymSet>.from(sets)
+              ..sort((a, b) => a.sequence.compareTo(b.sequence));
+
+            String? currentExercise;
+            List<GymSet> currentSets = [];
+            int? currentMinSeq;
+            int? currentMaxSeq;
+
+            for (final set in sortedSets) {
+              if (currentExercise == null ||
+                  set.name != currentExercise ||
+                  (currentMaxSeq != null && set.sequence > currentMaxSeq + 1)) {
+                // New exercise or gap detected - save previous group
+                if (currentExercise != null && currentSets.isNotEmpty) {
+                  exerciseGroups.add((
+                    name: currentExercise,
+                    sets: currentSets,
+                    minSeq: currentMinSeq!,
+                    maxSeq: currentMaxSeq!,
+                  ));
+                }
+                // Start new group
+                currentExercise = set.name;
+                currentSets = [set];
+                currentMinSeq = set.sequence;
+                currentMaxSeq = set.sequence;
+              } else {
+                // Continue current group
+                currentSets.add(set);
+                currentMaxSeq = set.sequence;
+              }
+            }
+
+            // Add last group
+            if (currentExercise != null && currentSets.isNotEmpty) {
+              exerciseGroups.add((
+                name: currentExercise,
+                sets: currentSets,
+                minSeq: currentMinSeq!,
+                maxSeq: currentMaxSeq!,
+              ));
+            }
           }
-
-          // Sort exercise groups by stored sequence (from first set of each exercise)
-          final sortedExerciseNames = exerciseGroups.keys.toList()
-            ..sort((a, b) {
-              // Use the sequence stored in each set (from the first set of each exercise)
-              final seqA = exerciseGroups[a]!.first.sequence;
-              final seqB = exerciseGroups[b]!.first.sequence;
-
-              // If sequences are different, use them
-              if (seqA != seqB) return seqA.compareTo(seqB);
-
-              // If sequences are the same (both 0 for old data), fall back to creation time
-              final timeA = exerciseGroups[a]!.first.created;
-              final timeB = exerciseGroups[b]!.first.created;
-              return timeA.compareTo(timeB);
-            });
 
           final totalVolume = sets.fold<double>(
             0,
             (sum, s) => sum + (s.weight * s.reps),
           );
+
+          // Count unique exercise names (not instances)
+          final uniqueExerciseNames = sets.map((s) => s.name).toSet().length;
 
           return CustomScrollView(
             slivers: [
@@ -143,7 +173,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
               ),
               // Stats section
               SliverToBoxAdapter(
-                child: _buildStatsSection(sets, totalVolume),
+                child: _buildStatsSection(sets, totalVolume, uniqueExerciseNames),
               ),
               // Notes section
               if (widget.workout.notes?.isNotEmpty == true)
@@ -151,24 +181,24 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                   child: _buildNotesSection(),
                 ),
               // Empty state
-              if (sets.isEmpty)
+              if (exerciseGroups.isEmpty)
                 const SliverFillRemaining(
                   child: Center(
                     child: Text('No exercises in this workout'),
                   ),
                 ),
-              // Exercise groups (sorted by plan sequence)
+              // Exercise groups (each instance displayed separately)
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final exerciseName = sortedExerciseNames[index];
+                    final group = exerciseGroups[index];
                     return _buildExerciseGroup(
-                      exerciseName,
-                      exerciseGroups[exerciseName]!,
+                      group.name,
+                      group.sets,
                       showImages,
                     );
                   },
-                  childCount: sortedExerciseNames.length,
+                  childCount: exerciseGroups.length,
                 ),
               ),
               // Bottom padding for navigation bar
@@ -215,13 +245,12 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     );
   }
 
-  Widget _buildStatsSection(List<GymSet> sets, double totalVolume) {
+  Widget _buildStatsSection(List<GymSet> sets, double totalVolume, int exerciseCount) {
     final colorScheme = Theme.of(context).colorScheme;
     final duration = widget.workout.endTime != null
         ? widget.workout.endTime!.difference(widget.workout.startTime)
         : DateTime.now().difference(widget.workout.startTime);
 
-    final exerciseCount = sets.map((s) => s.name).toSet().length;
     final totalSets = sets.length;
 
     return Padding(
