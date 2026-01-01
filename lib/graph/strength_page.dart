@@ -265,7 +265,7 @@ class _StrengthPageState extends State<StrengthPage> {
                         if (selectedIndex != null && selectedIndex! < data.length)
                           Positioned(
                             top: 8,
-                            left: 8,
+                            left: 40,
                             child: GestureDetector(
                               onTap: () => _editSet(selectedIndex!),
                               child: Container(
