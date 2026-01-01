@@ -11,7 +11,7 @@ Flexify is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, 
 
 ## Database Architecture
 
-### Current Schema (v49)
+### Current Schema (v50)
 
 #### Tables
 
@@ -34,6 +34,7 @@ Flexify is a Flutter/Dart fitness tracking mobile app (cross-platform: Android, 
    - `workoutId` (nullable int - **links to Workouts.id** for session grouping)
    - `image`, `category`, `notes`
    - `sequence` (int, default 0 - **preserves exercise display order in history**)
+   - `warmup` (bool, default false - **indicates if set is a warmup set**)
 
 3. **Plans** (workout templates)
    - `id`, `days`, `sequence`, `title`
@@ -268,49 +269,84 @@ When adding new columns or tables, follow these steps:
 
 ### Manual Migration (Fallback)
 
-If the automatic migration script doesn't generate the Schema class properly, you'll need to manually update `database.steps.dart`:
+If the automatic migration script doesn't generate the Schema class properly (e.g., Schema50 not found), you'll need to manually update both the schema JSON and `database.steps.dart`:
 
-**a. Add new column definition (if needed):**
-```dart
-i1.GeneratedColumn<int> _column_88(String aliasedName) =>
-    i1.GeneratedColumn<int>('sequence', aliasedName, false,
-        type: i1.DriftSqlType.int, defaultValue: const CustomExpression('0'));
-```
-
-**b. Add new Shape class (if table structure changes):**
-```dart
-class Shape38 extends i0.VersionedTable {
-  Shape38({required super.source, required super.alias}) : super.aliased();
-  // Copy getters from previous Shape, add new column getter
-  i1.GeneratedColumn<int> get sequence =>
-      columnsByName['sequence']! as i1.GeneratedColumn<int>;
+**a. Create the new schema JSON file** in `drift_schemas/db/`:
+Copy the previous version's JSON (e.g., `drift_schema_v49.json` → `drift_schema_v50.json`) and add the new column to the appropriate table's columns array:
+```json
+{
+  "name": "warmup",
+  "getter_name": "warmup",
+  "moor_type": "bool",
+  "nullable": false,
+  "customConstraints": null,
+  "defaultConstraints": "CHECK (\"warmup\" IN (0, 1))",
+  "dialectAwareDefaultConstraints": {"sqlite": "CHECK (\"warmup\" IN (0, 1))"},
+  "default_dart": "const CustomExpression('0')",
+  "default_client_dart": null,
+  "dsl_features": []
 }
 ```
 
-**c. Add Schema class (copy previous, update shape references):**
+**b. Add new column definition** in `database.steps.dart`:
 ```dart
-final class Schema49 extends i0.VersionedSchema {
-  Schema49({required super.database}) : super(version: 49);
+i1.GeneratedColumn<bool> _column_89(String aliasedName) =>
+    i1.GeneratedColumn<bool>('warmup', aliasedName, false,
+        type: i1.DriftSqlType.bool,
+        defaultValue: const CustomExpression('0'),
+        defaultConstraints: i1.GeneratedColumn.constraintIsAlways(
+            'CHECK ("warmup" IN (0, 1))'));
+```
+
+**c. Add new Shape class** (copy previous Shape, add new column getter):
+```dart
+class Shape39 extends i0.VersionedTable {
+  Shape39({required super.source, required super.alias}) : super.aliased();
+  // Copy all getters from Shape38, then add:
+  i1.GeneratedColumn<bool> get warmup =>
+      columnsByName['warmup']! as i1.GeneratedColumn<bool>;
+}
+```
+
+**d. Add Schema class** (copy previous Schema, use new Shape for modified table, add new column to columns list):
+```dart
+final class Schema50 extends i0.VersionedSchema {
+  Schema50({required super.database}) : super(version: 50);
   @override
-  late final List<i1.DatabaseSchemaEntity> entities = [...];
-  // Use new Shape for updated tables, add new column to columns list
+  late final List<i1.DatabaseSchemaEntity> entities = [
+    plans, gymSets, settings, planExercises, metadata, workouts,
+  ];
+  // Use Shape39 instead of Shape38 for gymSets:
+  late final Shape39 gymSets = Shape39(
+      source: i0.VersionedTable(
+        entityName: 'gym_sets',
+        // ... copy from previous Schema, add _column_89 to columns list
+        columns: [..., _column_89],
+      ),
+      alias: null);
+  // Copy other tables from previous Schema unchanged
 }
 ```
 
-**d. Update `migrationSteps()` function:**
-- Add parameter: `required Future<void> Function(i1.Migrator m, Schema49 schema) from48To49,`
+**e. Update `migrationSteps()` function:**
+- Add parameter: `required Future<void> Function(i1.Migrator m, Schema50 schema) from49To50,`
 - Add switch case:
   ```dart
-  case 48:
-    final schema = Schema49(database: database);
+  case 49:
+    final schema = Schema50(database: database);
     final migrator = i1.Migrator(database, schema);
-    await from48To49(migrator, schema);
-    return 49;
+    await from49To50(migrator, schema);
+    return 50;
   ```
 
-**e. Update `stepByStep()` function:**
-- Add parameter: `required Future<void> Function(i1.Migrator m, Schema49 schema) from48To49,`
-- Add to migrationSteps call: `from48To49: from48To49,`
+**f. Update `stepByStep()` function:**
+- Add parameter: `required Future<void> Function(i1.Migrator m, Schema50 schema) from49To50,`
+- Add to migrationSteps call: `from49To50: from49To50,`
+
+**g. Run build_runner** to regenerate database.g.dart with the new column:
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
 
 ### Type Usage in Migrations
 

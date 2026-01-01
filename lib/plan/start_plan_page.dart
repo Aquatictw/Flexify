@@ -1060,6 +1060,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
           reps: set.reps.toInt(),
           completed: !set.hidden,
           savedSetId: set.id,
+          isWarmup: set.warmup,
         );
       }).toList();
 
@@ -1269,6 +1270,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               sequence: Value(widget.sequence),
               notes: Value(widget.exerciseNotes ?? ''),
               hidden: const Value(false),
+              warmup: Value(setData.isWarmup),
             ),
           );
 
@@ -1333,6 +1335,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
           sequence: Value(widget.sequence),
           notes: Value(widget.exerciseNotes ?? ''),
           hidden: const Value(true),
+          warmup: Value(isWarmup),
         ),
       );
 

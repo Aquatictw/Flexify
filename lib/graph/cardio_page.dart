@@ -203,41 +203,9 @@ class _CardioPageState extends State<CardioPage> {
 
             const SizedBox(height: 16),
 
-            // Selected value display
-            if (selectedIndex != null && selectedIndex! < data.length)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _formatValue(data[selectedIndex!]),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      DateFormat(settings.shortDateFormat)
-                          .format(data[selectedIndex!].created),
-                      style: TextStyle(
-                        color: colorScheme.onPrimaryContainer.withOpacity(0.7),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-            const SizedBox(height: 16),
-
-            // Chart
-            Expanded(
+            // Chart with overlay label
+            SizedBox(
+              height: 250,
               child: data.isEmpty
                   ? Center(
                       child: Text(
@@ -245,7 +213,53 @@ class _CardioPageState extends State<CardioPage> {
                         style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
                     )
-                  : _buildChart(settings, colorScheme),
+                  : Stack(
+                      children: [
+                        _buildChart(settings, colorScheme),
+                        // Selected value overlay (top right)
+                        if (selectedIndex != null && selectedIndex! < data.length)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primaryContainer.withOpacity(0.95),
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _formatValue(data[selectedIndex!]),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                  Text(
+                                    DateFormat(settings.shortDateFormat)
+                                        .format(data[selectedIndex!].created),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: colorScheme.onPrimaryContainer.withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
             ),
           ],
         ),

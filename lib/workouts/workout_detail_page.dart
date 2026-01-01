@@ -364,10 +364,20 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
 
   Widget _buildExerciseGroup(
     String exerciseName,
-    List<GymSet> sets,
+    List<GymSet> unsortedSets,
     bool showImages,
   ) {
-    final firstSet = sets.first;
+    // Sort sets: warmups first, then by creation time
+    final sets = List<GymSet>.from(unsortedSets)
+      ..sort((a, b) {
+        // Warmups come first
+        if (a.warmup && !b.warmup) return -1;
+        if (!a.warmup && b.warmup) return 1;
+        // Then by creation time
+        return a.created.compareTo(b.created);
+      });
+
+    final firstSet = unsortedSets.first; // Use original first for metadata
     final exerciseNotes = firstSet.notes;
 
     Widget? leading;
@@ -420,11 +430,13 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
           ),
         ),
       // Show all sets
-      ...sets.asMap().entries.map((entry) {
-        final index = entry.key;
-        final set = entry.value;
-        return _buildSetTile(set, index + 1);
-      }),
+      ...(() {
+        int workingSetNumber = 0;
+        return sets.map((set) {
+          if (!set.warmup) workingSetNumber++;
+          return _buildSetTile(set, workingSetNumber);
+        }).toList();
+      })(),
     ];
 
     return ExpansionTile(
