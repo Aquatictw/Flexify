@@ -28,6 +28,7 @@ class _GraphsFiltersState extends State<GraphsFilters> {
         stream: categoriesStream,
         builder: (context, snapshot) {
           return PopupMenuButton(
+            padding: EdgeInsets.zero,
             itemBuilder: (context) => [
               PopupMenuItem(
                 child: DropdownButtonFormField(
@@ -58,8 +59,13 @@ class _GraphsFiltersState extends State<GraphsFilters> {
                 ),
               ),
             ],
-            tooltip: "Filter",
-            icon: const Icon(Icons.filter_list),
+            tooltip: "Filter by category",
+            icon: Icon(
+              Icons.filter_list,
+              color: count > 0
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           );
         },
       ),

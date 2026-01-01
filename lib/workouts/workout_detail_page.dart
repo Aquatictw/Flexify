@@ -472,6 +472,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     final seconds =
         ((set.duration * 60) % 60).floor().toString().padLeft(2, '0');
     final distance = toString(set.distance);
+    final colorScheme = Theme.of(context).colorScheme;
+    final isWarmup = set.warmup;
 
     String subtitle;
     if (set.cardio) {
@@ -486,18 +488,59 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
 
     return ListTile(
       contentPadding: const EdgeInsets.only(left: 72, right: 16),
-      leading: CircleAvatar(
-        radius: 14,
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: Text(
-          '$setNumber',
-          style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
+      leading: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: isWarmup
+              ? colorScheme.tertiaryContainer
+              : colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Center(
+          child: isWarmup
+              ? Icon(
+                  Icons.whatshot,
+                  size: 14,
+                  color: colorScheme.tertiary,
+                )
+              : Text(
+                  '$setNumber',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
         ),
       ),
-      title: Text(subtitle),
+      title: Row(
+        children: [
+          if (isWarmup)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: colorScheme.tertiaryContainer,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'WARMUP',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.tertiary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          Text(
+            subtitle,
+            style: isWarmup
+                ? TextStyle(color: colorScheme.onSurfaceVariant)
+                : null,
+          ),
+        ],
+      ),
       onTap: () {
         Navigator.push(
           context,

@@ -116,6 +116,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           reps: set.reps.toInt(),
           completed: !set.hidden, // hidden=false means completed
           savedSetId: set.id,
+          isWarmup: set.warmup,
         );
       }).toList();
 
@@ -321,6 +322,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               sequence: Value(widget.sequence),
               notes: Value(widget.exerciseNotes ?? ''),
               hidden: const Value(false),
+              warmup: Value(setData.isWarmup),
             ),
           );
 
@@ -398,6 +400,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           sequence: Value(widget.sequence),
           notes: Value(widget.exerciseNotes ?? ''),
           hidden: const Value(true),
+          warmup: Value(isWarmup),
         ),
       );
 

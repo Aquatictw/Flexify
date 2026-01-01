@@ -308,38 +308,39 @@ class GraphsPageState extends State<GraphsPage>
           return material.Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: TextField(
                   controller: searchController,
                   decoration: InputDecoration(
                     hintText: 'Search exercises...',
                     prefixIcon: const Icon(Icons.search),
-                    suffixIcon: search.isNotEmpty
-                        ? IconButton(
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (search.isNotEmpty)
+                          IconButton(
                             icon: const Icon(Icons.clear),
                             onPressed: () {
                               searchController.clear();
                               setState(() => search = '');
                             },
-                          )
-                        : null,
+                          ),
+                        GraphsFilters(
+                          category: category,
+                          setCategory: (value) {
+                            setState(() {
+                              category = value;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   onChanged: (value) => setState(() => search = value),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: GraphsFilters(
-                  category: category,
-                  setCategory: (value) {
-                    setState(() {
-                      category = value;
-                    });
-                  },
                 ),
               ),
               if (gymSets.isEmpty)

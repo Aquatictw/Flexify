@@ -162,12 +162,53 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
               child: leading,
             );
 
+            final isWarmup = gymSet.warmup;
+            final colorScheme = Theme.of(context).colorScheme;
+
             return ListTile(
               leading: leading,
-              title: Text(
-                gymSet.cardio
-                    ? "$distance ${gymSet.unit} / $minutes:$seconds $incline"
-                    : "$reps x $weight ${gymSet.unit}",
+              title: Row(
+                children: [
+                  if (isWarmup) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: colorScheme.tertiaryContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.whatshot,
+                            size: 12,
+                            color: colorScheme.tertiary,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            'W',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.tertiary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  Expanded(
+                    child: Text(
+                      gymSet.cardio
+                          ? "$distance ${gymSet.unit} / $minutes:$seconds $incline"
+                          : "$reps x $weight ${gymSet.unit}",
+                      style: isWarmup
+                          ? TextStyle(color: colorScheme.onSurfaceVariant)
+                          : null,
+                    ),
+                  ),
+                ],
               ),
               selected: widget.selected.contains(gymSet.id),
               subtitle: Selector<SettingsState, String>(

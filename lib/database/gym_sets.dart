@@ -441,6 +441,7 @@ class GymSets extends Table {
   IntColumn get restMs => integer().nullable()();
   IntColumn get sequence => integer().withDefault(const Constant(0))(); // Exercise order within workout
   TextColumn get unit => text()();
+  BoolColumn get warmup => boolean().withDefault(const Constant(false))();
   RealColumn get weight => real()();
   IntColumn get workoutId => integer().nullable()();
 }
