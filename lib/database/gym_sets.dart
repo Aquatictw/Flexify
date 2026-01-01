@@ -492,18 +492,18 @@ Future<ExerciseRecords> getExerciseRecords({
 
   if (result == null) {
     return (
-      bestWeight: 0,
-      best1RM: 0,
-      bestVolume: 0,
+      bestWeight: 0.0,
+      best1RM: 0.0,
+      bestVolume: 0.0,
       bestWeightDate: null,
       best1RMDate: null,
       bestVolumeDate: null,
     );
   }
 
-  var bestWeight = result.read<double?>('best_weight') ?? 0;
-  var best1RM = result.read<double?>('best_1rm') ?? 0;
-  var bestVolume = result.read<double?>('best_volume') ?? 0;
+  var bestWeight = result.read<double?>('best_weight') ?? 0.0;
+  var best1RM = result.read<double?>('best_1rm') ?? 0.0;
+  var bestVolume = result.read<double?>('best_volume') ?? 0.0;
 
   // Get dates for each record
   final weightDate = await db.customSelect("""
