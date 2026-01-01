@@ -9,8 +9,8 @@ import 'package:flexify/graph/edit_graph_page.dart';
 import 'package:flexify/graph/graph_history_page.dart';
 import 'package:flexify/graph/strength_data.dart';
 import 'package:flexify/main.dart';
-import 'package:flexify/workouts/workout_detail_page.dart';
 import 'package:flexify/settings/settings_state.dart';
+import 'package:flexify/workouts/workout_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -218,7 +218,8 @@ class _StrengthPageState extends State<StrengthPage> {
                     StrengthMetric.bestWeight,
                     StrengthMetric.bestVolume,
                     StrengthMetric.oneRepMax,
-                    if (settings.showBodyWeight) StrengthMetric.relativeStrength,
+                    if (settings.showBodyWeight)
+                      StrengthMetric.relativeStrength,
                   ].map((m) {
                     final isSelected = metric == m;
                     return Padding(
@@ -262,7 +263,8 @@ class _StrengthPageState extends State<StrengthPage> {
                       children: [
                         _buildChart(settings, colorScheme),
                         // Selected value overlay (top left, clickable)
-                        if (selectedIndex != null && selectedIndex! < data.length)
+                        if (selectedIndex != null &&
+                            selectedIndex! < data.length)
                           Positioned(
                             top: 8,
                             left: 40,
@@ -270,7 +272,9 @@ class _StrengthPageState extends State<StrengthPage> {
                               onTap: () => _editSet(selectedIndex!),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6),
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   color: colorScheme.primaryContainer
                                       .withOpacity(0.95),
@@ -295,14 +299,16 @@ class _StrengthPageState extends State<StrengthPage> {
                                         color: colorScheme.onPrimaryContainer,
                                       ),
                                     ),
-                                    Text(
-                                      _formatSetInfo(data[selectedIndex!]),
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: colorScheme.onPrimaryContainer
-                                            .withOpacity(0.8),
+                                    if (metric == StrengthMetric.oneRepMax ||
+                                        metric == StrengthMetric.bestVolume)
+                                      Text(
+                                        _formatSetInfo(data[selectedIndex!]),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: colorScheme.onPrimaryContainer
+                                              .withOpacity(0.8),
+                                        ),
                                       ),
-                                    ),
                                     Text(
                                       DateFormat(settings.shortDateFormat)
                                           .format(data[selectedIndex!].created),
@@ -324,7 +330,8 @@ class _StrengthPageState extends State<StrengthPage> {
             const SizedBox(height: 24),
 
             // Records section
-            if (records != null && name != 'Weight') _buildRecordsSection(colorScheme),
+            if (records != null && name != 'Weight')
+              _buildRecordsSection(colorScheme),
 
             const SizedBox(height: 24),
 
@@ -395,11 +402,12 @@ class _StrengthPageState extends State<StrengthPage> {
                 colorScheme: colorScheme,
                 icon: Icons.bar_chart,
                 label: 'Best Volume',
-                value: '${formatter.format(records!.bestVolume)}',
+                value: formatter.format(records!.bestVolume),
                 date: records!.bestVolumeDate,
                 color: colorScheme.secondary,
                 workoutId: records!.bestVolumeWorkoutId,
-                subtitle: records!.bestVolumeReps != null && records!.bestVolumeWeight != null
+                subtitle: records!.bestVolumeReps != null &&
+                        records!.bestVolumeWeight != null
                     ? '${records!.bestVolumeReps!.toInt()} × ${formatter.format(records!.bestVolumeWeight!)} $target'
                     : null,
               ),
@@ -513,7 +521,11 @@ class _StrengthPageState extends State<StrengthPage> {
       children: [
         Row(
           children: [
-            Icon(Icons.format_list_numbered, color: colorScheme.primary, size: 20),
+            Icon(
+              Icons.format_list_numbered,
+              color: colorScheme.primary,
+              size: 20,
+            ),
             const SizedBox(width: 8),
             Text(
               'Rep Records',
@@ -535,7 +547,8 @@ class _StrengthPageState extends State<StrengthPage> {
             children: [
               // Header row
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withOpacity(0.1),
                   borderRadius: const BorderRadius.only(
@@ -573,7 +586,8 @@ class _StrengthPageState extends State<StrengthPage> {
               // Rep rows
               ...List.generate(15, (index) {
                 final repCount = index + 1;
-                final record = repRecords.where((r) => r.reps == repCount).firstOrNull;
+                final record =
+                    repRecords.where((r) => r.reps == repCount).firstOrNull;
 
                 final isEven = index % 2 == 0;
                 final hasRecord = record != null;
@@ -589,7 +603,8 @@ class _StrengthPageState extends State<StrengthPage> {
                             await Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => WorkoutDetailPage(workout: workout),
+                                builder: (context) =>
+                                    WorkoutDetailPage(workout: workout),
                               ),
                             );
                           }
@@ -602,11 +617,15 @@ class _StrengthPageState extends State<StrengthPage> {
                         )
                       : null,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: isEven
                           ? Colors.transparent
-                          : colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          : colorScheme.surfaceContainerHighest
+                              .withOpacity(0.3),
                       borderRadius: index == 14
                           ? const BorderRadius.only(
                               bottomLeft: Radius.circular(16),
@@ -620,7 +639,9 @@ class _StrengthPageState extends State<StrengthPage> {
                           width: 60,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 6),
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: hasRecord
                                   ? colorScheme.primary.withOpacity(0.15)
@@ -635,7 +656,8 @@ class _StrengthPageState extends State<StrengthPage> {
                                 fontWeight: FontWeight.bold,
                                 color: hasRecord
                                     ? colorScheme.primary
-                                    : colorScheme.onSurfaceVariant.withOpacity(0.5),
+                                    : colorScheme.onSurfaceVariant
+                                        .withOpacity(0.5),
                               ),
                             ),
                           ),
@@ -648,10 +670,13 @@ class _StrengthPageState extends State<StrengthPage> {
                                 : '-',
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: hasRecord ? FontWeight.w600 : FontWeight.normal,
+                              fontWeight: hasRecord
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                               color: hasRecord
                                   ? colorScheme.onSurface
-                                  : colorScheme.onSurfaceVariant.withOpacity(0.5),
+                                  : colorScheme.onSurfaceVariant
+                                      .withOpacity(0.5),
                             ),
                           ),
                         ),
@@ -712,8 +737,10 @@ class _StrengthPageState extends State<StrengthPage> {
           ),
         ),
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,

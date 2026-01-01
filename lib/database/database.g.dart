@@ -362,11 +362,28 @@ class $GymSetsTable extends GymSets with TableInfo<$GymSetsTable, GymSet> {
   late final GeneratedColumn<int> restMs = GeneratedColumn<int>(
       'rest_ms', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _sequenceMeta =
+      const VerificationMeta('sequence');
+  @override
+  late final GeneratedColumn<int> sequence = GeneratedColumn<int>(
+      'sequence', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   static const VerificationMeta _unitMeta = const VerificationMeta('unit');
   @override
   late final GeneratedColumn<String> unit = GeneratedColumn<String>(
       'unit', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _warmupMeta = const VerificationMeta('warmup');
+  @override
+  late final GeneratedColumn<bool> warmup = GeneratedColumn<bool>(
+      'warmup', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("warmup" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _weightMeta = const VerificationMeta('weight');
   @override
   late final GeneratedColumn<double> weight = GeneratedColumn<double>(
@@ -395,7 +412,9 @@ class $GymSetsTable extends GymSets with TableInfo<$GymSetsTable, GymSet> {
         planId,
         reps,
         restMs,
+        sequence,
         unit,
+        warmup,
         weight,
         workoutId
       ];
@@ -476,11 +495,19 @@ class $GymSetsTable extends GymSets with TableInfo<$GymSetsTable, GymSet> {
       context.handle(_restMsMeta,
           restMs.isAcceptableOrUnknown(data['rest_ms']!, _restMsMeta));
     }
+    if (data.containsKey('sequence')) {
+      context.handle(_sequenceMeta,
+          sequence.isAcceptableOrUnknown(data['sequence']!, _sequenceMeta));
+    }
     if (data.containsKey('unit')) {
       context.handle(
           _unitMeta, unit.isAcceptableOrUnknown(data['unit']!, _unitMeta));
     } else if (isInserting) {
       context.missing(_unitMeta);
+    }
+    if (data.containsKey('warmup')) {
+      context.handle(_warmupMeta,
+          warmup.isAcceptableOrUnknown(data['warmup']!, _warmupMeta));
     }
     if (data.containsKey('weight')) {
       context.handle(_weightMeta,
@@ -531,8 +558,12 @@ class $GymSetsTable extends GymSets with TableInfo<$GymSetsTable, GymSet> {
           .read(DriftSqlType.double, data['${effectivePrefix}reps'])!,
       restMs: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}rest_ms']),
+      sequence: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sequence'])!,
       unit: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}unit'])!,
+      warmup: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}warmup'])!,
       weight: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}weight'])!,
       workoutId: attachedDatabase.typeMapping
@@ -562,7 +593,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
   final int? planId;
   final double reps;
   final int? restMs;
+  final int sequence;
   final String unit;
+  final bool warmup;
   final double weight;
   final int? workoutId;
   const GymSet(
@@ -581,7 +614,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
       this.planId,
       required this.reps,
       this.restMs,
+      required this.sequence,
       required this.unit,
+      required this.warmup,
       required this.weight,
       this.workoutId});
   @override
@@ -614,7 +649,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
     if (!nullToAbsent || restMs != null) {
       map['rest_ms'] = Variable<int>(restMs);
     }
+    map['sequence'] = Variable<int>(sequence);
     map['unit'] = Variable<String>(unit);
+    map['warmup'] = Variable<bool>(warmup);
     map['weight'] = Variable<double>(weight);
     if (!nullToAbsent || workoutId != null) {
       map['workout_id'] = Variable<int>(workoutId);
@@ -647,7 +684,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
       reps: Value(reps),
       restMs:
           restMs == null && nullToAbsent ? const Value.absent() : Value(restMs),
+      sequence: Value(sequence),
       unit: Value(unit),
+      warmup: Value(warmup),
       weight: Value(weight),
       workoutId: workoutId == null && nullToAbsent
           ? const Value.absent()
@@ -674,7 +713,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
       planId: serializer.fromJson<int?>(json['planId']),
       reps: serializer.fromJson<double>(json['reps']),
       restMs: serializer.fromJson<int?>(json['restMs']),
+      sequence: serializer.fromJson<int>(json['sequence']),
       unit: serializer.fromJson<String>(json['unit']),
+      warmup: serializer.fromJson<bool>(json['warmup']),
       weight: serializer.fromJson<double>(json['weight']),
       workoutId: serializer.fromJson<int?>(json['workoutId']),
     );
@@ -698,7 +739,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
       'planId': serializer.toJson<int?>(planId),
       'reps': serializer.toJson<double>(reps),
       'restMs': serializer.toJson<int?>(restMs),
+      'sequence': serializer.toJson<int>(sequence),
       'unit': serializer.toJson<String>(unit),
+      'warmup': serializer.toJson<bool>(warmup),
       'weight': serializer.toJson<double>(weight),
       'workoutId': serializer.toJson<int?>(workoutId),
     };
@@ -720,7 +763,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
           Value<int?> planId = const Value.absent(),
           double? reps,
           Value<int?> restMs = const Value.absent(),
+          int? sequence,
           String? unit,
+          bool? warmup,
           double? weight,
           Value<int?> workoutId = const Value.absent()}) =>
       GymSet(
@@ -739,7 +784,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
         planId: planId.present ? planId.value : this.planId,
         reps: reps ?? this.reps,
         restMs: restMs.present ? restMs.value : this.restMs,
+        sequence: sequence ?? this.sequence,
         unit: unit ?? this.unit,
+        warmup: warmup ?? this.warmup,
         weight: weight ?? this.weight,
         workoutId: workoutId.present ? workoutId.value : this.workoutId,
       );
@@ -761,7 +808,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
       planId: data.planId.present ? data.planId.value : this.planId,
       reps: data.reps.present ? data.reps.value : this.reps,
       restMs: data.restMs.present ? data.restMs.value : this.restMs,
+      sequence: data.sequence.present ? data.sequence.value : this.sequence,
       unit: data.unit.present ? data.unit.value : this.unit,
+      warmup: data.warmup.present ? data.warmup.value : this.warmup,
       weight: data.weight.present ? data.weight.value : this.weight,
       workoutId: data.workoutId.present ? data.workoutId.value : this.workoutId,
     );
@@ -785,7 +834,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
           ..write('planId: $planId, ')
           ..write('reps: $reps, ')
           ..write('restMs: $restMs, ')
+          ..write('sequence: $sequence, ')
           ..write('unit: $unit, ')
+          ..write('warmup: $warmup, ')
           ..write('weight: $weight, ')
           ..write('workoutId: $workoutId')
           ..write(')'))
@@ -809,7 +860,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
       planId,
       reps,
       restMs,
+      sequence,
       unit,
+      warmup,
       weight,
       workoutId);
   @override
@@ -831,7 +884,9 @@ class GymSet extends DataClass implements Insertable<GymSet> {
           other.planId == this.planId &&
           other.reps == this.reps &&
           other.restMs == this.restMs &&
+          other.sequence == this.sequence &&
           other.unit == this.unit &&
+          other.warmup == this.warmup &&
           other.weight == this.weight &&
           other.workoutId == this.workoutId);
 }
@@ -852,7 +907,9 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
   final Value<int?> planId;
   final Value<double> reps;
   final Value<int?> restMs;
+  final Value<int> sequence;
   final Value<String> unit;
+  final Value<bool> warmup;
   final Value<double> weight;
   final Value<int?> workoutId;
   const GymSetsCompanion({
@@ -871,7 +928,9 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
     this.planId = const Value.absent(),
     this.reps = const Value.absent(),
     this.restMs = const Value.absent(),
+    this.sequence = const Value.absent(),
     this.unit = const Value.absent(),
+    this.warmup = const Value.absent(),
     this.weight = const Value.absent(),
     this.workoutId = const Value.absent(),
   });
@@ -891,7 +950,9 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
     this.planId = const Value.absent(),
     required double reps,
     this.restMs = const Value.absent(),
+    this.sequence = const Value.absent(),
     required String unit,
+    this.warmup = const Value.absent(),
     required double weight,
     this.workoutId = const Value.absent(),
   })  : created = Value(created),
@@ -915,7 +976,9 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
     Expression<int>? planId,
     Expression<double>? reps,
     Expression<int>? restMs,
+    Expression<int>? sequence,
     Expression<String>? unit,
+    Expression<bool>? warmup,
     Expression<double>? weight,
     Expression<int>? workoutId,
   }) {
@@ -935,7 +998,9 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
       if (planId != null) 'plan_id': planId,
       if (reps != null) 'reps': reps,
       if (restMs != null) 'rest_ms': restMs,
+      if (sequence != null) 'sequence': sequence,
       if (unit != null) 'unit': unit,
+      if (warmup != null) 'warmup': warmup,
       if (weight != null) 'weight': weight,
       if (workoutId != null) 'workout_id': workoutId,
     });
@@ -957,7 +1022,9 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
       Value<int?>? planId,
       Value<double>? reps,
       Value<int?>? restMs,
+      Value<int>? sequence,
       Value<String>? unit,
+      Value<bool>? warmup,
       Value<double>? weight,
       Value<int?>? workoutId}) {
     return GymSetsCompanion(
@@ -976,7 +1043,9 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
       planId: planId ?? this.planId,
       reps: reps ?? this.reps,
       restMs: restMs ?? this.restMs,
+      sequence: sequence ?? this.sequence,
       unit: unit ?? this.unit,
+      warmup: warmup ?? this.warmup,
       weight: weight ?? this.weight,
       workoutId: workoutId ?? this.workoutId,
     );
@@ -1030,8 +1099,14 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
     if (restMs.present) {
       map['rest_ms'] = Variable<int>(restMs.value);
     }
+    if (sequence.present) {
+      map['sequence'] = Variable<int>(sequence.value);
+    }
     if (unit.present) {
       map['unit'] = Variable<String>(unit.value);
+    }
+    if (warmup.present) {
+      map['warmup'] = Variable<bool>(warmup.value);
     }
     if (weight.present) {
       map['weight'] = Variable<double>(weight.value);
@@ -1060,7 +1135,9 @@ class GymSetsCompanion extends UpdateCompanion<GymSet> {
           ..write('planId: $planId, ')
           ..write('reps: $reps, ')
           ..write('restMs: $restMs, ')
+          ..write('sequence: $sequence, ')
           ..write('unit: $unit, ')
+          ..write('warmup: $warmup, ')
           ..write('weight: $weight, ')
           ..write('workoutId: $workoutId')
           ..write(')'))
@@ -3774,7 +3851,9 @@ typedef $$GymSetsTableCreateCompanionBuilder = GymSetsCompanion Function({
   Value<int?> planId,
   required double reps,
   Value<int?> restMs,
+  Value<int> sequence,
   required String unit,
+  Value<bool> warmup,
   required double weight,
   Value<int?> workoutId,
 });
@@ -3794,7 +3873,9 @@ typedef $$GymSetsTableUpdateCompanionBuilder = GymSetsCompanion Function({
   Value<int?> planId,
   Value<double> reps,
   Value<int?> restMs,
+  Value<int> sequence,
   Value<String> unit,
+  Value<bool> warmup,
   Value<double> weight,
   Value<int?> workoutId,
 });
@@ -3874,8 +3955,14 @@ class $$GymSetsTableFilterComposer
   ColumnFilters<int> get restMs => $composableBuilder(
       column: $table.restMs, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<int> get sequence => $composableBuilder(
+      column: $table.sequence, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<String> get unit => $composableBuilder(
       column: $table.unit, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get warmup => $composableBuilder(
+      column: $table.warmup, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<double> get weight => $composableBuilder(
       column: $table.weight, builder: (column) => ColumnFilters(column));
@@ -3959,8 +4046,14 @@ class $$GymSetsTableOrderingComposer
   ColumnOrderings<int> get restMs => $composableBuilder(
       column: $table.restMs, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get sequence => $composableBuilder(
+      column: $table.sequence, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get unit => $composableBuilder(
       column: $table.unit, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get warmup => $composableBuilder(
+      column: $table.warmup, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<double> get weight => $composableBuilder(
       column: $table.weight, builder: (column) => ColumnOrderings(column));
@@ -4023,8 +4116,14 @@ class $$GymSetsTableAnnotationComposer
   GeneratedColumn<int> get restMs =>
       $composableBuilder(column: $table.restMs, builder: (column) => column);
 
+  GeneratedColumn<int> get sequence =>
+      $composableBuilder(column: $table.sequence, builder: (column) => column);
+
   GeneratedColumn<String> get unit =>
       $composableBuilder(column: $table.unit, builder: (column) => column);
+
+  GeneratedColumn<bool> get warmup =>
+      $composableBuilder(column: $table.warmup, builder: (column) => column);
 
   GeneratedColumn<double> get weight =>
       $composableBuilder(column: $table.weight, builder: (column) => column);
@@ -4092,7 +4191,9 @@ class $$GymSetsTableTableManager extends RootTableManager<
             Value<int?> planId = const Value.absent(),
             Value<double> reps = const Value.absent(),
             Value<int?> restMs = const Value.absent(),
+            Value<int> sequence = const Value.absent(),
             Value<String> unit = const Value.absent(),
+            Value<bool> warmup = const Value.absent(),
             Value<double> weight = const Value.absent(),
             Value<int?> workoutId = const Value.absent(),
           }) =>
@@ -4112,7 +4213,9 @@ class $$GymSetsTableTableManager extends RootTableManager<
             planId: planId,
             reps: reps,
             restMs: restMs,
+            sequence: sequence,
             unit: unit,
+            warmup: warmup,
             weight: weight,
             workoutId: workoutId,
           ),
@@ -4132,7 +4235,9 @@ class $$GymSetsTableTableManager extends RootTableManager<
             Value<int?> planId = const Value.absent(),
             required double reps,
             Value<int?> restMs = const Value.absent(),
+            Value<int> sequence = const Value.absent(),
             required String unit,
+            Value<bool> warmup = const Value.absent(),
             required double weight,
             Value<int?> workoutId = const Value.absent(),
           }) =>
@@ -4152,7 +4257,9 @@ class $$GymSetsTableTableManager extends RootTableManager<
             planId: planId,
             reps: reps,
             restMs: restMs,
+            sequence: sequence,
             unit: unit,
+            warmup: warmup,
             weight: weight,
             workoutId: workoutId,
           ),
