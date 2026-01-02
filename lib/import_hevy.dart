@@ -20,6 +20,7 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'flat bench press (dumbbell)': ('Dumbbell bench press', 'Chest'),
   'incline bench press (barbell)': ('Incline bench press', 'Chest'),
   'incline bench press (dumbbell)': ('Incline bench press', 'Chest'),
+  'incline chest press (machine)': ('Incline chest press (Machine)', 'Chest'),
   'decline bench press (barbell)': ('Decline bench press', 'Chest'),
   'decline bench press (dumbbell)': ('Decline bench press', 'Chest'),
   'chest press (machine)': ('Chest press (Machine)', 'Chest'),
@@ -37,6 +38,7 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'dips': ('Triceps dip', 'Chest'),
   'dip': ('Triceps dip', 'Chest'),
   'chest dip': ('Triceps dip', 'Chest'),
+  'seated dip machine': ('Seated dip (Machine)', 'Chest'),
 
   // Back exercises
   'deadlift (barbell)': ('Deadlift', 'Back'),
@@ -58,6 +60,8 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'pull-up': ('Pull-up', 'Back'),
   'pullup': ('Pull-up', 'Back'),
   'pull ups': ('Pull-up', 'Back'),
+  'pull up (assisted)': ('Assisted pull-up', 'Back'),
+  'assisted pull up': ('Assisted pull-up', 'Back'),
   'chin up': ('Chin-up', 'Back'),
   'chin-up': ('Chin-up', 'Back'),
   'chinup': ('Chin-up', 'Back'),
@@ -88,11 +92,13 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'shoulder press (barbell)': ('Barbell shoulder press', 'Shoulders'),
   'shoulder press (dumbbell)': ('Dumbbell shoulder press', 'Shoulders'),
   'shoulder press (machine)': ('Shoulder press (Machine)', 'Shoulders'),
+  'seated overhead press (barbell)': ('Barbell shoulder press', 'Shoulders'),
   'arnold press': ('Arnold press', 'Shoulders'),
   'arnold press (dumbbell)': ('Arnold press', 'Shoulders'),
   'lateral raise': ('Dumbbell lateral raise', 'Shoulders'),
   'lateral raise (dumbbell)': ('Dumbbell lateral raise', 'Shoulders'),
   'lateral raise (cable)': ('Cable lateral raise', 'Shoulders'),
+  'lateral raise (machine)': ('Lateral raise (Machine)', 'Shoulders'),
   'side lateral raise': ('Dumbbell lateral raise', 'Shoulders'),
   'cable lateral raise': ('Cable lateral raise', 'Shoulders'),
   'front raise': ('Front raise', 'Shoulders'),
@@ -109,6 +115,7 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'dumbbell shrug': ('Dumbbell shrug', 'Shoulders'),
   'upright row': ('Upright row', 'Shoulders'),
   'upright row (barbell)': ('Upright row', 'Shoulders'),
+  'upright row (dumbbell)': ('Upright row', 'Shoulders'),
 
   // Arms - Biceps
   'bicep curl (barbell)': ('Barbell biceps curl', 'Arms'),
@@ -155,12 +162,14 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'goblet squat': ('Goblet squat', 'Legs'),
   'leg press': ('Leg press', 'Legs'),
   'leg press (machine)': ('Leg press', 'Legs'),
+  'leg press horizontal (machine)': ('Leg press', 'Legs'),
   'leg extension': ('Leg extension', 'Legs'),
   'leg extension (machine)': ('Leg extension', 'Legs'),
   'leg curl': ('Leg curl', 'Legs'),
   'leg curl (machine)': ('Leg curl', 'Legs'),
   'lying leg curl': ('Leg curl', 'Legs'),
   'seated leg curl': ('Leg curl', 'Legs'),
+  'seated leg curl (machine)': ('Leg curl', 'Legs'),
   'lunge': ('Lunge', 'Legs'),
   'lunge (barbell)': ('Lunge', 'Legs'),
   'lunge (dumbbell)': ('Lunge', 'Legs'),
@@ -361,7 +370,8 @@ class ImportHevy extends StatelessWidget {
       final repsIdx = _findColumnIndex(headers, ['reps', 'repetitions']);
       final distanceIdx = _findColumnIndex(headers, ['distance_km', 'distance_m', 'distance (km)', 'distance']);
       final durationIdx = _findColumnIndex(headers, ['duration_seconds', 'duration_s', 'duration']);
-      final notesIdx = _findColumnIndex(headers, ['notes', 'note', 'set_notes']);
+      final notesIdx = _findColumnIndex(headers, ['exercise_notes', 'notes', 'note', 'set_notes']);
+      final setTypeIdx = _findColumnIndex(headers, ['set_type', 'type']);
 
       if (exerciseIdx == -1) {
         throw Exception('Could not find exercise column in CSV. Expected columns: exercise_title, exercise_name, or exercise');
@@ -455,6 +465,13 @@ class ImportHevy extends StatelessWidget {
           if (noteStr.isNotEmpty) notes = noteStr;
         }
 
+        // Parse set type (warmup, normal, dropset)
+        bool isWarmup = false;
+        if (setTypeIdx != -1 && row.elementAtOrNull(setTypeIdx) != null) {
+          final setType = row[setTypeIdx].toString().toLowerCase();
+          isWarmup = setType == 'warmup';
+        }
+
         // Determine if cardio
         final isCardio = distance > 0 || duration > 0 && weight == 0 && reps == 0;
 
@@ -472,6 +489,7 @@ class ImportHevy extends StatelessWidget {
             notes: Value(notes),
             hidden: const Value(false),
             workoutId: Value(currentWorkoutId),
+            warmup: Value(isWarmup),
           ),
         );
       }
@@ -526,7 +544,7 @@ class ImportHevy extends StatelessWidget {
   DateTime _parseHevyDate(String dateStr) {
     // Try common Hevy date formats
     // Format 1: "2024-01-15 10:30:00"
-    // Format 2: "15 Jan 2024, 10:30 AM"
+    // Format 2: "31 Dec 2025, 14:59" (actual Hevy format)
     // Format 3: "Jan 15, 2024 10:30:00"
     // Format 4: ISO 8601
 
@@ -534,11 +552,31 @@ class ImportHevy extends StatelessWidget {
       return DateTime.parse(dateStr);
     } catch (_) {}
 
+    // Month name mapping
+    const months = {
+      'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+      'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+    };
+
+    // Try Hevy format: "31 Dec 2025, 14:59"
+    final hevyPattern = RegExp(r'(\d{1,2})\s+(\w{3})\s+(\d{4}),?\s+(\d{1,2}):(\d{2})');
+    final hevyMatch = hevyPattern.firstMatch(dateStr);
+    if (hevyMatch != null) {
+      try {
+        final day = int.parse(hevyMatch.group(1)!);
+        final monthStr = hevyMatch.group(2)!.toLowerCase();
+        final year = int.parse(hevyMatch.group(3)!);
+        final hour = int.parse(hevyMatch.group(4)!);
+        final minute = int.parse(hevyMatch.group(5)!);
+        final month = months[monthStr] ?? 1;
+        return DateTime(year, month, day, hour, minute);
+      } catch (_) {}
+    }
+
     // Try other formats
     final patterns = [
       RegExp(r'(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})'),
-      RegExp(r'(\d{2})\s+(\w{3})\s+(\d{4})'),
-      RegExp(r'(\w{3})\s+(\d{2}),?\s+(\d{4})'),
+      RegExp(r'(\w{3})\s+(\d{1,2}),?\s+(\d{4})\s+(\d{1,2}):(\d{2})'),
     ];
 
     for (final pattern in patterns) {
@@ -550,6 +588,16 @@ class ImportHevy extends StatelessWidget {
               int.parse(match.group(1)!),
               int.parse(match.group(2)!),
               int.parse(match.group(3)!),
+              int.parse(match.group(4)!),
+              int.parse(match.group(5)!),
+            );
+          } else if (pattern == patterns[1]) {
+            final monthStr = match.group(1)!.toLowerCase();
+            final month = months[monthStr] ?? 1;
+            return DateTime(
+              int.parse(match.group(3)!),
+              month,
+              int.parse(match.group(2)!),
               int.parse(match.group(4)!),
               int.parse(match.group(5)!),
             );
