@@ -448,62 +448,65 @@ class _OverviewPageState extends State<OverviewPage> {
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: List.generate(7, (dayOfWeek) {
-          return Row(
-            children: [
-              SizedBox(
-                width: 30,
-                child: Text(
-                  ['M', 'T', 'W', 'T', 'F', 'S', 'S'][dayOfWeek],
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: List.generate(7, (dayOfWeek) {
+            return Row(
+              children: [
+                SizedBox(
+                  width: 30,
+                  child: Text(
+                    ['M', 'T', 'W', 'T', 'F', 'S', 'S'][dayOfWeek],
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-              ...List.generate(weeks, (week) {
-                final date = startDate.add(
-                  Duration(
-                    days: week * 7 + dayOfWeek,
-                  ),
-                );
-
-                if (date.isAfter(now)) {
-                  return const Padding(
-                    padding: EdgeInsets.all(2),
-                    child: SizedBox(width: 14, height: 14),
+                ...List.generate(weeks, (week) {
+                  final date = startDate.add(
+                    Duration(
+                      days: week * 7 + dayOfWeek,
+                    ),
                   );
-                }
 
-                final normalizedDate =
-                    DateTime(date.year, date.month, date.day);
-                final count = trainingDays[normalizedDate] ?? 0;
+                  if (date.isAfter(now)) {
+                    return const Padding(
+                      padding: EdgeInsets.all(2),
+                      child: SizedBox(width: 14, height: 14),
+                    );
+                  }
 
-                return Padding(
-                  padding: const EdgeInsets.all(2),
-                  child: Tooltip(
-                    message: '${DateFormat('MMM d').format(date)}\n$count sets',
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: _getHeatmapColor(colorScheme, count),
-                        borderRadius: BorderRadius.circular(2),
-                        border: Border.all(
-                          color: colorScheme.outline.withValues(alpha: 0.2),
-                          width: 0.5,
+                  final normalizedDate =
+                      DateTime(date.year, date.month, date.day);
+                  final count = trainingDays[normalizedDate] ?? 0;
+
+                  return Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: Tooltip(
+                      message: '${DateFormat('MMM d').format(date)}\n$count sets',
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: _getHeatmapColor(colorScheme, count),
+                          borderRadius: BorderRadius.circular(2),
+                          border: Border.all(
+                            color: colorScheme.outline.withValues(alpha: 0.2),
+                            width: 0.5,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              }),
-            ],
-          );
-        }),
+                  );
+                }),
+              ],
+            );
+          }),
+        ),
       ),
     );
   }

@@ -48,7 +48,6 @@ class _AddExercisePageState extends State<AddExercisePage> {
     'Hamstrings',
     'Glutes',
     'Calves',
-    'Full Body',
   ];
 
   @override

@@ -46,7 +46,6 @@ class _EditGraphPageState extends State<EditGraphPage> {
     'Hamstrings',
     'Glutes',
     'Calves',
-    'Full Body',
   ];
 
   final List<({String value, String label, IconData icon})> exerciseTypes = [

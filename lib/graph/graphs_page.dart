@@ -394,39 +394,47 @@ class GraphsPageState extends State<GraphsPage>
   }
 
   Future<void> _addDebugWorkouts() async {
-    // Diverse exercises with different categories and rep ranges
+    // Diverse exercises with proper muscle group categories
     final exerciseGroups = [
-      // Strength exercises (lower reps, higher weight)
+      // Chest exercises
       {
-        'exercises': ['Bench Press', 'Squat', 'Deadlift'],
-        'category': 'Strength',
-        'repRanges': [3, 4, 5],
+        'exercises': ['Bench Press', 'Incline Dumbbell Press', 'Cable Flyes'],
+        'categories': ['Chest', 'Chest', 'Chest'],
+        'repRanges': [5, 8, 12],
         'baseWeight': 100.0,
         'weightIncrement': 5.0,
       },
-      // Hypertrophy exercises (moderate reps, moderate weight)
+      // Back exercises
       {
-        'exercises': ['Dumbbell Press', 'Leg Press', 'Romanian Deadlift'],
-        'category': 'Hypertrophy',
-        'repRanges': [8, 10, 12],
-        'baseWeight': 40.0,
+        'exercises': ['Deadlift', 'Pull-ups', 'Barbell Row'],
+        'categories': ['Back', 'Back', 'Back'],
+        'repRanges': [5, 8, 10],
+        'baseWeight': 80.0,
+        'weightIncrement': 5.0,
+      },
+      // Leg exercises
+      {
+        'exercises': ['Squat', 'Leg Press', 'Romanian Deadlift'],
+        'categories': ['Quads', 'Quads', 'Hamstrings'],
+        'repRanges': [5, 10, 10],
+        'baseWeight': 100.0,
+        'weightIncrement': 5.0,
+      },
+      // Shoulder exercises
+      {
+        'exercises': ['Overhead Press', 'Lateral Raises', 'Face Pulls'],
+        'categories': ['Shoulders', 'Shoulders', 'Shoulders'],
+        'repRanges': [6, 12, 15],
+        'baseWeight': 50.0,
         'weightIncrement': 2.5,
       },
-      // Endurance exercises (higher reps, lower weight)
+      // Arm exercises
       {
-        'exercises': ['Push-ups', 'Lunges', 'Face Pulls'],
-        'category': 'Endurance',
-        'repRanges': [12, 15, 20],
+        'exercises': ['Bicep Curls', 'Tricep Extensions', 'Hammer Curls'],
+        'categories': ['Biceps', 'Triceps', 'Biceps'],
+        'repRanges': [10, 12, 10],
         'baseWeight': 15.0,
         'weightIncrement': 1.25,
-      },
-      // Accessory exercises (varied reps)
-      {
-        'exercises': ['Bicep Curls', 'Tricep Extensions', 'Lateral Raises'],
-        'category': 'Accessories',
-        'repRanges': [10, 12, 15],
-        'baseWeight': 10.0,
-        'weightIncrement': 1.0,
       },
     ];
 
@@ -467,6 +475,7 @@ class GraphsPageState extends State<GraphsPage>
             exerciseIndex < (group['exercises'] as List).length;
             exerciseIndex++) {
           final exerciseName = (group['exercises'] as List)[exerciseIndex];
+          final exerciseCategory = (group['categories'] as List)[exerciseIndex];
           final repRanges = group['repRanges'] as List<int>;
           final baseWeight = group['baseWeight'] as double;
           final weightIncrement = group['weightIncrement'] as double;
@@ -494,7 +503,7 @@ class GraphsPageState extends State<GraphsPage>
                   seconds: setNum * 10,
                 )),
                 workoutId: Value(workoutId),
-                category: Value(group['category'] as String),
+                category: Value(exerciseCategory),
               ),
             );
             totalSets++;
@@ -503,17 +512,21 @@ class GraphsPageState extends State<GraphsPage>
 
         // Add some one-rep max attempts occasionally
         if (workoutCount % 5 == 0 && monthOffset < 3) {
-          final heavyExercises = ['Bench Press', 'Squat', 'Deadlift'];
+          final heavyExercises = [
+            {'name': 'Bench Press', 'category': 'Chest'},
+            {'name': 'Squat', 'category': 'Quads'},
+            {'name': 'Deadlift', 'category': 'Back'},
+          ];
           for (var i = 0; i < heavyExercises.length; i++) {
             await db.gymSets.insertOne(
               GymSetsCompanion.insert(
-                name: heavyExercises[i],
+                name: heavyExercises[i]['name']!,
                 reps: 1.0,
                 weight: 120.0 + (progressMultiplier * 5.0) + (i * 10.0),
                 unit: 'kg',
                 created: workoutDate.add(Duration(minutes: 60 + i * 10)),
                 workoutId: Value(workoutId),
-                category: Value('Strength'),
+                category: Value(heavyExercises[i]['category']!),
               ),
             );
             totalSets++;
@@ -528,7 +541,7 @@ class GraphsPageState extends State<GraphsPage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-              'Added $workoutCount workouts with $totalSets sets across ${exerciseGroups.length * 3} exercises'),
+              'Added $workoutCount workouts with $totalSets sets across 15 exercises with proper muscle groups'),
           duration: const Duration(seconds: 3),
         ),
       );
