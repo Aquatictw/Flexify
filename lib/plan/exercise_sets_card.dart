@@ -65,6 +65,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
   double _defaultWeight = 0.0;
   int _defaultReps = 8;
   String? _brandName;
+  String? _exerciseType;
 
   @override
   void initState() {
@@ -97,6 +98,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     _defaultReps = lastSet?.reps.toInt() ?? 8;
     final defaultUnit = lastSet?.unit ?? settings.strengthUnit;
     _brandName = lastSet?.brandName;
+    _exerciseType = lastSet?.exerciseType;
 
     // Get ALL sets (including uncompleted/hidden ones) in this workout for this specific exercise instance
     List<GymSet> existingSets = [];
@@ -147,6 +149,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               workoutId: Value(widget.workoutId),
               sequence: Value(widget.sequence),
               hidden: const Value(true), // Uncompleted
+              brandName: Value(_brandName),
+              exerciseType: Value(_exerciseType),
             ),
           );
           newSets.add(SetData(
@@ -391,6 +395,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               notes: Value(widget.exerciseNotes ?? ''),
               hidden: const Value(false),
               warmup: Value(setData.isWarmup),
+              brandName: Value(_brandName),
+              exerciseType: Value(_exerciseType),
             ),
           );
 
@@ -469,6 +475,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           notes: Value(widget.exerciseNotes ?? ''),
           hidden: const Value(true),
           warmup: Value(isWarmup),
+          brandName: Value(_brandName),
+          exerciseType: Value(_exerciseType),
         ),
       );
 

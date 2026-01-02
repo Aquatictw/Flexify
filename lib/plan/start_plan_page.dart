@@ -820,7 +820,7 @@ class _ExercisePickerModal extends StatefulWidget {
 
 class _ExercisePickerModalState extends State<_ExercisePickerModal> {
   String _search = '';
-  List<String> _allExercises = [];
+  List<({String name, String? brandName})> _allExercises = [];
   bool _loading = true;
 
   @override
@@ -830,23 +830,29 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
   }
 
   Future<void> _loadExercises() async {
-    // Get distinct exercise names from gym_sets
-    final sets = await db.gymSets.select().get();
-    final exerciseNames = sets.map((s) => s.name).toSet().toList();
-    exerciseNames.sort();
+    // Get distinct exercise names with brand names from gym_sets
+    final results = await (db.gymSets.selectOnly(distinct: true)
+          ..addColumns([db.gymSets.name, db.gymSets.brandName])
+          ..orderBy([OrderingTerm(expression: db.gymSets.name, mode: OrderingMode.asc)]))
+        .get();
+
+    final exerciseList = results.map((r) => (
+      name: r.read(db.gymSets.name)!,
+      brandName: r.read(db.gymSets.brandName),
+    )).toList();
 
     if (mounted) {
       setState(() {
-        _allExercises = exerciseNames;
+        _allExercises = exerciseList;
         _loading = false;
       });
     }
   }
 
-  List<String> get _filteredExercises {
+  List<({String name, String? brandName})> get _filteredExercises {
     if (_search.isEmpty) return _allExercises;
     return _allExercises
-        .where((e) => e.toLowerCase().contains(_search.toLowerCase()))
+        .where((e) => e.name.toLowerCase().contains(_search.toLowerCase()))
         .toList();
   }
 
@@ -962,17 +968,41 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                                 color: colorScheme.primary,
                               ),
                             ),
-                            title: Text(
-                              exercise,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                              ),
+                            title: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    exercise.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                if (exercise.brandName != null && exercise.brandName!.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      exercise.brandName!,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
+                                        color: colorScheme.onSecondaryContainer,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             trailing: Icon(
                               Icons.add_circle_outline,
                               color: colorScheme.primary,
                             ),
-                            onTap: () => Navigator.pop(context, exercise),
+                            onTap: () => Navigator.pop(context, exercise.name),
                           );
                         },
                       ),
@@ -1015,6 +1045,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
   String unit = 'kg';
   double _defaultWeight = 0.0;
   int _defaultReps = 8;
+  String? _brandName;
+  String? _exerciseType;
 
   @override
   void initState() {
@@ -1037,6 +1069,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     _defaultWeight = lastSet?.weight ?? 0.0;
     _defaultReps = lastSet?.reps.toInt() ?? 8;
     final defaultUnit = lastSet?.unit ?? settings.strengthUnit;
+    _brandName = lastSet?.brandName;
+    _exerciseType = lastSet?.exerciseType;
 
     // Get ALL sets (including uncompleted/hidden ones) in this workout for this specific exercise instance
     List<GymSet> existingSets = [];
@@ -1086,6 +1120,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               workoutId: Value(widget.workoutId),
               sequence: Value(widget.sequence),
               hidden: const Value(true), // Uncompleted
+              brandName: Value(_brandName),
+              exerciseType: Value(_exerciseType),
             ),
           );
           newSets.add(SetData(
@@ -1273,6 +1309,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               notes: Value(widget.exerciseNotes ?? ''),
               hidden: const Value(false),
               warmup: Value(setData.isWarmup),
+              brandName: Value(_brandName),
+              exerciseType: Value(_exerciseType),
             ),
           );
 
@@ -1338,6 +1376,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
           notes: Value(widget.exerciseNotes ?? ''),
           hidden: const Value(true),
           warmup: Value(isWarmup),
+          brandName: Value(_brandName),
+          exerciseType: Value(_exerciseType),
         ),
       );
 
@@ -1437,11 +1477,35 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          widget.exerciseName,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                widget.exerciseName,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                               ),
+                            ),
+                            if (_brandName != null && _brandName!.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  _brandName!,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    color: colorScheme.onSecondaryContainer,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         // Exercise notes preview
                         if (widget.exerciseNotes?.isNotEmpty == true) ...[
