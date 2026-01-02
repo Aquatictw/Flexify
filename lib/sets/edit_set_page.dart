@@ -31,7 +31,6 @@ class _EditSetPageState extends State<EditSetPage> {
   final reps = TextEditingController();
   final weight = TextEditingController();
   final orm = TextEditingController();
-  final body = TextEditingController();
   final distance = TextEditingController();
   final minutes = TextEditingController();
   final seconds = TextEditingController();
@@ -53,7 +52,7 @@ class _EditSetPageState extends State<EditSetPage> {
   late bool cardio;
   late String name;
 
-  void onSelected(String option, bool showBodyWeight) async {
+  void onSelected(String option) async {
     final last = await (db.gymSets.select()
           ..where((tbl) => tbl.name.equals(option) & tbl.hidden.equals(false))
           ..orderBy(
@@ -71,16 +70,7 @@ class _EditSetPageState extends State<EditSetPage> {
         name = option;
       });
 
-    if (showBodyWeight)
-      updateFields(last);
-    else {
-      final bodyWeight = await getBodyWeight();
-      updateFields(
-        last.copyWith(
-          bodyWeight: bodyWeight?.weight,
-        ),
-      );
-    }
+    updateFields(last);
 
     if (cardio) {
       distNode.requestFocus();
@@ -93,14 +83,10 @@ class _EditSetPageState extends State<EditSetPage> {
 
   @override
   Widget build(BuildContext context) {
-    final showBodyWeight = context.select<SettingsState, bool>(
-      (settings) => settings.value.showBodyWeight,
-    );
-
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: buildAppBar(),
-      body: buildBody(showBodyWeight),
+      body: buildBody(),
       floatingActionButton: buildSaveButton(),
     );
   }
@@ -153,7 +139,7 @@ class _EditSetPageState extends State<EditSetPage> {
     );
   }
 
-  Widget buildBody(bool showBodyWeight) {
+  Widget buildBody() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Form(
@@ -168,19 +154,15 @@ class _EditSetPageState extends State<EditSetPage> {
 
             return ListView(
               children: [
-                autocomplete(showBodyWeight),
+                autocomplete(),
                 const SizedBox(height: 8.0),
                 ...exerciseFields(),
                 const SizedBox(height: 8.0),
-                if (showBodyWeight && name != 'Weight') ...[
-                  bodyFields(showBodyWeight),
-                  const SizedBox(height: 8.0),
-                ],
                 if (showUnits) ...[
                   unitSelector(),
                   const SizedBox(height: 8.0),
                 ],
-                if (showCategories && name != 'Weight') ...[
+                if (showCategories) ...[
                   categorySelector(),
                   const SizedBox(height: 8.0),
                 ],
@@ -211,11 +193,11 @@ class _EditSetPageState extends State<EditSetPage> {
 
   List<Widget> buildStrengthFields() {
     return [
-      if (name != 'Weight') buildRepsField(),
+      buildRepsField(),
       SizedBox(height: 8.0),
       buildWeightField(),
       SizedBox(height: 8.0),
-      if (name != 'Weight') buildORMField(),
+      buildORMField(),
     ];
   }
 
@@ -241,7 +223,7 @@ class _EditSetPageState extends State<EditSetPage> {
     return TextFormField(
       controller: weight,
       decoration: InputDecoration(
-        labelText: name == 'Weight' ? 'Value ' : 'Weight ($unit)',
+        labelText: 'Weight ($unit)',
       ),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       onTap: () => selectAll(weight),
@@ -310,26 +292,6 @@ class _EditSetPageState extends State<EditSetPage> {
     );
   }
 
-  Widget bodyFields(bool showBodyWeight) {
-    return Visibility(
-      visible: showBodyWeight && name != 'Weight',
-      child: TextFormField(
-        controller: body,
-        decoration: InputDecoration(
-          labelText: 'Body weight ($unit)',
-        ),
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        onTap: () => selectAll(body),
-        validator: (value) {
-          if (value == null) return null;
-          if (value.isNotEmpty && double.tryParse(value) == null)
-            return 'Invalid number';
-          return null;
-        },
-      ),
-    );
-  }
-
   Widget unitSelector() {
     return Selector<SettingsState, bool>(
       builder: (context, showUnits, child) => Visibility(
@@ -353,7 +315,7 @@ class _EditSetPageState extends State<EditSetPage> {
     return Selector<SettingsState, bool>(
       selector: (context, settings) => settings.value.showCategories,
       builder: (context, showCategories, child) {
-        if (!showCategories || name == 'Weight') {
+        if (!showCategories) {
           return const SizedBox();
         }
 
@@ -529,7 +491,7 @@ class _EditSetPageState extends State<EditSetPage> {
     );
   }
 
-  material.Autocomplete<String> autocomplete(bool showBodyWeight) {
+  material.Autocomplete<String> autocomplete() {
     return Autocomplete<String>(
       optionsBuilder: (textEditingValue) {
         final searchTerms = textEditingValue.text
@@ -543,7 +505,7 @@ class _EditSetPageState extends State<EditSetPage> {
         }
         return opts;
       },
-      onSelected: (option) => onSelected(option, showBodyWeight),
+      onSelected: (option) => onSelected(option),
       initialValue: TextEditingValue(text: name),
       fieldViewBuilder: (
         BuildContext context,
@@ -580,7 +542,6 @@ class _EditSetPageState extends State<EditSetPage> {
     reps.dispose();
     repsNode.dispose();
     weight.dispose();
-    body.dispose();
     distance.dispose();
     minutes.dispose();
     incline.dispose();
@@ -625,7 +586,6 @@ class _EditSetPageState extends State<EditSetPage> {
       created: created,
       reps: double.tryParse(reps.text),
       weight: double.tryParse(weight.text),
-      bodyWeight: double.tryParse(body.text),
       distance: double.tryParse(distance.text),
       duration: (int.tryParse(seconds.text) ?? 0) / 60 +
           (int.tryParse(minutes.text) ?? 0),
@@ -763,7 +723,6 @@ class _EditSetPageState extends State<EditSetPage> {
     if (gymSet.reps != 0) reps.text = toString(gymSet.reps);
     weight.text = toString(gymSet.weight);
     setORM();
-    if (gymSet.bodyWeight != 0) body.text = toString(gymSet.bodyWeight);
     if (gymSet.duration != 0) {
       minutes.text = gymSet.duration.floor().toString();
       seconds.text = ((gymSet.duration * 60) % 60).floor().toString();

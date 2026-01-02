@@ -208,33 +208,15 @@ $version
         final reps = _parseDouble(row[2], 'reps', rows.indexOf(row) + 1);
         final weight = _parseDouble(row[3], 'weight', rows.indexOf(row) + 1);
 
-        Value<bool> hidden;
-        var bodyWeight = const Value(0.0);
+        Value<bool> hidden = const Value(false);
 
+        // Check for hidden column at position 6 or 9
         if (columns.elementAtOrNull(6) == 'hidden') {
           hidden = Value(
             row.elementAtOrNull(6) == 1.0 || row.elementAtOrNull(6) == "1",
           );
-        } else {
-          hidden = const Value(false);
-          final bodyWeightValue = row.elementAtOrNull(6);
-          if (bodyWeightValue is num) {
-            bodyWeight = Value(bodyWeightValue.toDouble());
-          } else if (bodyWeightValue is String) {
-            bodyWeight = Value(double.tryParse(bodyWeightValue) ?? 0.0);
-          }
-        }
-
-        if (columns.elementAtOrNull(7) == 'bodyWeight') {
-          final bodyWeightValue = row.elementAtOrNull(7);
-          if (bodyWeightValue != null) {
-            bodyWeight =
-                Value(double.tryParse(bodyWeightValue.toString()) ?? 0);
-          }
-        }
-
-        if (columns.elementAtOrNull(10) == 'hidden') {
-          final hiddenValue = row.elementAtOrNull(10);
+        } else if (columns.elementAtOrNull(9) == 'hidden') {
+          final hiddenValue = row.elementAtOrNull(9);
           if (hiddenValue != null) {
             hidden = Value(hiddenValue.toString().toLowerCase() == 'true');
           }
@@ -247,30 +229,23 @@ $version
           created: Value(parseDate(row[4])),
           unit: Value(row[5]?.toString() ?? ''),
           hidden: hidden,
-          bodyWeight: bodyWeight,
-          duration: columns.elementAtOrNull(7) == 'duration'
+          duration: columns.elementAtOrNull(6) == 'duration'
+              ? Value(double.tryParse(row[6]?.toString() ?? '0') ?? 0)
+              : const Value(0),
+          distance: columns.elementAtOrNull(7) == 'distance'
               ? Value(double.tryParse(row[7]?.toString() ?? '0') ?? 0)
               : const Value(0),
-          distance: columns.elementAtOrNull(8) == 'distance'
-              ? Value(double.tryParse(row[8]?.toString() ?? '0') ?? 0)
-              : const Value(0),
-          cardio: columns.elementAtOrNull(9) == 'cardio'
-              ? Value(parseBool(row[9]))
+          cardio: columns.elementAtOrNull(8) == 'cardio'
+              ? Value(parseBool(row[8]))
               : const Value(false),
-          incline: columns.elementAtOrNull(11) == 'incline'
-              ? Value(int.tryParse(row[11]?.toString() ?? ''))
+          incline: columns.elementAtOrNull(10) == 'incline'
+              ? Value(int.tryParse(row[10]?.toString() ?? ''))
               : const Value(null),
         );
       });
 
       await db.gymSets.deleteAll();
       await db.gymSets.insertAll(gymSets);
-
-      final weightSet = await getBodyWeight();
-      if (weightSet != null) {
-        (db.gymSets.update()..where((tbl) => tbl.bodyWeight.equals(0)))
-            .write(GymSetsCompanion(bodyWeight: Value(weightSet.weight)));
-      }
 
       if (!ctx.mounted) return;
       Navigator.pop(ctx);

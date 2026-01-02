@@ -108,8 +108,6 @@ class _StrengthPageState extends State<StrengthPage> {
         return 'Best Volume';
       case StrengthMetric.oneRepMax:
         return '1RM';
-      case StrengthMetric.relativeStrength:
-        return 'Relative';
       case StrengthMetric.volume:
         return 'Volume';
     }
@@ -210,17 +208,14 @@ class _StrengthPageState extends State<StrengthPage> {
             const SizedBox(height: 8),
 
             // Metric selector chips
-            if (name != 'Weight')
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    StrengthMetric.bestWeight,
-                    StrengthMetric.bestVolume,
-                    StrengthMetric.oneRepMax,
-                    if (settings.showBodyWeight)
-                      StrengthMetric.relativeStrength,
-                  ].map((m) {
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  StrengthMetric.bestWeight,
+                  StrengthMetric.bestVolume,
+                  StrengthMetric.oneRepMax,
+                ].map((m) {
                     final isSelected = metric == m;
                     return Padding(
                       padding: const EdgeInsets.only(right: 6),

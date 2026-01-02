@@ -1,8 +1,5 @@
 import 'package:flexify/settings/settings_page.dart';
-import 'package:flexify/settings/settings_state.dart';
-import 'package:flexify/weight_page.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class AppSearch extends StatefulWidget {
   final Set<dynamic> selected;
@@ -133,115 +130,96 @@ class _AppSearchState extends State<AppSearch> {
             count: widget.selected.length,
             isLabelVisible: widget.selected.isNotEmpty,
             backgroundColor: Theme.of(context).colorScheme.primary,
-            child: Selector<SettingsState, bool>(
-              selector: (p0, settings) => settings.value.showBodyWeight,
-              builder: (context, showBodyWeight, child) => IconButton(
-                icon: const Icon(Icons.more_vert),
-                tooltip: "Show menu",
-                onPressed: () async {
-                  final RenderBox button =
-                      context.findRenderObject() as RenderBox;
-                  final RenderBox overlay = Navigator.of(context)
-                      .overlay!
-                      .context
-                      .findRenderObject() as RenderBox;
-                  final RelativeRect position = RelativeRect.fromRect(
-                    Rect.fromPoints(
-                      button.localToGlobal(Offset.zero, ancestor: overlay),
-                      button.localToGlobal(
-                        button.size.bottomRight(Offset.zero),
-                        ancestor: overlay,
-                      ),
+            child: IconButton(
+              icon: const Icon(Icons.more_vert),
+              tooltip: "Show menu",
+              onPressed: () async {
+                final RenderBox button =
+                    context.findRenderObject() as RenderBox;
+                final RenderBox overlay = Navigator.of(context)
+                    .overlay!
+                    .context
+                    .findRenderObject() as RenderBox;
+                final RelativeRect position = RelativeRect.fromRect(
+                  Rect.fromPoints(
+                    button.localToGlobal(Offset.zero, ancestor: overlay),
+                    button.localToGlobal(
+                      button.size.bottomRight(Offset.zero),
+                      ancestor: overlay,
                     ),
-                    Offset.zero & overlay.size,
-                  );
+                  ),
+                  Offset.zero & overlay.size,
+                );
 
-                  await showMenu(
-                    context: context,
-                    position: position,
-                    items: [
-                      if (widget.selected.isEmpty && widget.onAdd != null)
-                        PopupMenuItem(
-                          child: ListTile(
-                            leading: const Icon(Icons.add),
-                            title: const Text('Add'),
-                            onTap: () {
-                              Navigator.pop(context);
-                              widget.onAdd!();
-                            },
-                          ),
-                        ),
+                await showMenu(
+                  context: context,
+                  position: position,
+                  items: [
+                    if (widget.selected.isEmpty && widget.onAdd != null)
                       PopupMenuItem(
                         child: ListTile(
-                          leading: const Icon(Icons.done_all),
-                          title: const Text('Select all'),
+                          leading: const Icon(Icons.add),
+                          title: const Text('Add'),
                           onTap: () {
                             Navigator.pop(context);
-                            widget.onSelect();
+                            widget.onAdd!();
                           },
                         ),
                       ),
-                      if (widget.selected.isNotEmpty) ...[
-                        PopupMenuItem(
-                          child: ListTile(
-                            leading: const Icon(Icons.edit),
-                            title: const Text('Edit'),
-                            onTap: () async {
-                              await widget.onEdit();
-                              if (!context.mounted) return;
-                              Navigator.pop(context);
-                            },
-                          ),
+                    PopupMenuItem(
+                      child: ListTile(
+                        leading: const Icon(Icons.done_all),
+                        title: const Text('Select all'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          widget.onSelect();
+                        },
+                      ),
+                    ),
+                    if (widget.selected.isNotEmpty) ...[
+                      PopupMenuItem(
+                        child: ListTile(
+                          leading: const Icon(Icons.edit),
+                          title: const Text('Edit'),
+                          onTap: () async {
+                            await widget.onEdit();
+                            if (!context.mounted) return;
+                            Navigator.pop(context);
+                          },
                         ),
-                        PopupMenuItem(
-                          child: ListTile(
-                            leading: const Icon(Icons.share),
-                            title: const Text('Share'),
-                            onTap: () async {
-                              await widget.onShare();
-                              if (!context.mounted) return;
-                              Navigator.pop(context);
-                            },
-                          ),
+                      ),
+                      PopupMenuItem(
+                        child: ListTile(
+                          leading: const Icon(Icons.share),
+                          title: const Text('Share'),
+                          onTap: () async {
+                            await widget.onShare();
+                            if (!context.mounted) return;
+                            Navigator.pop(context);
+                          },
                         ),
-                      ],
-                      if (widget.selected.isEmpty && showBodyWeight)
-                        PopupMenuItem(
-                          child: ListTile(
-                            leading: const Icon(Icons.scale),
-                            title: const Text('Weight'),
-                            onTap: () async {
-                              Navigator.pop(context);
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const WeightPage(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      if (widget.selected.isEmpty)
-                        PopupMenuItem(
-                          child: ListTile(
-                            leading: const Icon(Icons.settings),
-                            title: const Text('Settings'),
-                            onTap: () async {
-                              Navigator.pop(context);
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const SettingsPage(),
-                                ),
-                              );
-                              if (widget.onRefresh != null) widget.onRefresh!();
-                            },
-                          ),
-                        ),
+                      ),
                     ],
-                  );
-                },
-              ),
+                    if (widget.selected.isEmpty)
+                      PopupMenuItem(
+                        child: ListTile(
+                          leading: const Icon(Icons.settings),
+                          title: const Text('Settings'),
+                          onTap: () async {
+                            Navigator.pop(context);
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const SettingsPage(),
+                              ),
+                            );
+                            if (widget.onRefresh != null) widget.onRefresh!();
+                          },
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
         ],

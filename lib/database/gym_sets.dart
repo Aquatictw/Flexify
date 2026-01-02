@@ -15,7 +15,6 @@ const volumeCol = CustomExpression<double>("ROUND(SUM(weight * reps), 2)");
 const ormCol = CustomExpression<double>(
   'MAX(CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END)',
 );
-final relativeCol = db.gymSets.weight.max() / db.gymSets.bodyWeight;
 double getCardio(TypedResult row, CardioMetric metric) {
   switch (metric) {
     case CardioMetric.pace:
@@ -253,8 +252,6 @@ double getStrength(TypedResult row, StrengthMetric metric) {
       return row.read(ormCol)!;
     case StrengthMetric.volume:
       return row.read(volumeCol)!;
-    case StrengthMetric.relativeStrength:
-      return row.read(relativeCol) ?? 0;
     case StrengthMetric.bestWeight:
       return row.read(db.gymSets.weight.max())!;
     case StrengthMetric.bestVolume:
@@ -284,10 +281,6 @@ Future<List<StrengthData>> getStrengthData({
       break;
     case StrengthMetric.volume:
       metricExpression = 'weight * reps';
-      orderColumn = metricExpression;
-      break;
-    case StrengthMetric.relativeStrength:
-      metricExpression = 'weight / NULLIF(body_weight, 0)';
       orderColumn = metricExpression;
       break;
     case StrengthMetric.bestVolume:
@@ -388,10 +381,6 @@ Future<List<StrengthData>> getGlobalData({
       break;
     case StrengthMetric.volume:
       metricExpression = 'weight * reps';
-      orderColumn = metricExpression;
-      break;
-    case StrengthMetric.relativeStrength:
-      metricExpression = 'weight / NULLIF(body_weight, 0)';
       orderColumn = metricExpression;
       break;
     case StrengthMetric.bestVolume:

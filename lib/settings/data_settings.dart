@@ -1,19 +1,16 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/delete_records_button.dart';
 import 'package:flexify/export_data.dart';
 import 'package:flexify/import_data.dart';
+import 'package:flexify/import_hevy.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/settings/settings_state.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 void tapBackup(bool value) async {
   await db.settings.update().write(
@@ -48,20 +45,9 @@ List<Widget> getDataSettings(
           onChanged: (value) => tapBackup(value),
         ),
       ),
-    if ('share database'.contains(term.toLowerCase()) &&
-        !kIsWeb &&
-        !Platform.isLinux)
-      TextButton.icon(
-        onPressed: () async {
-          final dbFolder = await getApplicationDocumentsDirectory();
-          final dbPath = p.join(dbFolder.path, 'flexify.sqlite');
-          await SharePlus.instance.share(ShareParams(files: [XFile(dbPath)]));
-        },
-        label: const Text("Share database"),
-        icon: const Icon(Icons.share),
-      ),
     if ('export data'.contains(term.toLowerCase())) const ExportData(),
     if ('import data'.contains(term.toLowerCase())) ImportData(ctx: context),
+    if ('import hevy'.contains(term.toLowerCase())) ImportHevy(ctx: context),
     if ('delete records'.contains(term.toLowerCase()))
       DeleteRecordsButton(ctx: context),
   ];

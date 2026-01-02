@@ -28,7 +28,6 @@ enum StrengthMetric {
   oneRepMax,
   volume,
   bestWeight,
-  relativeStrength,
   bestVolume,
 }
 
@@ -47,7 +46,6 @@ final defaultSettings = SettingsCompanion.insert(
   curveLines: true,
   explainedPermissions: false,
   groupHistory: const Value(true),
-  showBodyWeight: const Value(false),
   strengthUnit: 'kg',
   systemColors: false,
   showCategories: const Value(true),
