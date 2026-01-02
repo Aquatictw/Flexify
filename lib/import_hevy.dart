@@ -365,6 +365,7 @@ class ImportHevy extends StatelessWidget {
       // Find column indices
       final titleIdx = _findColumnIndex(headers, ['title', 'workout_name', 'workout']);
       final startTimeIdx = _findColumnIndex(headers, ['start_time', 'date', 'start']);
+      final endTimeIdx = _findColumnIndex(headers, ['end_time', 'end']);
       final exerciseIdx = _findColumnIndex(headers, ['exercise_title', 'exercise_name', 'exercise']);
       final weightIdx = _findColumnIndex(headers, ['weight_kg', 'weight_lbs', 'weight (kg)', 'weight (lbs)', 'weight']);
       final repsIdx = _findColumnIndex(headers, ['reps', 'repetitions']);
@@ -384,10 +385,9 @@ class ImportHevy extends StatelessWidget {
       final isLbs = headers.any((h) => h.contains('lbs'));
       final unit = isLbs ? 'lb' : 'kg';
 
-      // Track workouts and imported sets
-      int currentWorkoutId = await _getNextWorkoutId();
-      String? lastWorkoutKey;
-      final importedSets = <GymSetsCompanion>[];
+      // First pass: collect all unique workouts and their sets
+      final workoutSets = <String, List<Map<String, dynamic>>>{};
+      final workoutInfo = <String, Map<String, dynamic>>{};
       final newExercises = <String, String>{}; // name -> category
 
       for (int i = 1; i < rows.length; i++) {
@@ -410,88 +410,87 @@ class ImportHevy extends StatelessWidget {
           newExercises[mappedName] = category;
         }
 
-        // Parse workout grouping
+        // Parse workout info
+        DateTime startTime = DateTime.now();
+        DateTime? endTime;
+        String workoutName = 'Imported Workout';
         String workoutKey = '';
-        DateTime created = DateTime.now();
 
         if (startTimeIdx != -1 && row.elementAtOrNull(startTimeIdx) != null) {
-          try {
-            final startTimeStr = row[startTimeIdx].toString();
-            created = _parseHevyDate(startTimeStr);
-            workoutKey = '${created.year}-${created.month}-${created.day}';
-            if (titleIdx != -1) {
-              workoutKey += '_${row[titleIdx]}';
-            }
-          } catch (e) {
-            // Use current date if parsing fails
-          }
+          final startTimeStr = row[startTimeIdx].toString();
+          startTime = _parseHevyDate(startTimeStr);
+          workoutKey = startTimeStr; // Use the raw start_time as unique key
         }
 
-        // New workout if key changed
-        if (workoutKey.isNotEmpty && workoutKey != lastWorkoutKey) {
-          currentWorkoutId = await _getNextWorkoutId();
-          lastWorkoutKey = workoutKey;
+        if (endTimeIdx != -1 && row.elementAtOrNull(endTimeIdx) != null) {
+          final endTimeStr = row[endTimeIdx].toString();
+          endTime = _parseHevyDate(endTimeStr);
         }
 
-        // Parse weight
+        if (titleIdx != -1 && row.elementAtOrNull(titleIdx) != null) {
+          workoutName = row[titleIdx].toString();
+        }
+
+        // Store workout info if not already stored
+        if (workoutKey.isNotEmpty && !workoutInfo.containsKey(workoutKey)) {
+          workoutInfo[workoutKey] = {
+            'startTime': startTime,
+            'endTime': endTime,
+            'name': workoutName,
+          };
+        }
+
+        // Parse set data
         double weight = 0;
         if (weightIdx != -1 && row.elementAtOrNull(weightIdx) != null) {
           weight = double.tryParse(row[weightIdx].toString()) ?? 0;
         }
 
-        // Parse reps
         double reps = 0;
         if (repsIdx != -1 && row.elementAtOrNull(repsIdx) != null) {
           reps = double.tryParse(row[repsIdx].toString()) ?? 0;
         }
 
-        // Parse distance (for cardio)
         double distance = 0;
         if (distanceIdx != -1 && row.elementAtOrNull(distanceIdx) != null) {
           distance = double.tryParse(row[distanceIdx].toString()) ?? 0;
         }
 
-        // Parse duration (for cardio, in minutes)
         double duration = 0;
         if (durationIdx != -1 && row.elementAtOrNull(durationIdx) != null) {
           final durationSeconds = double.tryParse(row[durationIdx].toString()) ?? 0;
-          duration = durationSeconds / 60; // Convert to minutes
+          duration = durationSeconds / 60;
         }
 
-        // Parse notes
         String? notes;
         if (notesIdx != -1 && row.elementAtOrNull(notesIdx) != null) {
           final noteStr = row[notesIdx].toString().trim();
           if (noteStr.isNotEmpty) notes = noteStr;
         }
 
-        // Parse set type (warmup, normal, dropset)
         bool isWarmup = false;
         if (setTypeIdx != -1 && row.elementAtOrNull(setTypeIdx) != null) {
           final setType = row[setTypeIdx].toString().toLowerCase();
           isWarmup = setType == 'warmup';
         }
 
-        // Determine if cardio
-        final isCardio = distance > 0 || duration > 0 && weight == 0 && reps == 0;
+        final isCardio = distance > 0 || (duration > 0 && weight == 0 && reps == 0);
 
-        importedSets.add(
-          GymSetsCompanion(
-            name: Value(mappedName),
-            reps: Value(reps),
-            weight: Value(weight),
-            created: Value(created),
-            unit: Value(unit),
-            category: Value(category),
-            cardio: Value(isCardio),
-            distance: Value(distance),
-            duration: Value(duration),
-            notes: Value(notes),
-            hidden: const Value(false),
-            workoutId: Value(currentWorkoutId),
-            warmup: Value(isWarmup),
-          ),
-        );
+        // Add to workout's sets
+        workoutSets.putIfAbsent(workoutKey, () => []);
+        workoutSets[workoutKey]!.add({
+          'name': mappedName,
+          'category': category,
+          'reps': reps,
+          'weight': weight,
+          'created': startTime,
+          'unit': unit,
+          'cardio': isCardio,
+          'distance': distance,
+          'duration': duration,
+          'notes': notes,
+          'warmup': isWarmup,
+        });
       }
 
       // Insert new exercises as hidden template entries
@@ -509,12 +508,56 @@ class ImportHevy extends StatelessWidget {
             );
       }
 
-      // Insert all imported sets
-      await db.gymSets.insertAll(importedSets);
+      // Second pass: create workouts and insert sets
+      int totalSets = 0;
+      int totalWorkouts = 0;
+
+      for (final entry in workoutInfo.entries) {
+        final workoutKey = entry.key;
+        final info = entry.value;
+        final sets = workoutSets[workoutKey] ?? [];
+
+        if (sets.isEmpty) continue;
+
+        // Create the workout record
+        final workoutId = await db.into(db.workouts).insert(
+              WorkoutsCompanion(
+                startTime: Value(info['startTime'] as DateTime),
+                endTime: Value(info['endTime'] as DateTime?),
+                name: Value(info['name'] as String?),
+              ),
+            );
+
+        totalWorkouts++;
+
+        // Insert all sets for this workout
+        int sequence = 0;
+        for (final setData in sets) {
+          await db.into(db.gymSets).insert(
+                GymSetsCompanion(
+                  name: Value(setData['name'] as String),
+                  reps: Value(setData['reps'] as double),
+                  weight: Value(setData['weight'] as double),
+                  created: Value(setData['created'] as DateTime),
+                  unit: Value(setData['unit'] as String),
+                  category: Value(setData['category'] as String),
+                  cardio: Value(setData['cardio'] as bool),
+                  distance: Value(setData['distance'] as double),
+                  duration: Value(setData['duration'] as double),
+                  notes: Value(setData['notes'] as String?),
+                  hidden: const Value(false),
+                  workoutId: Value(workoutId),
+                  warmup: Value(setData['warmup'] as bool),
+                  sequence: Value(sequence++),
+                ),
+              );
+          totalSets++;
+        }
+      }
 
       if (!ctx.mounted) return;
 
-      final message = 'Imported ${importedSets.length} sets from Hevy. '
+      final message = 'Imported $totalSets sets in $totalWorkouts workouts from Hevy. '
           '${newExercises.isNotEmpty ? 'Created ${newExercises.length} new exercises.' : ''}';
 
       toast(message);
@@ -607,12 +650,5 @@ class ImportHevy extends StatelessWidget {
     }
 
     return DateTime.now();
-  }
-
-  Future<int> _getNextWorkoutId() async {
-    final result = await db.customSelect(
-      'SELECT COALESCE(MAX(workout_id), 0) + 1 as next_id FROM gym_sets',
-    ).getSingleOrNull();
-    return result?.read<int>('next_id') ?? 1;
   }
 }
