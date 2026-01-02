@@ -36,7 +36,24 @@ class _OverviewPageState extends State<OverviewPage> {
     setState(() => isLoading = true);
 
     final now = DateTime.now();
-    final startDate = _getStartDate(now);
+    DateTime startDate;
+
+    // For All Time, get the earliest workout date
+    if (period == OverviewPeriod.allTime) {
+      final firstWorkout = await (db.workouts.select()
+            ..orderBy([(w) => OrderingTerm(expression: w.startTime, mode: OrderingMode.asc)])
+            ..limit(1))
+          .getSingleOrNull();
+
+      if (firstWorkout != null) {
+        startDate = firstWorkout.startTime;
+      } else {
+        // No workouts yet, use today
+        startDate = now;
+      }
+    } else {
+      startDate = _getStartDate(now);
+    }
 
     // Load muscle volumes
     final volumeQuery = await db.customSelect(
@@ -746,13 +763,14 @@ class _OverviewPageState extends State<OverviewPage> {
     final totalDays = sundayOfCurrentWeek.difference(mondayOfStartWeek).inDays + 1;
     final weeks = (totalDays / 7).ceil();
 
-    // Build month labels (reversed for right-to-left display)
+    // Build month labels (latest on left)
     final monthLabels = <int, String>{};
     int lastMonth = -1;
-    for (int week = weeks - 1; week >= 0; week--) {
-      final date = mondayOfStartWeek.add(Duration(days: week * 7));
+    for (int week = 0; week < weeks; week++) {
+      // Start from the most recent week and go backwards
+      final date = sundayOfCurrentWeek.subtract(Duration(days: week * 7));
       if (date.month != lastMonth) {
-        monthLabels[weeks - 1 - week] = DateFormat('MMM').format(date);
+        monthLabels[week] = DateFormat('MMM').format(date);
         lastMonth = date.month;
       }
     }
@@ -802,92 +820,87 @@ class _OverviewPageState extends State<OverviewPage> {
             ],
           ),
           // Scrollable heatmap grid
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              reverse: true, // Start scrolled to the right (showing latest)
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Month labels
-                  Row(
-                    children: List.generate(weeks, (weekIndex) {
-                      final label = monthLabels[weekIndex];
-                      return SizedBox(
-                        width: 18,
-                        child: label != null
-                            ? Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Text(
-                                  label,
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    color: colorScheme.primary.withValues(alpha: 0.8),
-                                  ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Month labels
+                Row(
+                  children: List.generate(weeks, (weekIndex) {
+                    final label = monthLabels[weekIndex];
+                    return SizedBox(
+                      width: 18,
+                      child: label != null
+                          ? Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.primary.withValues(alpha: 0.8),
                                 ),
-                              )
-                            : const SizedBox(),
-                      );
-                    }),
-                  ),
-                  // Day rows (Monday=0 to Sunday=6)
-                  ...List.generate(7, (dayOfWeek) {
-                    return Row(
-                      children: List.generate(weeks, (weekIndex) {
-                        // Reverse week index for right-to-left display
-                        final reversedWeek = weeks - 1 - weekIndex;
-                        final date = mondayOfStartWeek.add(
-                          Duration(days: reversedWeek * 7 + dayOfWeek),
-                        );
-
-                        if (date.isBefore(startDate) || date.isAfter(today)) {
-                          return const Padding(
-                            padding: EdgeInsets.all(2),
-                            child: SizedBox(width: 14, height: 14),
-                          );
-                        }
-
-                        final normalizedDate = DateTime(date.year, date.month, date.day);
-                        final count = trainingDays[normalizedDate] ?? 0;
-
-                        return Padding(
-                          padding: const EdgeInsets.all(2),
-                          child: InkWell(
-                            onTap: count > 0
-                                ? () => _showDayDetails(normalizedDate)
-                                : null,
-                            borderRadius: BorderRadius.circular(3),
-                            child: Container(
-                              width: 14,
-                              height: 14,
-                              decoration: BoxDecoration(
-                                color: _getHeatmapColor(colorScheme, count),
-                                borderRadius: BorderRadius.circular(3),
-                                border: Border.all(
-                                  color: count > 0
-                                      ? colorScheme.primary.withValues(alpha: 0.3)
-                                      : colorScheme.outline.withValues(alpha: 0.2),
-                                  width: count > 0 ? 0.8 : 0.5,
-                                ),
-                                boxShadow: count > 10
-                                    ? [
-                                        BoxShadow(
-                                          color: colorScheme.primary.withValues(alpha: 0.3),
-                                          blurRadius: 2,
-                                          spreadRadius: 0.5,
-                                        ),
-                                      ]
-                                    : null,
                               ),
-                            ),
-                          ),
-                        );
-                      }),
+                            )
+                          : const SizedBox(),
                     );
                   }),
-                ],
-              ),
+                ),
+                // Day rows (Monday=0 to Sunday=6)
+                ...List.generate(7, (dayOfWeek) {
+                  return Row(
+                    children: List.generate(weeks, (weekIndex) {
+                      // Calculate date from most recent week backwards
+                      final weeksFromNow = weekIndex;
+                      final weekStart = sundayOfCurrentWeek.subtract(Duration(days: weeksFromNow * 7 + (6 - dayOfWeek)));
+                      final date = DateTime(weekStart.year, weekStart.month, weekStart.day);
+
+                      if (date.isBefore(startDate) || date.isAfter(today)) {
+                        return const Padding(
+                          padding: EdgeInsets.all(2),
+                          child: SizedBox(width: 14, height: 14),
+                        );
+                      }
+
+                      final count = trainingDays[date] ?? 0;
+
+                      return Padding(
+                        padding: const EdgeInsets.all(2),
+                        child: InkWell(
+                          onTap: count > 0
+                              ? () => _showDayDetails(date)
+                              : null,
+                          borderRadius: BorderRadius.circular(3),
+                          child: Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: _getHeatmapColor(colorScheme, count),
+                              borderRadius: BorderRadius.circular(3),
+                              border: Border.all(
+                                color: count > 0
+                                    ? colorScheme.primary.withValues(alpha: 0.3)
+                                    : colorScheme.outline.withValues(alpha: 0.2),
+                                width: count > 0 ? 0.8 : 0.5,
+                              ),
+                              boxShadow: count > 10
+                                  ? [
+                                      BoxShadow(
+                                        color: colorScheme.primary.withValues(alpha: 0.3),
+                                        blurRadius: 2,
+                                        spreadRadius: 0.5,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  );
+                }),
+              ],
             ),
           ),
         ],
