@@ -820,11 +820,12 @@ class _OverviewPageState extends State<OverviewPage> {
             ],
           ),
           // Scrollable heatmap grid
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 // Month labels
                 Row(
                   children: List.generate(weeks, (weekIndex) {
@@ -902,6 +903,7 @@ class _OverviewPageState extends State<OverviewPage> {
                 }),
               ],
             ),
+          ),
           ),
         ],
       ),
