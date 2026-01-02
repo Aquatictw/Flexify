@@ -41,7 +41,7 @@ class _OverviewPageState extends State<OverviewPage> {
     // For All Time, get the earliest workout date
     if (period == OverviewPeriod.allTime) {
       final firstWorkout = await (db.workouts.select()
-            ..orderBy([(w) => OrderingTerm(expression: w.startTime, mode: OrderingMode.asc)])
+            ..orderBy([(w) => drift.OrderingTerm(expression: w.startTime, mode: drift.OrderingMode.asc)])
             ..limit(1))
           .getSingleOrNull();
 
