@@ -79,7 +79,31 @@ Workout Session (e.g., "Monday Chest - Dec 29, 5pm")
 | `lib/plan/plans_page.dart` | Plans list page with freeform workout option |
 | `lib/plan/plan_tile.dart` | Plan list tile - checks for active workout before starting |
 | `lib/app_search.dart` | Reusable search AppBar with optional Add menu item |
+| `lib/graph/overview_page.dart` | Workout overview with stats, heatmap, and muscle charts |
 | `drift_schemas/db/drift_schema_vN.json` | Schema JSON files for each version |
+
+## Workout Overview & Statistics
+
+The workout overview page (`lib/graph/overview_page.dart`) displays comprehensive statistics and visualizations:
+
+**Features:**
+- **Period Selector**: 7D, 1M, 3M, 6M, 1Y, All-time
+- **Statistics Cards**: Workouts, Total Volume, Streak, Top Muscle
+- **Training Heatmap**:
+  - GitHub-style activity calendar showing workout days
+  - Days of week column is fixed (doesn't scroll)
+  - Grid is reversed (latest workouts on left for consistency)
+  - Days properly aligned to Monday-Sunday weeks
+  - Clicking a day shows workout details popup with clickable workout name
+- **Muscle Group Volume Chart**: Top 10 muscles by weight × reps
+- **Muscle Group Set Count Chart**: Top 10 muscles by total sets performed
+
+**Implementation Details:**
+- Uses `fl_chart` package for bar charts
+- Heatmap uses Monday as week start (weekday 1-7)
+- All queries filter out hidden sets (`hidden = 0`)
+- Popup navigation creates Workout object from query results
+- Charts use different colors (primary for volume, secondary for sets)
 
 ## Workout Session Feature
 
@@ -103,6 +127,8 @@ Workout Session (e.g., "Monday Chest - Dec 29, 5pm")
    - **Sets view**: Shows individual sets (legacy view)
 
 7. **Workout Details**: Tapping a workout card opens `WorkoutDetailPage` showing all exercises and sets grouped together.
+
+8. **Active Workout Navigation**: Clicking the ActiveWorkoutBar switches to the Plans tab (if needed) and navigates to the active workout. It clears the Plans navigator stack before pushing the workout page to avoid duplicate routes.
 
 ### Key Code Paths
 
@@ -234,42 +260,7 @@ Create with a temporary Plan object (id: -1) that has no exercises.
 
 ## Migration Notes
 
-When adding new columns or tables, follow these steps:
-
-### Standard Migration Process
-
-1. **Edit table definition** (e.g., `lib/database/gym_sets.dart`):
-   ```dart
-   IntColumn get sequence => integer().withDefault(const Constant(0))();
-   ```
-
-2. **Update `@DriftDatabase` annotation** in `database.dart` if adding new tables
-
-3. **Increment `schemaVersion`** in `lib/database/database.dart`:
-   ```dart
-   int get schemaVersion => 49;  // Bump from 48 to 49
-   ```
-
-4. **Run the migration script**:
-   ```bash
-   ./scripts/migrate.sh
-   ```
-
-   This script automatically:
-   - Runs build_runner to generate code
-   - Generates migration code with `drift_dev make-migrations`
-   - Updates schema JSON files in `drift_schemas/`
-
-5. **Add the migration step** in `onUpgrade: stepByStep(...)` in `database.dart`:
-   ```dart
-   from48To49: (Migrator m, Schema49 schema) async {
-     await m.addColumn(schema.gymSets, schema.gymSets.sequence);
-   },
-   ```
-
-### Manual Migration (Fallback)
-
-If the automatic migration script doesn't generate the Schema class properly (e.g., Schema50 not found), you'll need to manually update both the schema JSON and `database.steps.dart`:
+When adding new columns or tables, you'll need to manually update both the schema JSON and `database.steps.dart`:
 
 **a. Create the new schema JSON file** in `drift_schemas/db/`:
 Copy the previous version's JSON (e.g., `drift_schema_v49.json` → `drift_schema_v50.json`) and add the new column to the appropriate table's columns array:

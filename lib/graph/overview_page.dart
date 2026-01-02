@@ -187,16 +187,27 @@ class _OverviewPageState extends State<OverviewPage> {
   }
 
   Future<void> _showDayDetails(DateTime date) async {
-    // Fetch workout for this date
-    final workout = await (db.workouts.select()
-          ..where((w) => db.workouts.startTime.isBetweenValues(
-                date.millisecondsSinceEpoch ~/ 1000,
-                date.add(const Duration(days: 1)).millisecondsSinceEpoch ~/ 1000,
-              ))
-          ..limit(1))
-        .getSingleOrNull();
+    // Fetch workout for this date using SQL query
+    final workoutQuery = await db.customSelect(
+      """
+      SELECT *
+      FROM workouts
+      WHERE DATE(start_time, 'unixepoch') = ?
+      LIMIT 1
+    """,
+      variables: [
+        drift.Variable.withString(DateFormat('yyyy-MM-dd').format(date)),
+      ],
+      readsFrom: {db.workouts},
+    ).getSingleOrNull();
 
-    if (workout == null || !mounted) return;
+    if (workoutQuery == null || !mounted) return;
+
+    final workoutId = workoutQuery.read<int>('id');
+    final workoutName = workoutQuery.readNullable<String>('name');
+    final startTime = DateTime.fromMillisecondsSinceEpoch(
+      workoutQuery.read<int>('start_time') * 1000,
+    );
 
     final dayData = await db.customSelect(
       """
@@ -212,7 +223,7 @@ class _OverviewPageState extends State<OverviewPage> {
       ORDER BY gs.created
     """,
       variables: [
-        drift.Variable.withInt(workout.id),
+        drift.Variable.withInt(workoutId),
       ],
     ).get();
 
@@ -282,6 +293,12 @@ class _OverviewPageState extends State<OverviewPage> {
                   Expanded(
                     child: InkWell(
                       onTap: () {
+                        // Create a Workout object for navigation
+                        final workout = Workout(
+                          id: workoutId,
+                          startTime: startTime,
+                          name: workoutName,
+                        );
                         Navigator.pop(context);
                         Navigator.push(
                           context,
@@ -294,7 +311,7 @@ class _OverviewPageState extends State<OverviewPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            workout.name ?? 'Workout',
+                            workoutName ?? 'Workout',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
