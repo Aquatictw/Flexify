@@ -59,22 +59,24 @@ A creative, artistic notes feature has been implemented for Flexify! Users can n
 
 ## What Needs to Be Done
 
-### Required: Run Database Migration
-Since the Flutter environment isn't set up in this session, you need to run the migration script to generate the required database code:
+### Required: Run Build Runner
+The database.steps.dart has been manually created with Schema52 and the Notes table migration. Now you just need to run build_runner to generate database.g.dart:
 
-```bash
-./scripts/migrate.sh
-```
-
-This script will:
-1. Run `dart run build_runner build -d` - Generates database.g.dart with new Notes table
-2. Run `drift_dev make-migrations` - Creates migration steps
-3. Run `drift_dev schema generate` - Updates schema files
-
-**Alternative (if migrate.sh doesn't work):**
 ```bash
 dart run build_runner build --delete-conflicting-outputs
 ```
+
+This will generate the database.g.dart file with the Notes table properly integrated.
+
+**What was done manually:**
+- ✅ Created column definitions (_column_92 through _column_97)
+- ✅ Created Shape41 for Notes table
+- ✅ Created Schema52 with Notes entity
+- ✅ Updated migrationSteps with from51To52
+- ✅ Updated stepByStep function
+
+**What build_runner will do:**
+- Generate database.g.dart with Notes table class and queries
 
 ### Testing Checklist
 After running the migration, test the following:
