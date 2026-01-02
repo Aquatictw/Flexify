@@ -37,7 +37,7 @@ class Settings extends Table {
   TextColumn get strengthUnit => text()();
   BoolColumn get systemColors => boolean()();
   TextColumn get tabs => text().withDefault(
-        const Constant("HistoryPage,PlansPage,GraphsPage,TimerPage,SettingsPage"),
+        const Constant("HistoryPage,PlansPage,GraphsPage,TimerPage,NotesPage,SettingsPage"),
       )();
   TextColumn get themeMode => text()();
   IntColumn get timerDuration => integer()();

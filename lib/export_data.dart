@@ -109,6 +109,44 @@ class ExportData extends StatelessWidget {
                     },
                   ),
                   ListTile(
+                    leading: const Icon(Icons.note),
+                    title: const Text('Notes'),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      if (!await requestNotificationPermission()) return;
+                      final notes = await db.notes.select().get();
+                      final List<List<dynamic>> data = [
+                        [
+                          'id',
+                          'title',
+                          'content',
+                          'created',
+                          'updated',
+                          'color',
+                        ]
+                      ];
+                      for (var note in notes) {
+                        data.add([
+                          note.id,
+                          note.title,
+                          note.content,
+                          note.created.toIso8601String(),
+                          note.updated.toIso8601String(),
+                          note.color ?? '',
+                        ]);
+                      }
+                      final csv =
+                          const ListToCsvConverter(eol: "\n").convert(data);
+                      final bytes = Uint8List.fromList(csv.codeUnits);
+                      await FilePicker.platform.saveFile(
+                        fileName: 'notes.csv',
+                        bytes: bytes,
+                        type: FileType.custom,
+                        allowedExtensions: ['csv'],
+                      );
+                    },
+                  ),
+                  ListTile(
                     leading: const Icon(Icons.storage),
                     title: const Text('Database'),
                     onTap: () async {

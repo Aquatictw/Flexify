@@ -3,6 +3,7 @@ import 'package:flexify/bottom_nav.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/graph/graphs_page.dart';
 import 'package:flexify/main.dart';
+import 'package:flexify/notes/notes_page.dart';
 import 'package:flexify/plan/plans_page.dart';
 import 'package:flexify/sets/history_page.dart';
 import 'package:flexify/settings/settings_page.dart';
@@ -143,6 +144,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   return GraphsPage(tabController: controller);
                 else if (tab == 'TimerPage')
                   return const TimerPage();
+                else if (tab == 'NotesPage')
+                  return const NotesPage();
                 else if (tab == 'SettingsPage')
                   return const SettingsPage();
                 else
