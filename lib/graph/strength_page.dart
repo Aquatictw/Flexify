@@ -108,8 +108,6 @@ class _StrengthPageState extends State<StrengthPage> {
         return 'Best Volume';
       case StrengthMetric.oneRepMax:
         return '1RM';
-      case StrengthMetric.relativeStrength:
-        return 'Relative';
       case StrengthMetric.volume:
         return 'Volume';
     }
@@ -210,42 +208,39 @@ class _StrengthPageState extends State<StrengthPage> {
             const SizedBox(height: 8),
 
             // Metric selector chips
-            if (name != 'Weight')
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    StrengthMetric.bestWeight,
-                    StrengthMetric.bestVolume,
-                    StrengthMetric.oneRepMax,
-                    if (settings.showBodyWeight)
-                      StrengthMetric.relativeStrength,
-                  ].map((m) {
-                    final isSelected = metric == m;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: ChoiceChip(
-                        label: Text(
-                          _getMetricLabel(m),
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-                        visualDensity: VisualDensity.compact,
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setState(() {
-                              metric = m;
-                              selectedIndex = null;
-                            });
-                            setData();
-                          }
-                        },
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  StrengthMetric.bestWeight,
+                  StrengthMetric.bestVolume,
+                  StrengthMetric.oneRepMax,
+                ].map((m) {
+                  final isSelected = metric == m;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ChoiceChip(
+                      label: Text(
+                        _getMetricLabel(m),
+                        style: const TextStyle(fontSize: 12),
                       ),
-                    );
-                  }).toList(),
-                ),
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                      visualDensity: VisualDensity.compact,
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() {
+                            metric = m;
+                            selectedIndex = null;
+                          });
+                          setData();
+                        }
+                      },
+                    ),
+                  );
+                }).toList(),
               ),
+            ),
 
             const SizedBox(height: 12),
 
@@ -281,7 +276,8 @@ class _StrengthPageState extends State<StrengthPage> {
                                   borderRadius: BorderRadius.circular(8),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.1),
+                                      color:
+                                          Colors.black.withValues(alpha: 0.1),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -698,8 +694,6 @@ class _StrengthPageState extends State<StrengthPage> {
     switch (metric) {
       case StrengthMetric.bestVolume:
         return '${formatter.format(row.value)} vol';
-      case StrengthMetric.relativeStrength:
-        return '${row.value.toStringAsFixed(2)}x';
       case StrengthMetric.oneRepMax:
       case StrengthMetric.volume:
         return '${formatter.format(row.value)} $target';

@@ -23,7 +23,6 @@ class EditSetsPage extends StatefulWidget {
 class _EditSetsPageState extends State<EditSetsPage> {
   final reps = TextEditingController();
   final weight = TextEditingController();
-  final body = TextEditingController();
   final distance = TextEditingController();
   final minutes = TextEditingController();
   final seconds = TextEditingController();
@@ -39,7 +38,6 @@ class _EditSetsPageState extends State<EditSetsPage> {
   String? oldNames;
   String? oldReps;
   String? oldWeights;
-  String? oldBody;
   String? oldCreated;
   String? oldDist;
   String? oldMin;
@@ -202,7 +200,7 @@ class _EditSetsPageState extends State<EditSetsPage> {
                 TextFormField(
                   controller: weight,
                   decoration: InputDecoration(
-                    labelText: name.text == 'Weight' ? 'Value' : 'Weight',
+                    labelText: 'Weight',
                     hintText: oldWeights,
                   ),
                   keyboardType: const TextInputType.numberWithOptions(
@@ -216,31 +214,6 @@ class _EditSetsPageState extends State<EditSetsPage> {
                   },
                 ),
               ],
-              if (name.text != 'Weight')
-                Selector<SettingsState, bool>(
-                  builder: (context, showBodyWeight, child) => Visibility(
-                    visible: showBodyWeight,
-                    child: TextFormField(
-                      controller: body,
-                      decoration: InputDecoration(
-                        labelText: 'Body weight',
-                        hintText: oldBody,
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      onTap: () => selectAll(body),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return null;
-                        if (double.tryParse(value) == null)
-                          return 'Invalid number';
-                        return null;
-                      },
-                    ),
-                  ),
-                  selector: (context, settings) =>
-                      settings.value.showBodyWeight,
-                ),
               Selector<SettingsState, bool>(
                 builder: (context, showUnits, child) => Visibility(
                   visible: showUnits,
@@ -356,7 +329,6 @@ class _EditSetsPageState extends State<EditSetsPage> {
   void dispose() {
     reps.dispose();
     weight.dispose();
-    body.dispose();
     distance.dispose();
     minutes.dispose();
     seconds.dispose();
@@ -380,7 +352,6 @@ class _EditSetsPageState extends State<EditSetsPage> {
         oldNames = gymSets.map((gymSet) => gymSet.name).join(', ');
         oldReps = gymSets.map((gymSet) => gymSet.reps).join(', ');
         oldWeights = gymSets.map((gymSet) => gymSet.weight).join(', ');
-        oldBody = gymSets.map((gymSet) => gymSet.bodyWeight).join(', ');
         if (settings.longDateFormat == 'timeago')
           oldCreated = gymSets
               .map(
@@ -439,7 +410,6 @@ class _EditSetsPageState extends State<EditSetsPage> {
       incline: Value.absentIfNull(int.tryParse(incline.text)),
       reps: Value.absentIfNull(double.tryParse(reps.text)),
       weight: Value.absentIfNull(double.tryParse(weight.text)),
-      bodyWeight: Value.absentIfNull(double.tryParse(body.text)),
       distance: Value.absentIfNull(double.tryParse(distance.text)),
       duration: int.tryParse(seconds.text) == null &&
               int.tryParse(minutes.text) == null

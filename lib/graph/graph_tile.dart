@@ -97,9 +97,12 @@ class GraphTile extends StatelessWidget {
         leading: leading,
         title: Row(
           children: [
-            Text(
-              exercise.name,
-              style: const TextStyle(fontWeight: FontWeight.w500),
+            Flexible(
+              child: Text(
+                exercise.name,
+                style: const TextStyle(fontWeight: FontWeight.w500),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             if (exercise.brandName != null && exercise.brandName!.isNotEmpty) ...[
               const SizedBox(width: 8),

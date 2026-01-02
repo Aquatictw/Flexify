@@ -26,14 +26,12 @@ To get started with Flexify, follow these steps:
    ```bash
    git clone https://github.com/Aquatictw/Flexify flexify
    ```
-
 2. **Install Dependencies**: Navigate to the project directory and install the necessary dependencies:
 
    ```bash
    cd flexify
    flutter pub get
    ```
-
 3. **Run the App**: Launch the Flexify app on your Android device or emulator:
 
    ```bash

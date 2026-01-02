@@ -50,3 +50,5 @@ android/fastlane/report.xml
 
 coverage/
 flexify-release-key.keystore
+/.github/
+/.vscode/

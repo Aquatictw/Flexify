@@ -13,7 +13,6 @@ import 'package:flexify/main.dart';
 import 'package:flexify/plan/plan_state.dart';
 import 'package:flexify/settings/settings_page.dart';
 import 'package:flexify/settings/settings_state.dart';
-import 'package:flexify/weight_page.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -233,14 +232,6 @@ class GraphsPageState extends State<GraphsPage>
                     showEmptyExercises = !showEmptyExercises;
                   });
                   break;
-                case 'weight':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const WeightPage(),
-                    ),
-                  );
-                  break;
                 case 'settings':
                   Navigator.push(
                     context,
@@ -273,14 +264,6 @@ class GraphsPageState extends State<GraphsPage>
                       : 'Show empty exercises'),
                 ),
               ),
-              if (settings.showBodyWeight)
-                const PopupMenuItem(
-                  value: 'weight',
-                  child: ListTile(
-                    leading: Icon(Icons.scale),
-                    title: Text('Weight'),
-                  ),
-                ),
               const PopupMenuItem(
                 value: 'settings',
                 child: ListTile(
