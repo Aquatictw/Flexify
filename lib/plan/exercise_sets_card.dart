@@ -1180,7 +1180,7 @@ class _RepsInputState extends State<_RepsInput> {
   @override
   void didUpdateWidget(_RepsInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value && !_hasFocus) {
+    if (oldWidget.value != widget.value) {
       _controller.text = widget.value.toString();
     }
   }

@@ -1918,7 +1918,7 @@ class _SimpleRepsInputState extends State<_SimpleRepsInput> {
   @override
   void didUpdateWidget(_SimpleRepsInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value && !_hasFocus) {
+    if (oldWidget.value != widget.value) {
       _controller.text = widget.value.toString();
     }
   }
