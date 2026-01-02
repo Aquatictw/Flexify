@@ -41,12 +41,14 @@ class _CardioPageState extends State<CardioPage> {
   Period period = Period.months3;
   DateTime lastTap = DateTime(0);
   int? selectedIndex;
+  String? brandName;
 
   @override
   void initState() {
     super.initState();
     widget.tabCtrl.addListener(_onTabChanged);
     setData();
+    _loadBrandName();
   }
 
   @override
@@ -59,6 +61,21 @@ class _CardioPageState extends State<CardioPage> {
     final settings = context.read<SettingsState>().value;
     if (widget.tabCtrl.index == settings.tabs.indexOf('GraphsPage')) {
       setData();
+    }
+  }
+
+  Future<void> _loadBrandName() async {
+    final result = await (db.gymSets.select()
+          ..where((tbl) => tbl.name.equals(widget.name))
+          ..orderBy([
+            (u) => drift.OrderingTerm(expression: u.created, mode: drift.OrderingMode.desc),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
+    if (mounted) {
+      setState(() {
+        brandName = result?.brandName;
+      });
     }
   }
 
@@ -99,7 +116,32 @@ class _CardioPageState extends State<CardioPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.name),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(widget.name),
+            ),
+            if (brandName != null && brandName!.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  brandName!,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSecondaryContainer,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           IconButton(
             onPressed: () async {

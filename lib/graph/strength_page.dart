@@ -45,6 +45,7 @@ class _StrengthPageState extends State<StrengthPage> {
   // Records data
   ExerciseRecords? records;
   List<RepRecord> repRecords = [];
+  String? brandName;
 
   @override
   void initState() {
@@ -52,6 +53,7 @@ class _StrengthPageState extends State<StrengthPage> {
     widget.tabCtrl.addListener(_onTabChanged);
     setData();
     _loadRecords();
+    _loadBrandName();
   }
 
   @override
@@ -81,6 +83,21 @@ class _StrengthPageState extends State<StrengthPage> {
       setState(() {
         records = exerciseRecords;
         repRecords = reps;
+      });
+    }
+  }
+
+  Future<void> _loadBrandName() async {
+    final result = await (db.gymSets.select()
+          ..where((tbl) => tbl.name.equals(widget.name))
+          ..orderBy([
+            (u) => drift.OrderingTerm(expression: u.created, mode: drift.OrderingMode.desc),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
+    if (mounted) {
+      setState(() {
+        brandName = result?.brandName;
       });
     }
   }
@@ -120,7 +137,32 @@ class _StrengthPageState extends State<StrengthPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(name),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(name),
+            ),
+            if (brandName != null && brandName!.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  brandName!,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSecondaryContainer,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           IconButton(
             onPressed: () async {
