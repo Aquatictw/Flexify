@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flexify/constants.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/database/gym_sets.dart';
+import 'package:flexify/graph/add_exercise_page.dart';
 import 'package:flexify/graph/cardio_page.dart';
 import 'package:flexify/graph/strength_page.dart';
 import 'package:flexify/main.dart';
@@ -861,65 +862,12 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
   }
 
   Future<void> _showCreateExerciseDialog(BuildContext parentContext) async {
-    final controller = TextEditingController();
-    final result = await showDialog<String>(
-      context: parentContext,
-      builder: (dialogContext) {
-        final colorScheme = Theme.of(dialogContext).colorScheme;
-        return AlertDialog(
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.add_box,
-                  color: colorScheme.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text('Create Custom Exercise'),
-            ],
-          ),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(
-              labelText: 'Exercise Name',
-              hintText: 'e.g., Cable Crossover, Hack Squat...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              prefixIcon: const Icon(Icons.fitness_center),
-            ),
-            onSubmitted: (value) {
-              if (value.trim().isNotEmpty) {
-                Navigator.pop(dialogContext, value.trim());
-              }
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            FilledButton.icon(
-              onPressed: () {
-                if (controller.text.trim().isNotEmpty) {
-                  Navigator.pop(dialogContext, controller.text.trim());
-                }
-              },
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Create'),
-            ),
-          ],
-        );
-      },
+    // Navigate to the full AddExercisePage instead of showing a dialog
+    final result = await Navigator.push<String>(
+      parentContext,
+      MaterialPageRoute(
+        builder: (context) => const AddExercisePage(),
+      ),
     );
 
     if (result != null && result.isNotEmpty) {
@@ -1579,11 +1527,14 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
   Future<void> _addSet({bool isWarmup = false, bool isDropSet = false}) async {
     int insertIndex;
     if (isWarmup) {
+      // Warmup sets go at the front
       insertIndex = sets.where((s) => s.isWarmup).length;
     } else if (isDropSet) {
-      insertIndex = sets.where((s) => s.isWarmup || s.isDropSet).length;
-    } else {
+      // Drop sets go at the very end
       insertIndex = sets.length;
+    } else {
+      // Working sets go after warmup but before drop sets
+      insertIndex = sets.length - sets.where((s) => s.isDropSet).length;
     }
 
     final baseWeight = sets.isNotEmpty ? sets.last.weight : _defaultWeight;

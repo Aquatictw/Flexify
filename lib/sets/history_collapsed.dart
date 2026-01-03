@@ -163,6 +163,7 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
             );
 
             final isWarmup = gymSet.warmup;
+            final isDropSet = gymSet.dropSet;
             final colorScheme = Theme.of(context).colorScheme;
 
             return ListTile(
@@ -184,12 +185,27 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
                       ),
                     ),
                   ],
+                  if (isDropSet) ...[
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Icon(
+                        Icons.trending_down,
+                        size: 12,
+                        color: colorScheme.secondary,
+                      ),
+                    ),
+                  ],
                   Expanded(
                     child: Text(
                       gymSet.cardio
                           ? "$distance ${gymSet.unit} / $minutes:$seconds $incline"
                           : "$reps x $weight ${gymSet.unit}",
-                      style: isWarmup
+                      style: (isWarmup || isDropSet)
                           ? TextStyle(color: colorScheme.onSurfaceVariant)
                           : null,
                     ),

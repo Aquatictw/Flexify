@@ -457,12 +457,14 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
 
     int insertIndex;
     if (isWarmup) {
+      // Warmup sets go at the front
       insertIndex = sets.where((s) => s.isWarmup).length;
     } else if (isDropSet) {
-      // Insert drop sets after warmup sets but before regular working sets
-      insertIndex = sets.where((s) => s.isWarmup || s.isDropSet).length;
-    } else {
+      // Drop sets go at the very end
       insertIndex = sets.length;
+    } else {
+      // Working sets go after warmup but before drop sets
+      insertIndex = sets.length - sets.where((s) => s.isDropSet).length;
     }
 
     final baseWeight = sets.isNotEmpty ? sets.last.weight : _defaultWeight;
