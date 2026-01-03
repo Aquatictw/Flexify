@@ -825,7 +825,7 @@ class _ExercisePickerModal extends StatefulWidget {
 
 class _ExercisePickerModalState extends State<_ExercisePickerModal> {
   String _search = '';
-  List<({String name, String? brandName})> _allExercises = [];
+  List<({String name, String? brandName, int workoutCount})> _allExercises = [];
   bool _loading = true;
 
   @override
@@ -835,15 +835,30 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
   }
 
   Future<void> _loadExercises() async {
-    // Get distinct exercise names with brand names from gym_sets
-    final results = await (db.gymSets.selectOnly(distinct: true)
-          ..addColumns([db.gymSets.name, db.gymSets.brandName])
-          ..orderBy([OrderingTerm(expression: db.gymSets.name, mode: OrderingMode.asc)]))
+    // Get distinct exercise names with brand names and workout counts from gym_sets
+    // Sort by workout count descending (most frequently used exercises first)
+    final workoutCountCol = const CustomExpression<int>(
+      'COUNT(DISTINCT workout_id)',
+    );
+
+    final results = await (db.gymSets.selectOnly()
+          ..addColumns([
+            db.gymSets.name,
+            db.gymSets.brandName,
+            workoutCountCol,
+          ])
+          ..where(db.gymSets.hidden.equals(false))
+          ..orderBy([
+            OrderingTerm(expression: workoutCountCol, mode: OrderingMode.desc),
+            OrderingTerm(expression: db.gymSets.name, mode: OrderingMode.asc),
+          ])
+          ..groupBy([db.gymSets.name]))
         .get();
 
     final exerciseList = results.map((r) => (
       name: r.read(db.gymSets.name)!,
       brandName: r.read(db.gymSets.brandName),
+      workoutCount: r.read(workoutCountCol) ?? 0,
     )).toList();
 
     if (mounted) {
@@ -854,7 +869,7 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
     }
   }
 
-  List<({String name, String? brandName})> get _filteredExercises {
+  List<({String name, String? brandName, int workoutCount})> get _filteredExercises {
     if (_search.isEmpty) return _allExercises;
     return _allExercises
         .where((e) => e.name.toLowerCase().contains(_search.toLowerCase()))
@@ -883,239 +898,268 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
+      initialChildSize: 0.95,
+      minChildSize: 0.7,
       maxChildSize: 0.95,
       expand: false,
-      builder: (context, scrollController) => Column(
-        children: [
-          // Handle
-          Container(
-            margin: const EdgeInsets.only(top: 12, bottom: 8),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          // Title
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.add_circle_outline,
-                  color: colorScheme.primary,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Add Exercise',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-          ),
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextField(
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: 'Search exercises...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: colorScheme.surfaceContainerHighest,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      snap: true,
+      snapSizes: const [0.95],
+      builder: (context, scrollController) => Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          children: [
+            // Handle
+            Container(
+              margin: const EdgeInsets.only(top: 8, bottom: 4),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
               ),
-              onChanged: (value) => setState(() => _search = value),
             ),
-          ),
-          // Create Custom Exercise Button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _showCreateExerciseDialog(context),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: colorScheme.primary.withValues(alpha: 0.5),
-                      width: 1.5,
+            // Title with workout count badge
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    gradient: LinearGradient(
-                      colors: [
-                        colorScheme.primaryContainer.withValues(alpha: 0.3),
-                        colorScheme.secondaryContainer.withValues(alpha: 0.2),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                    child: Icon(
+                      Icons.add_circle,
+                      color: colorScheme.primary,
+                      size: 20,
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Add Exercise',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
                         ),
-                        child: Icon(
+                  ),
+                ],
+              ),
+            ),
+            // Search bar - more compact
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: TextField(
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search exercises...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _search.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 20),
+                          onPressed: () => setState(() => _search = ''),
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  isDense: true,
+                ),
+                onChanged: (value) => setState(() => _search = value),
+              ),
+            ),
+            // Create Custom Exercise Button - more compact
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _showCreateExerciseDialog(context),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: colorScheme.primary.withValues(alpha: 0.4),
+                        width: 1.5,
+                      ),
+                      gradient: LinearGradient(
+                        colors: [
+                          colorScheme.primaryContainer.withValues(alpha: 0.3),
+                          colorScheme.secondaryContainer.withValues(alpha: 0.2),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
                           Icons.add_box,
                           color: colorScheme.primary,
-                          size: 20,
+                          size: 18,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Create Custom Exercise',
-                        style: TextStyle(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
+                        const SizedBox(width: 8),
+                        Text(
+                          'Create Custom Exercise',
+                          style: TextStyle(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 4),
-          // Divider with text
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Divider(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    'OR CHOOSE EXISTING',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                      letterSpacing: 0.5,
+            // Divider with text - more compact
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Divider(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Divider(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      'RECENT EXERCISES',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                        letterSpacing: 0.8,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: Divider(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          // Exercise list
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredExercises.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.search_off,
-                              size: 48,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'No exercises found',
-                              style: TextStyle(
+            // Exercise list - more compact
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _filteredExercises.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.search_off,
+                                size: 48,
                                 color: colorScheme.onSurfaceVariant,
                               ),
-                            ),
-                            if (_search.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              FilledButton.tonal(
-                                onPressed: () =>
-                                    Navigator.pop(context, _search),
-                                child: Text('Create "$_search"'),
+                              const SizedBox(height: 8),
+                              Text(
+                                'No exercises found',
+                                style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                               ),
+                              if (_search.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                FilledButton.tonal(
+                                  onPressed: () =>
+                                      Navigator.pop(context, _search),
+                                  child: Text('Create "$_search"'),
+                                ),
+                              ],
                             ],
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: scrollController,
-                        padding: const EdgeInsets.only(bottom: 20),
-                        itemCount: _filteredExercises.length,
-                        itemBuilder: (context, index) {
-                          final exercise = _filteredExercises[index];
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: scrollController,
+                          padding: const EdgeInsets.only(bottom: 16),
+                          itemCount: _filteredExercises.length,
+                          itemBuilder: (context, index) {
+                            final exercise = _filteredExercises[index];
 
-                          return ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: colorScheme.primaryContainer,
-                                borderRadius: BorderRadius.circular(8),
+                            return ListTile(
+                              dense: true,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                              leading: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primaryContainer.withValues(alpha: 0.7),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.fitness_center,
+                                  size: 18,
+                                  color: colorScheme.primary,
+                                ),
                               ),
-                              child: Icon(
-                                Icons.fitness_center,
-                                size: 20,
-                                color: colorScheme.primary,
-                              ),
-                            ),
-                            title: Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    exercise.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w500,
+                              title: Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      exercise.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 14,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                ),
-                                if (exercise.brandName != null && exercise.brandName!.isNotEmpty) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      exercise.brandName!,
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                        color: colorScheme.onSecondaryContainer,
+                                  if (exercise.brandName != null && exercise.brandName!.isNotEmpty) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Text(
+                                        exercise.brandName!,
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.onSecondaryContainer,
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                  ],
                                 ],
-                              ],
-                            ),
-                            trailing: Icon(
-                              Icons.add_circle_outline,
-                              color: colorScheme.primary,
-                            ),
-                            onTap: () => Navigator.pop(context, exercise.name),
-                          );
-                        },
-                      ),
-          ),
-        ],
+                              ),
+                              subtitle: exercise.workoutCount > 0
+                                  ? Text(
+                                      '${exercise.workoutCount} workout${exercise.workoutCount == 1 ? '' : 's'}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                      ),
+                                    )
+                                  : null,
+                              trailing: Icon(
+                                Icons.add_circle_outline,
+                                color: colorScheme.primary,
+                                size: 20,
+                              ),
+                              onTap: () => Navigator.pop(context, exercise.name),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
       ),
     );
   }
