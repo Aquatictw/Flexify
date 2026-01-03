@@ -60,20 +60,27 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
   void _navigateToWorkout(GlobalKey<NavigatorState>? navKey, Plan plan) {
     if (navKey?.currentState == null) return;
 
-    // Check if we're already on the StartPlanPage for this plan
     final navigator = navKey!.currentState!;
-    final context = navigator.context;
 
-    // Try to get the current route
-    final currentRoute = ModalRoute.of(context);
-    if (currentRoute?.settings.name == 'StartPlanPage_${plan.id}') {
-      // Already on the active workout page, do nothing
+    // Check if we're already on the StartPlanPage for this plan by popping until we find it
+    bool foundTargetPage = false;
+
+    navigator.popUntil((route) {
+      if (route.settings.name == 'StartPlanPage_${plan.id}') {
+        // Found the target page, stop popping here
+        foundTargetPage = true;
+        return true;
+      }
+      // Continue popping until we reach the first route
+      return route.isFirst;
+    });
+
+    // If we found the target page, we're already there - do nothing
+    if (foundTargetPage) {
       return;
     }
 
-    // Not on the active workout page, navigate to it
-    // Pop to first route (Plans page) and push the workout page
-    navigator.popUntil((route) => route.isFirst);
+    // Target page not found in stack, push it
     navigator.push(
       MaterialPageRoute(
         builder: (context) => StartPlanPage(plan: plan),

@@ -220,6 +220,9 @@ class _PlanTileState extends State<PlanTile> {
                             builder: (context) => StartPlanPage(
                               plan: workoutState.activePlan!,
                             ),
+                            settings: RouteSettings(
+                              name: 'StartPlanPage_${workoutState.activePlan!.id}',
+                            ),
                           ),
                         );
                       }
@@ -236,6 +239,9 @@ class _PlanTileState extends State<PlanTile> {
                 MaterialPageRoute(
                   builder: (context) => StartPlanPage(
                     plan: widget.plan,
+                  ),
+                  settings: RouteSettings(
+                    name: 'StartPlanPage_${widget.plan.id}',
                   ),
                 ),
               );
@@ -269,6 +275,9 @@ class _PlanTileState extends State<PlanTile> {
                                       builder: (context) => StartPlanPage(
                                         plan: workoutState.activePlan!,
                                       ),
+                                      settings: RouteSettings(
+                                        name: 'StartPlanPage_${workoutState.activePlan!.id}',
+                                      ),
                                     ),
                                   );
                                 }
@@ -285,6 +294,9 @@ class _PlanTileState extends State<PlanTile> {
                           MaterialPageRoute(
                             builder: (context) => StartPlanPage(
                               plan: widget.plan,
+                            ),
+                            settings: RouteSettings(
+                              name: 'StartPlanPage_${widget.plan.id}',
                             ),
                           ),
                         );
