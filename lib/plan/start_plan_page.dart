@@ -1051,6 +1051,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
   int _defaultReps = 8;
   String? _brandName;
   String? _exerciseType;
+  int? _restMs; // Custom rest time for this exercise
 
   @override
   void initState() {
@@ -1075,6 +1076,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     final defaultUnit = lastSet?.unit ?? settings.strengthUnit;
     _brandName = lastSet?.brandName;
     _exerciseType = lastSet?.exerciseType;
+    _restMs = lastSet?.restMs; // Load custom rest time
 
     // Get ALL sets (including uncompleted/hidden ones) in this workout for this specific exercise instance
     List<GymSet> existingSets = [];
@@ -1390,7 +1392,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
 
     if (settings.restTimers) {
       final timerState = context.read<TimerState>();
-      final restMs = settings.timerDuration;
+      // Use custom rest time if set, otherwise use global default
+      final restMs = _restMs ?? settings.timerDuration;
       timerState.startTimer(
         "${widget.exerciseName} ($completedCount)",
         Duration(milliseconds: restMs),

@@ -164,6 +164,73 @@ workoutId: Value(workoutId),
 await workoutState.stopWorkout();
 ```
 
+## Rest Timers & Exercise Data Loading
+
+### How Rest Timers Work
+
+Rest timers start automatically after completing a set (when marking it as not hidden). The timer duration comes from:
+1. **Custom rest time**: Stored in `GymSet.restMs` field (per exercise, in milliseconds)
+2. **Global default**: Falls back to `Settings.timerDuration` if no custom time is set
+
+**Key locations:**
+- Timer state management: `lib/timer/timer_state.dart`
+- Timer UI bar: `lib/timer/rest_timer_bar.dart`
+- Timer started in: `_completeSet()` method in both `ExerciseSetsCard` and `_AdHocExerciseCard`
+
+### Exercise Data Loading Pattern
+
+When loading an exercise in workout execution, both `ExerciseSetsCard` (`lib/plan/exercise_sets_card.dart`) and `_AdHocExerciseCard` (`lib/plan/start_plan_page.dart`) follow this pattern:
+
+**1. Load last set from exercise history** to get defaults:
+```dart
+final lastSet = await (db.gymSets.select()
+  ..where((tbl) => tbl.name.equals(exerciseName))
+  ..orderBy([(u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc)])
+  ..limit(1))
+  .getSingleOrNull();
+
+// Extract defaults from last set
+_defaultWeight = lastSet?.weight ?? 0.0;
+_defaultReps = lastSet?.reps.toInt() ?? 8;
+_brandName = lastSet?.brandName;
+_exerciseType = lastSet?.exerciseType;
+_restMs = lastSet?.restMs; // Custom rest time (nullable)
+```
+
+**2. Load existing sets from current workout** (if resuming):
+```dart
+existingSets = await (db.gymSets.select()
+  ..where((tbl) =>
+      tbl.name.equals(exerciseName) &
+      tbl.workoutId.equals(workoutId) &
+      tbl.sequence.equals(sequence))) // sequence identifies exercise instance
+  .get();
+```
+
+**3. Start timer after completing a set**:
+```dart
+if (settings.restTimers) {
+  final timerState = context.read<TimerState>();
+  // Use custom rest time if set, otherwise use global default
+  final restMs = _restMs ?? settings.timerDuration;
+  timerState.startTimer(
+    "$exerciseName ($completedCount)",
+    Duration(milliseconds: restMs),
+    settings.alarmSound,
+    settings.vibrate,
+  );
+}
+```
+
+### Setting Custom Rest Times
+
+Custom rest times are configured via:
+- **Edit exercise page**: `lib/graph/edit_graph_page.dart`
+- Updates all sets for that exercise with `restMs: Value(duration?.inMilliseconds)`
+- Stored per exercise, not per plan or workout
+
+**Important**: Custom rest times are stored at the GymSet level (not PlanExercise level), meaning they're tied to the exercise name across all workouts.
+
 ## Development Commands
 
 ```bash
