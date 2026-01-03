@@ -83,6 +83,7 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
   final scroll = ScrollController();
 
   Set<int> selected = {};
+  Set<int> selectedWorkouts = {};
   String search = '';
   int limit = 100;
   DateTime? startDate;
@@ -98,24 +99,41 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
         children: [
           _buildViewToggle(),
           if (historyView == HistoryView.workouts) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                decoration: const InputDecoration(
-                  hintText: 'Search workouts...',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    search = value;
-                    limit = 100;
-                  });
-                },
-              ),
+            AppSearch(
+              onChange: (value) {
+                setState(() {
+                  search = value;
+                  limit = 100;
+                });
+              },
+              onClear: () => setState(() {
+                selectedWorkouts.clear();
+              }),
+              onDelete: () async {
+                final copy = selectedWorkouts.toList();
+                setState(() {
+                  selectedWorkouts.clear();
+                });
+                // Delete all gym sets associated with these workouts
+                await db.gymSets.deleteWhere((tbl) => tbl.workoutId.isIn(copy));
+                // Delete the workouts themselves
+                await db.workouts.deleteWhere((tbl) => tbl.id.isIn(copy));
+              },
+              onSelect: () async {
+                // Get all workout IDs currently visible
+                final workouts = await (db.workouts.select()
+                      ..orderBy([
+                        (w) => OrderingTerm(
+                            expression: w.startTime, mode: OrderingMode.desc),
+                      ])
+                      ..limit(limit))
+                    .get();
+                setState(() {
+                  selectedWorkouts.addAll(workouts.map((w) => w.id));
+                });
+              },
+              selected: selectedWorkouts,
             ),
-            const SizedBox(height: 8),
             Expanded(
               child: WorkoutsList(
                 scroll: scroll,
@@ -128,6 +146,17 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
                 startDate: startDate,
                 endDate: endDate,
                 limit: limit,
+                selected: selectedWorkouts,
+                onSelect: (id) {
+                  if (selectedWorkouts.contains(id))
+                    setState(() {
+                      selectedWorkouts.remove(id);
+                    });
+                  else
+                    setState(() {
+                      selectedWorkouts.add(id);
+                    });
+                },
               ),
             ),
           ] else

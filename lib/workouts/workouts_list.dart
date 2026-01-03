@@ -28,6 +28,8 @@ class WorkoutsList extends StatefulWidget {
   final DateTime? startDate;
   final DateTime? endDate;
   final int limit;
+  final Set<int> selected;
+  final Function(int) onSelect;
 
   const WorkoutsList({
     super.key,
@@ -37,6 +39,8 @@ class WorkoutsList extends StatefulWidget {
     this.startDate,
     this.endDate,
     required this.limit,
+    required this.selected,
+    required this.onSelect,
   });
 
   @override
@@ -171,7 +175,11 @@ class _WorkoutsListState extends State<WorkoutsList> {
           itemCount: workouts.length,
           itemBuilder: (context, index) {
             final workoutWithSets = workouts[index];
-            return _WorkoutCard(workoutWithSets: workoutWithSets);
+            return _WorkoutCard(
+              workoutWithSets: workoutWithSets,
+              selected: widget.selected,
+              onSelect: widget.onSelect,
+            );
           },
         );
       },
@@ -181,13 +189,20 @@ class _WorkoutsListState extends State<WorkoutsList> {
 
 class _WorkoutCard extends StatelessWidget {
   final WorkoutWithSets workoutWithSets;
+  final Set<int> selected;
+  final Function(int) onSelect;
 
-  const _WorkoutCard({required this.workoutWithSets});
+  const _WorkoutCard({
+    required this.workoutWithSets,
+    required this.selected,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
     final workout = workoutWithSets.workout;
     final colorScheme = Theme.of(context).colorScheme;
+    final isSelected = selected.contains(workout.id);
 
     final duration = workout.endTime?.difference(workout.startTime);
 
@@ -199,14 +214,33 @@ class _WorkoutCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       elevation: 1,
       shadowColor: colorScheme.shadow.withValues(alpha: 0.2),
+      color: isSelected
+          ? colorScheme.primary.withValues(alpha: .08)
+          : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isSelected
+              ? colorScheme.primary.withValues(alpha: 0.3)
+              : colorScheme.outlineVariant.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => WorkoutDetailPage(workout: workout),
-            ),
-          );
+          if (selected.isNotEmpty) {
+            onSelect(workout.id);
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => WorkoutDetailPage(workout: workout),
+              ),
+            );
+          }
+        },
+        onLongPress: () {
+          onSelect(workout.id);
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -218,8 +252,27 @@ class _WorkoutCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Date badge
-                  Container(
+                  // Selection indicator or Date badge
+                  if (selected.isNotEmpty)
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 150),
+                      transitionBuilder: (child, animation) {
+                        return ScaleTransition(scale: animation, child: child);
+                      },
+                      child: SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: Checkbox(
+                          value: isSelected,
+                          onChanged: (value) {
+                            onSelect(workout.id);
+                          },
+                        ),
+                      ),
+                    )
+                  else
+                    // Date badge
+                    Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 6,
@@ -251,7 +304,8 @@ class _WorkoutCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  if (selected.isEmpty) const SizedBox(width: 12),
+                  if (selected.isNotEmpty) const SizedBox(width: 16),
                   // Title and year
                   Expanded(
                     child: Column(
