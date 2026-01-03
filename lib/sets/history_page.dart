@@ -333,8 +333,11 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
     List<HistoryDay> historyDays = [];
     for (final gymSet in gymSets) {
       final day = DateUtils.dateOnly(gymSet.created);
-      final index = historyDays
-          .indexWhere((hd) => isSameDay(hd.day, day) && hd.name == gymSet.name);
+      // Group by day, workout, AND exercise name to properly group sets
+      final index = historyDays.indexWhere((hd) =>
+          isSameDay(hd.day, day) &&
+          hd.name == gymSet.name &&
+          hd.gymSets.first.workoutId == gymSet.workoutId);
       if (index == -1)
         historyDays.add(
           HistoryDay(name: gymSet.name, gymSets: [gymSet], day: day),
