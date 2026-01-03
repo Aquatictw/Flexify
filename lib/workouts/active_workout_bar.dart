@@ -58,14 +58,35 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
   }
 
   void _navigateToWorkout(GlobalKey<NavigatorState>? navKey, Plan plan) {
-    if (navKey?.currentState != null) {
-      navKey!.currentState!.popUntil((route) => route.isFirst);
-      navKey.currentState!.push(
-        MaterialPageRoute(
-          builder: (context) => StartPlanPage(plan: plan),
-        ),
-      );
+    if (navKey?.currentState == null) return;
+
+    final navigator = navKey!.currentState!;
+
+    // Check if we're already on the StartPlanPage for this plan by popping until we find it
+    bool foundTargetPage = false;
+
+    navigator.popUntil((route) {
+      if (route.settings.name == 'StartPlanPage_${plan.id}') {
+        // Found the target page, stop popping here
+        foundTargetPage = true;
+        return true;
+      }
+      // Continue popping until we reach the first route
+      return route.isFirst;
+    });
+
+    // If we found the target page, we're already there - do nothing
+    if (foundTargetPage) {
+      return;
     }
+
+    // Target page not found in stack, push it
+    navigator.push(
+      MaterialPageRoute(
+        builder: (context) => StartPlanPage(plan: plan),
+        settings: RouteSettings(name: 'StartPlanPage_${plan.id}'),
+      ),
+    );
   }
 
   @override

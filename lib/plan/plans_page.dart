@@ -161,6 +161,9 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
         context,
         MaterialPageRoute(
           builder: (context) => StartPlanPage(plan: freeformPlan),
+          settings: RouteSettings(
+            name: 'StartPlanPage_${freeformPlan.id}',
+          ),
         ),
       );
     }

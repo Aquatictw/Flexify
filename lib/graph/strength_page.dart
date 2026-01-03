@@ -19,14 +19,14 @@ class StrengthPage extends StatefulWidget {
   final String name;
   final String unit;
   final List<StrengthData> data;
-  final TabController tabCtrl;
+  final TabController? tabCtrl;
 
   const StrengthPage({
     super.key,
     required this.name,
     required this.unit,
     required this.data,
-    required this.tabCtrl,
+    this.tabCtrl,
   });
 
   @override
@@ -45,24 +45,27 @@ class _StrengthPageState extends State<StrengthPage> {
   // Records data
   ExerciseRecords? records;
   List<RepRecord> repRecords = [];
+  String? brandName;
 
   @override
   void initState() {
     super.initState();
-    widget.tabCtrl.addListener(_onTabChanged);
+    widget.tabCtrl?.addListener(_onTabChanged);
     setData();
     _loadRecords();
+    _loadBrandName();
   }
 
   @override
   void dispose() {
-    widget.tabCtrl.removeListener(_onTabChanged);
+    widget.tabCtrl?.removeListener(_onTabChanged);
     super.dispose();
   }
 
   void _onTabChanged() {
+    if (widget.tabCtrl == null) return;
     final settings = context.read<SettingsState>().value;
-    if (widget.tabCtrl.index == settings.tabs.indexOf('GraphsPage')) {
+    if (widget.tabCtrl!.index == settings.tabs.indexOf('GraphsPage')) {
       setData();
       _loadRecords();
     }
@@ -81,6 +84,21 @@ class _StrengthPageState extends State<StrengthPage> {
       setState(() {
         records = exerciseRecords;
         repRecords = reps;
+      });
+    }
+  }
+
+  Future<void> _loadBrandName() async {
+    final result = await (db.gymSets.select()
+          ..where((tbl) => tbl.name.equals(widget.name))
+          ..orderBy([
+            (u) => drift.OrderingTerm(expression: u.created, mode: drift.OrderingMode.desc),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
+    if (mounted) {
+      setState(() {
+        brandName = result?.brandName;
       });
     }
   }
@@ -120,7 +138,32 @@ class _StrengthPageState extends State<StrengthPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(name),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(name),
+            ),
+            if (brandName != null && brandName!.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  brandName!,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSecondaryContainer,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           IconButton(
             onPressed: () async {

@@ -408,6 +408,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
 
     final firstSet = unsortedSets.first; // Use original first for metadata
     final exerciseNotes = firstSet.notes;
+    final brandName = firstSet.brandName;
 
     Widget? leading;
     if (showImages && firstSet.image != null) {
@@ -470,7 +471,31 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
 
     return ExpansionTile(
       leading: leading,
-      title: Text(exerciseName),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(exerciseName),
+          ),
+          if (brandName != null && brandName.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                brandName,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
       subtitle: exerciseNotes?.isNotEmpty == true
           ? Row(
               children: [

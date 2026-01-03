@@ -1,5 +1,9 @@
 import 'package:drift/drift.dart' hide Column;
+import 'package:flexify/constants.dart';
 import 'package:flexify/database/database.dart';
+import 'package:flexify/database/gym_sets.dart';
+import 'package:flexify/graph/cardio_page.dart';
+import 'package:flexify/graph/strength_page.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/plan/exercise_sets_card.dart';
 import 'package:flexify/plan/plan_state.dart';
@@ -820,7 +824,7 @@ class _ExercisePickerModal extends StatefulWidget {
 
 class _ExercisePickerModalState extends State<_ExercisePickerModal> {
   String _search = '';
-  List<String> _allExercises = [];
+  List<({String name, String? brandName})> _allExercises = [];
   bool _loading = true;
 
   @override
@@ -830,23 +834,29 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
   }
 
   Future<void> _loadExercises() async {
-    // Get distinct exercise names from gym_sets
-    final sets = await db.gymSets.select().get();
-    final exerciseNames = sets.map((s) => s.name).toSet().toList();
-    exerciseNames.sort();
+    // Get distinct exercise names with brand names from gym_sets
+    final results = await (db.gymSets.selectOnly(distinct: true)
+          ..addColumns([db.gymSets.name, db.gymSets.brandName])
+          ..orderBy([OrderingTerm(expression: db.gymSets.name, mode: OrderingMode.asc)]))
+        .get();
+
+    final exerciseList = results.map((r) => (
+      name: r.read(db.gymSets.name)!,
+      brandName: r.read(db.gymSets.brandName),
+    )).toList();
 
     if (mounted) {
       setState(() {
-        _allExercises = exerciseNames;
+        _allExercises = exerciseList;
         _loading = false;
       });
     }
   }
 
-  List<String> get _filteredExercises {
+  List<({String name, String? brandName})> get _filteredExercises {
     if (_search.isEmpty) return _allExercises;
     return _allExercises
-        .where((e) => e.toLowerCase().contains(_search.toLowerCase()))
+        .where((e) => e.name.toLowerCase().contains(_search.toLowerCase()))
         .toList();
   }
 
@@ -962,17 +972,41 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                                 color: colorScheme.primary,
                               ),
                             ),
-                            title: Text(
-                              exercise,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                              ),
+                            title: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    exercise.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                if (exercise.brandName != null && exercise.brandName!.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      exercise.brandName!,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
+                                        color: colorScheme.onSecondaryContainer,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             trailing: Icon(
                               Icons.add_circle_outline,
                               color: colorScheme.primary,
                             ),
-                            onTap: () => Navigator.pop(context, exercise),
+                            onTap: () => Navigator.pop(context, exercise.name),
                           );
                         },
                       ),
@@ -1015,6 +1049,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
   String unit = 'kg';
   double _defaultWeight = 0.0;
   int _defaultReps = 8;
+  String? _brandName;
+  String? _exerciseType;
 
   @override
   void initState() {
@@ -1037,6 +1073,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     _defaultWeight = lastSet?.weight ?? 0.0;
     _defaultReps = lastSet?.reps.toInt() ?? 8;
     final defaultUnit = lastSet?.unit ?? settings.strengthUnit;
+    _brandName = lastSet?.brandName;
+    _exerciseType = lastSet?.exerciseType;
 
     // Get ALL sets (including uncompleted/hidden ones) in this workout for this specific exercise instance
     List<GymSet> existingSets = [];
@@ -1086,6 +1124,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               workoutId: Value(widget.workoutId),
               sequence: Value(widget.sequence),
               hidden: const Value(true), // Uncompleted
+              brandName: Value(_brandName),
+              exerciseType: Value(_exerciseType),
             ),
           );
           newSets.add(SetData(
@@ -1172,6 +1212,15 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               },
             ),
             ListTile(
+              leading: Icon(Icons.show_chart, color: colorScheme.primary),
+              title: const Text('View Graph'),
+              subtitle: const Text('Jump to graph page for this exercise'),
+              onTap: () async {
+                Navigator.pop(context);
+                await _jumpToGraph(parentContext);
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.remove_circle_outline, color: colorScheme.error),
               title: Text('Remove Exercise', style: TextStyle(color: colorScheme.error)),
               subtitle: const Text('Remove this exercise from workout'),
@@ -1219,6 +1268,57 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     // Don't dispose controller here - let the dialog handle its own lifecycle
     if (result != null && widget.onNotesChanged != null) {
       widget.onNotesChanged!(result);
+    }
+  }
+
+  Future<void> _jumpToGraph(BuildContext parentContext) async {
+    // Get the exercise data to determine if it's cardio or strength
+    final exerciseData = await (db.gymSets.select()
+          ..where((tbl) => tbl.name.equals(widget.exerciseName))
+          ..orderBy([
+            (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
+
+    if (exerciseData == null || !parentContext.mounted) return;
+
+    if (exerciseData.cardio) {
+      final data = await getCardioData(
+        target: exerciseData.unit,
+        name: widget.exerciseName,
+        metric: CardioMetric.pace,
+        period: Period.months3,
+      );
+      if (!parentContext.mounted) return;
+      Navigator.push(
+        parentContext,
+        MaterialPageRoute(
+          builder: (context) => CardioPage(
+            name: widget.exerciseName,
+            unit: exerciseData.unit,
+            data: data,
+          ),
+        ),
+      );
+    } else {
+      final data = await getStrengthData(
+        target: exerciseData.unit,
+        name: widget.exerciseName,
+        metric: StrengthMetric.bestWeight,
+        period: Period.months3,
+      );
+      if (!parentContext.mounted) return;
+      Navigator.push(
+        parentContext,
+        MaterialPageRoute(
+          builder: (context) => StrengthPage(
+            name: widget.exerciseName,
+            unit: exerciseData.unit,
+            data: data,
+          ),
+        ),
+      );
     }
   }
 
@@ -1273,6 +1373,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               notes: Value(widget.exerciseNotes ?? ''),
               hidden: const Value(false),
               warmup: Value(setData.isWarmup),
+              brandName: Value(_brandName),
+              exerciseType: Value(_exerciseType),
             ),
           );
 
@@ -1338,6 +1440,8 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
           notes: Value(widget.exerciseNotes ?? ''),
           hidden: const Value(true),
           warmup: Value(isWarmup),
+          brandName: Value(_brandName),
+          exerciseType: Value(_exerciseType),
         ),
       );
 
@@ -1437,11 +1541,35 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          widget.exerciseName,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                widget.exerciseName,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                               ),
+                            ),
+                            if (_brandName != null && _brandName!.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  _brandName!,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    color: colorScheme.onSecondaryContainer,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         // Exercise notes preview
                         if (widget.exerciseNotes?.isNotEmpty == true) ...[
