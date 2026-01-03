@@ -60,8 +60,11 @@ class GraphTile extends StatelessWidget {
                 color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(Icons.fitness_center,
-                  size: 20, color: colorScheme.onSurfaceVariant),
+              child: Icon(
+                Icons.fitness_center,
+                size: 20,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ),
@@ -104,7 +107,8 @@ class GraphTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (exercise.brandName != null && exercise.brandName!.isNotEmpty) ...[
+            if (exercise.brandName != null &&
+                exercise.brandName!.isNotEmpty) ...[
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

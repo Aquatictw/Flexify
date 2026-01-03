@@ -89,7 +89,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
+                        horizontal: 16.0, vertical: 8.0,),
                     child: TextField(
                       controller: name,
                       textInputAction: TextInputAction.next,
@@ -97,7 +97,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                         labelText: "Exercise Name",
                         border: InputBorder.none,
                         icon: Icon(Icons.label_outline,
-                            color: colorScheme.primary),
+                            color: colorScheme.primary,),
                       ),
                       textCapitalization: TextCapitalization.sentences,
                     ),
@@ -122,7 +122,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
+                        horizontal: 16.0, vertical: 8.0,),
                     child: Row(
                       children: [
                         Icon(Icons.timer_outlined, color: colorScheme.primary),
@@ -267,7 +267,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 8.0),
+                          horizontal: 16.0, vertical: 8.0,),
                       child: TextField(
                         controller: brandNameCtrl,
                         decoration: InputDecoration(
@@ -309,13 +309,13 @@ class _EditGraphPageState extends State<EditGraphPage> {
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0, vertical: 4.0),
+                                horizontal: 16.0, vertical: 4.0,),
                             child: DropdownButtonFormField<String>(
                               decoration: InputDecoration(
                                 labelText: 'Bodypart',
                                 border: InputBorder.none,
                                 icon: Icon(Icons.accessibility_new,
-                                    color: colorScheme.primary),
+                                    color: colorScheme.primary,),
                               ),
                               initialValue: category != null &&
                                       bodyparts.contains(category)
@@ -351,7 +351,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
+                        horizontal: 16.0, vertical: 8.0,),
                     child: TextField(
                       controller: notesCtrl,
                       maxLines: 3,
@@ -360,7 +360,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                         hintText: 'Add any notes about this exercise...',
                         border: InputBorder.none,
                         icon: Icon(Icons.note_outlined,
-                            color: colorScheme.primary),
+                            color: colorScheme.primary,),
                       ),
                     ),
                   ),
