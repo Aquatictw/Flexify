@@ -25,6 +25,7 @@ class _OverviewPageState extends State<OverviewPage> {
   int currentStreak = 0;
   String? mostTrainedMuscle;
   bool isLoading = true;
+  DateTime? actualStartDate; // The actual start date used in queries
 
   @override
   void initState() {
@@ -169,6 +170,7 @@ class _OverviewPageState extends State<OverviewPage> {
         totalVolume = totalVol;
         currentStreak = streak;
         mostTrainedMuscle = topMuscle;
+        actualStartDate = startDate; // Save the actual start date used
         isLoading = false;
       });
     }
@@ -749,7 +751,8 @@ class _OverviewPageState extends State<OverviewPage> {
   Widget _buildHeatmap(ColorScheme colorScheme) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final startDate = _getStartDate(now);
+    // Use the actual start date from queries, or fall back to calculated date
+    final startDate = actualStartDate ?? _getStartDate(now);
 
     // Find the Monday of the week containing startDate
     final startWeekday = startDate.weekday; // 1 = Monday, 7 = Sunday
