@@ -8,9 +8,11 @@ import 'package:flexify/sets/history_collapsed.dart';
 import 'package:flexify/sets/history_list.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/utils.dart';
+import 'package:flexify/workouts/workout_detail_page.dart';
 import 'package:flexify/workouts/workouts_list.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -130,6 +132,52 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
                     .get();
                 setState(() {
                   selectedWorkouts.addAll(workouts.map((w) => w.id));
+                });
+              },
+              onEdit: () async {
+                // Navigate to workout detail page if only one workout is selected
+                if (selectedWorkouts.length == 1) {
+                  final workoutId = selectedWorkouts.first;
+                  final workout = await (db.workouts.select()
+                        ..where((w) => w.id.equals(workoutId)))
+                      .getSingle();
+                  if (context.mounted) {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => WorkoutDetailPage(workout: workout),
+                      ),
+                    );
+                  }
+                }
+              },
+              onShare: () async {
+                final workouts = await (db.workouts.select()
+                      ..where((w) => w.id.isIn(selectedWorkouts.toList()))
+                      ..orderBy([
+                        (w) => OrderingTerm(
+                            expression: w.startTime, mode: OrderingMode.desc),
+                      ]))
+                    .get();
+
+                final summaries = await Future.wait(
+                  workouts.map((workout) async {
+                    final sets = await (db.gymSets.select()
+                          ..where((s) =>
+                              s.workoutId.equals(workout.id) &
+                              s.hidden.equals(false)))
+                        .get();
+                    final exerciseCount = sets.map((s) => s.name).toSet().length;
+                    final date = DateFormat('MMM d, yyyy').format(workout.startTime);
+                    return "${workout.name ?? 'Workout'} - $date\n$exerciseCount exercises, ${sets.length} sets";
+                  }),
+                );
+
+                await SharePlus.instance.share(
+                  ShareParams(text: summaries.join('\n\n')),
+                );
+                setState(() {
+                  selectedWorkouts.clear();
                 });
               },
               selected: selectedWorkouts,
