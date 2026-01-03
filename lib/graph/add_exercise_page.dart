@@ -92,14 +92,18 @@ class _AddExercisePageState extends State<AddExercisePage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
                     child: TextFormField(
                       controller: nameCtrl,
                       decoration: InputDecoration(
                         labelText: 'Exercise Name',
                         border: InputBorder.none,
-                        icon: Icon(Icons.label_outline,
-                            color: colorScheme.primary),
+                        icon: Icon(
+                          Icons.label_outline,
+                          color: colorScheme.primary,
+                        ),
                       ),
                       textCapitalization: TextCapitalization.sentences,
                       autofocus: true,
@@ -127,7 +131,9 @@ class _AddExercisePageState extends State<AddExercisePage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
                     child: Row(
                       children: [
                         Icon(Icons.timer_outlined, color: colorScheme.primary),
@@ -268,7 +274,9 @@ class _AddExercisePageState extends State<AddExercisePage> {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 8.0),
+                        horizontal: 16.0,
+                        vertical: 8.0,
+                      ),
                       child: TextField(
                         controller: brandNameCtrl,
                         decoration: InputDecoration(
@@ -310,13 +318,17 @@ class _AddExercisePageState extends State<AddExercisePage> {
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0, vertical: 4.0),
+                              horizontal: 16.0,
+                              vertical: 4.0,
+                            ),
                             child: DropdownButtonFormField<String>(
                               decoration: InputDecoration(
                                 labelText: 'Bodypart',
                                 border: InputBorder.none,
-                                icon: Icon(Icons.accessibility_new,
-                                    color: colorScheme.primary),
+                                icon: Icon(
+                                  Icons.accessibility_new,
+                                  color: colorScheme.primary,
+                                ),
                               ),
                               initialValue: category != null &&
                                       bodyparts.contains(category)
@@ -352,7 +364,9 @@ class _AddExercisePageState extends State<AddExercisePage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
                     child: TextField(
                       controller: notesCtrl,
                       maxLines: 3,
@@ -360,8 +374,10 @@ class _AddExercisePageState extends State<AddExercisePage> {
                         labelText: 'Notes (Optional)',
                         hintText: 'Add any notes about this exercise...',
                         border: InputBorder.none,
-                        icon: Icon(Icons.note_outlined,
-                            color: colorScheme.primary),
+                        icon: Icon(
+                          Icons.note_outlined,
+                          color: colorScheme.primary,
+                        ),
                       ),
                     ),
                   ),

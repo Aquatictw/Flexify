@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flexify/constants.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/database/gym_sets.dart';
+import 'package:flexify/graph/add_exercise_page.dart';
 import 'package:flexify/graph/cardio_page.dart';
 import 'package:flexify/graph/strength_page.dart';
 import 'package:flexify/main.dart';
@@ -860,6 +861,23 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
         .toList();
   }
 
+  Future<void> _showCreateExerciseDialog(BuildContext parentContext) async {
+    // Navigate to the full AddExercisePage instead of showing a dialog
+    final result = await Navigator.push<String>(
+      parentContext,
+      MaterialPageRoute(
+        builder: (context) => const AddExercisePage(),
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      // Close the modal and return the custom exercise name
+      if (parentContext.mounted) {
+        Navigator.pop(parentContext, result);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -918,6 +936,92 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               ),
               onChanged: (value) => setState(() => _search = value),
+            ),
+          ),
+          // Create Custom Exercise Button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _showCreateExerciseDialog(context),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colorScheme.primary.withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
+                    gradient: LinearGradient(
+                      colors: [
+                        colorScheme.primaryContainer.withValues(alpha: 0.3),
+                        colorScheme.secondaryContainer.withValues(alpha: 0.2),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.add_box,
+                          color: colorScheme.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Create Custom Exercise',
+                        style: TextStyle(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Divider with text
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Divider(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    'OR CHOOSE EXISTING',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Divider(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
             ),
           ),
           // Exercise list
@@ -1103,6 +1207,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
           completed: !set.hidden,
           savedSetId: set.id,
           isWarmup: set.warmup,
+          isDropSet: set.dropSet,
         );
       }).toList();
 
@@ -1375,6 +1480,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
               notes: Value(widget.exerciseNotes ?? ''),
               hidden: const Value(false),
               warmup: Value(setData.isWarmup),
+              dropSet: Value(setData.isDropSet),
               brandName: Value(_brandName),
               exerciseType: Value(_exerciseType),
             ),
@@ -1418,16 +1524,25 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     });
   }
 
-  Future<void> _addSet({bool isWarmup = false}) async {
+  Future<void> _addSet({bool isWarmup = false, bool isDropSet = false}) async {
     int insertIndex;
     if (isWarmup) {
+      // Warmup sets go at the front
       insertIndex = sets.where((s) => s.isWarmup).length;
-    } else {
+    } else if (isDropSet) {
+      // Drop sets go at the very end
       insertIndex = sets.length;
+    } else {
+      // Working sets go after warmup but before drop sets
+      insertIndex = sets.length - sets.where((s) => s.isDropSet).length;
     }
 
     final baseWeight = sets.isNotEmpty ? sets.last.weight : _defaultWeight;
-    final weight = isWarmup ? (baseWeight * 0.5).roundToDouble() : baseWeight;
+    final weight = isWarmup
+        ? (baseWeight * 0.5).roundToDouble()
+        : isDropSet
+          ? (baseWeight * 0.75).roundToDouble()
+          : baseWeight;
     final reps = sets.isNotEmpty ? sets.last.reps : _defaultReps;
 
     if (widget.workoutId != null) {
@@ -1443,6 +1558,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
           notes: Value(widget.exerciseNotes ?? ''),
           hidden: const Value(true),
           warmup: Value(isWarmup),
+          dropSet: Value(isDropSet),
           brandName: Value(_brandName),
           exerciseType: Value(_exerciseType),
         ),
@@ -1454,6 +1570,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
           reps: reps,
           completed: false,
           isWarmup: isWarmup,
+          isDropSet: isDropSet,
           savedSetId: gymSet.id,
         ));
       });
@@ -1464,6 +1581,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
           reps: reps,
           completed: false,
           isWarmup: isWarmup,
+          isDropSet: isDropSet,
         ));
       });
     }
@@ -1477,6 +1595,52 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
           .go();
     }
     setState(() => sets.removeAt(index));
+  }
+
+  Future<void> _changeSetType(int index, bool isWarmup, bool isDropSet) async {
+    HapticFeedback.lightImpact();
+
+    setState(() {
+      sets[index].isWarmup = isWarmup;
+      sets[index].isDropSet = isDropSet;
+    });
+
+    // Update database if the set has been saved
+    if (sets[index].savedSetId != null) {
+      await (db.gymSets.update()
+            ..where((tbl) => tbl.id.equals(sets[index].savedSetId!)))
+          .write(GymSetsCompanion(
+            warmup: Value(isWarmup),
+            dropSet: Value(isDropSet),
+          ));
+    }
+  }
+
+  Future<void> _reorderSets(int oldIndex, int newIndex) async {
+    HapticFeedback.mediumImpact();
+
+    // Adjust newIndex if moving down
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+
+    setState(() {
+      final item = sets.removeAt(oldIndex);
+      sets.insert(newIndex, item);
+    });
+
+    // Update sequences in database for all sets
+    if (widget.workoutId != null) {
+      for (int i = 0; i < sets.length; i++) {
+        if (sets[i].savedSetId != null) {
+          await (db.gymSets.update()
+                ..where((tbl) => tbl.id.equals(sets[i].savedSetId!)))
+              .write(GymSetsCompanion(
+                sequence: Value(i),
+              ));
+        }
+      }
+    }
   }
 
   Future<void> _updateSet(int index) async {
@@ -1672,39 +1836,57 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                     padding: const EdgeInsets.only(top: 8, bottom: 8),
                     child: Column(
                       children: [
-                        ...List.generate(sets.length, (index) {
-                          final warmupCount = sets.take(index).where((s) => s.isWarmup).length;
-                          final displayIndex = sets[index].isWarmup
-                              ? index + 1
-                              : index - warmupCount + 1;
+                        ReorderableListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: sets.length,
+                          onReorder: _reorderSets,
+                          proxyDecorator: (child, index, animation) {
+                            return Material(
+                              elevation: 6,
+                              shadowColor: colorScheme.shadow,
+                              borderRadius: BorderRadius.circular(12),
+                              child: child,
+                            );
+                          },
+                          itemBuilder: (context, index) {
+                            final warmupCount = sets.take(index).where((s) => s.isWarmup).length;
+                            final dropSetCount = sets.take(index).where((s) => s.isDropSet).length;
+                            final displayIndex = sets[index].isWarmup
+                                ? index + 1 - dropSetCount
+                                : sets[index].isDropSet
+                                  ? index + 1 - warmupCount
+                                  : index - warmupCount - dropSetCount + 1;
 
-                          return _AdHocSetRow(
-                            key: ValueKey('adhoc_set_$index'),
-                            index: displayIndex,
-                            setData: sets[index],
-                            unit: unit,
-                            onWeightChanged: (value) {
-                              setState(() => sets[index].weight = value);
-                              if (sets[index].savedSetId != null) {
-                                _updateSet(index);
-                              }
-                            },
-                            onRepsChanged: (value) {
-                              setState(() => sets[index].reps = value);
-                              if (sets[index].savedSetId != null) {
-                                _updateSet(index);
-                              }
-                            },
-                            onToggle: () {
-                              // Unfocus to close keyboard when completing a set
-                              if (!sets[index].completed) {
-                                FocusScope.of(context).unfocus();
-                              }
-                              _toggleSet(index);
-                            },
-                            onDelete: () => _deleteSet(index),
-                          );
-                        }),
+                            return _AdHocSetRow(
+                              key: ValueKey('adhoc_set_${sets[index].savedSetId ?? index}'),
+                              index: displayIndex,
+                              setData: sets[index],
+                              unit: unit,
+                              onWeightChanged: (value) {
+                                setState(() => sets[index].weight = value);
+                                if (sets[index].savedSetId != null) {
+                                  _updateSet(index);
+                                }
+                              },
+                              onRepsChanged: (value) {
+                                setState(() => sets[index].reps = value);
+                                if (sets[index].savedSetId != null) {
+                                  _updateSet(index);
+                                }
+                              },
+                              onToggle: () {
+                                // Unfocus to close keyboard when completing a set
+                                if (!sets[index].completed) {
+                                  FocusScope.of(context).unfocus();
+                                }
+                                _toggleSet(index);
+                              },
+                              onDelete: () => _deleteSet(index),
+                              onTypeChanged: (isWarmup, isDropSet) => _changeSetType(index, isWarmup, isDropSet),
+                            );
+                          },
+                        ),
                         // Add set buttons
                         Padding(
                           padding: const EdgeInsets.symmetric(
@@ -1716,7 +1898,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                   onTap: () => _addSet(isWarmup: true),
                                   borderRadius: BorderRadius.circular(12),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
                                     decoration: BoxDecoration(
                                       border: Border.all(
                                         color: colorScheme.tertiary.withValues(alpha: 0.5),
@@ -1728,26 +1910,57 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Icon(Icons.whatshot_outlined,
-                                            size: 18, color: colorScheme.tertiary),
+                                            size: 16, color: colorScheme.tertiary),
                                         const SizedBox(width: 6),
                                         Text('Warmup',
                                             style: TextStyle(
                                               color: colorScheme.tertiary,
                                               fontWeight: FontWeight.w500,
-                                              fontSize: 13,
+                                              fontSize: 12,
                                             )),
                                       ],
                                     ),
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => _addSet(isDropSet: true),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: colorScheme.secondary.withValues(alpha: 0.5),
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: colorScheme.secondaryContainer.withValues(alpha: 0.2),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.trending_down,
+                                            size: 16, color: colorScheme.secondary),
+                                        const SizedBox(width: 6),
+                                        Text('Drop',
+                                            style: TextStyle(
+                                              color: colorScheme.secondary,
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 12,
+                                            )),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
                               Expanded(
                                 child: InkWell(
                                   onTap: () => _addSet(isWarmup: false),
                                   borderRadius: BorderRadius.circular(12),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
                                     decoration: BoxDecoration(
                                       border: Border.all(
                                         color: colorScheme.primary.withValues(alpha: 0.5),
@@ -1759,13 +1972,13 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Icon(Icons.add,
-                                            size: 18, color: colorScheme.primary),
+                                            size: 16, color: colorScheme.primary),
                                         const SizedBox(width: 6),
-                                        Text('Working Set',
+                                        Text('Working',
                                             style: TextStyle(
                                               color: colorScheme.primary,
                                               fontWeight: FontWeight.w500,
-                                              fontSize: 13,
+                                              fontSize: 12,
                                             )),
                                       ],
                                     ),
@@ -1799,6 +2012,7 @@ class _AdHocSetRow extends StatelessWidget {
   final ValueChanged<int> onRepsChanged;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
+  final Function(bool isWarmup, bool isDropSet)? onTypeChanged;
 
   const _AdHocSetRow({
     super.key,
@@ -1809,17 +2023,89 @@ class _AdHocSetRow extends StatelessWidget {
     required this.onRepsChanged,
     required this.onToggle,
     required this.onDelete,
+    this.onTypeChanged,
   });
+
+  Future<void> _showSetTypeMenu(BuildContext context, ColorScheme colorScheme) async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      useRootNavigator: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Text(
+                'Change Set Type',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ),
+            const Divider(),
+            ListTile(
+              leading: Icon(Icons.fitness_center, color: colorScheme.primary),
+              title: const Text('Working Set'),
+              subtitle: const Text('Regular set'),
+              selected: !setData.isWarmup && !setData.isDropSet,
+              onTap: () => Navigator.pop(context, 'working'),
+            ),
+            ListTile(
+              leading: Icon(Icons.whatshot, color: colorScheme.tertiary),
+              title: const Text('Warmup Set'),
+              subtitle: const Text('Lighter weight, prepare muscles'),
+              selected: setData.isWarmup,
+              onTap: () => Navigator.pop(context, 'warmup'),
+            ),
+            ListTile(
+              leading: Icon(Icons.trending_down, color: colorScheme.secondary),
+              title: const Text('Drop Set'),
+              subtitle: const Text('Reduced weight, push to failure'),
+              selected: setData.isDropSet,
+              onTap: () => Navigator.pop(context, 'drop'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null && onTypeChanged != null) {
+      switch (result) {
+        case 'working':
+          onTypeChanged!(false, false);
+          break;
+        case 'warmup':
+          onTypeChanged!(true, false);
+          break;
+        case 'drop':
+          onTypeChanged!(false, true);
+          break;
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final completed = setData.completed;
     final isWarmup = setData.isWarmup;
+    final isDropSet = setData.isDropSet;
 
     final Color bgColor;
     final Color borderColor;
     final Color accentColor;
+    final IconData setTypeIcon;
 
     if (isWarmup) {
       bgColor = completed
@@ -1827,6 +2113,14 @@ class _AdHocSetRow extends StatelessWidget {
           : colorScheme.tertiaryContainer.withValues(alpha: 0.2);
       borderColor = colorScheme.tertiary.withValues(alpha: completed ? 0.5 : 0.3);
       accentColor = colorScheme.tertiary;
+      setTypeIcon = Icons.whatshot;
+    } else if (isDropSet) {
+      bgColor = completed
+          ? colorScheme.secondaryContainer.withValues(alpha: 0.4)
+          : colorScheme.secondaryContainer.withValues(alpha: 0.2);
+      borderColor = colorScheme.secondary.withValues(alpha: completed ? 0.5 : 0.3);
+      accentColor = colorScheme.secondary;
+      setTypeIcon = Icons.trending_down;
     } else {
       bgColor = completed
           ? colorScheme.primaryContainer.withValues(alpha: 0.4)
@@ -1835,6 +2129,7 @@ class _AdHocSetRow extends StatelessWidget {
           ? colorScheme.primary.withValues(alpha: 0.5)
           : colorScheme.outlineVariant.withValues(alpha: 0.5);
       accentColor = colorScheme.primary;
+      setTypeIcon = Icons.fitness_center;
     }
 
     return Dismissible(
@@ -1864,33 +2159,39 @@ class _AdHocSetRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Set number badge
-            Container(
-              width: 44,
-              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-              decoration: BoxDecoration(
-                color: completed
-                    ? accentColor.withValues(alpha: 0.2)
-                    : colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isWarmup)
-                    Icon(Icons.whatshot, size: 12, color: accentColor),
-                  Text(
-                    isWarmup ? 'W$index' : '$index',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: completed
-                          ? accentColor
-                          : colorScheme.onSurfaceVariant,
-                      fontSize: isWarmup ? 11 : 14,
+            // Set number badge (clickable)
+            GestureDetector(
+              onTap: onTypeChanged != null ? () => _showSetTypeMenu(context, colorScheme) : null,
+              child: Container(
+                width: 44,
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                decoration: BoxDecoration(
+                  color: completed
+                      ? accentColor.withValues(alpha: 0.2)
+                      : colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                  border: onTypeChanged != null
+                      ? Border.all(color: accentColor.withValues(alpha: 0.3), width: 1)
+                      : null,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isWarmup || isDropSet)
+                      Icon(setTypeIcon, size: 12, color: accentColor),
+                    Text(
+                      isWarmup ? 'W$index' : isDropSet ? 'D$index' : '$index',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: completed
+                            ? accentColor
+                            : colorScheme.onSurfaceVariant,
+                        fontSize: (isWarmup || isDropSet) ? 11 : 14,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: 10),

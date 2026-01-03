@@ -256,12 +256,16 @@ class GraphsPageState extends State<GraphsPage>
               PopupMenuItem(
                 value: 'toggle_empty',
                 child: ListTile(
-                  leading: Icon(showEmptyExercises
-                      ? Icons.visibility_off
-                      : Icons.visibility),
-                  title: Text(showEmptyExercises
-                      ? 'Hide empty exercises'
-                      : 'Show empty exercises'),
+                  leading: Icon(
+                    showEmptyExercises
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                  ),
+                  title: Text(
+                    showEmptyExercises
+                        ? 'Hide empty exercises'
+                        : 'Show empty exercises',
+                  ),
                 ),
               ),
               const PopupMenuItem(
@@ -344,7 +348,9 @@ class GraphsPageState extends State<GraphsPage>
                       borderRadius: BorderRadius.circular(12),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
                   onChanged: (value) => setState(() => search = value),
                 ),
@@ -431,8 +437,12 @@ class GraphsPageState extends State<GraphsPage>
       final daysInMonth = [3, 10, 17, 24];
       for (var dayIndex = 0; dayIndex < 4; dayIndex++) {
         final day = daysInMonth[dayIndex];
-        final workoutDate = DateTime(now.year, now.month - monthOffset, day,
-            9 + (dayIndex * 3)); // Vary workout times
+        final workoutDate = DateTime(
+          now.year,
+          now.month - monthOffset,
+          day,
+          9 + (dayIndex * 3),
+        ); // Vary workout times
 
         // Skip dates in the future
         if (workoutDate.isAfter(now)) continue;
@@ -481,10 +491,12 @@ class GraphsPageState extends State<GraphsPage>
                 reps: reps,
                 weight: weight > 0 ? weight : baseWeight,
                 unit: 'kg',
-                created: workoutDate.add(Duration(
-                  minutes: exerciseIndex * 15 + setNum * 3,
-                  seconds: setNum * 10,
-                )),
+                created: workoutDate.add(
+                  Duration(
+                    minutes: exerciseIndex * 15 + setNum * 3,
+                    seconds: setNum * 10,
+                  ),
+                ),
                 workoutId: Value(workoutId),
                 category: Value(exerciseCategory),
               ),
@@ -524,7 +536,8 @@ class GraphsPageState extends State<GraphsPage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-              'Added $workoutCount workouts with $totalSets sets across 15 exercises with proper muscle groups'),
+            'Added $workoutCount workouts with $totalSets sets across 15 exercises with proper muscle groups',
+          ),
           duration: const Duration(seconds: 3),
         ),
       );

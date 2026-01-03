@@ -459,10 +459,13 @@ class AppDatabase extends _$AppDatabase {
         from51To52: (Migrator m, Schema52 schema) async {
           await m.createTable(schema.notes);
         },
+        from52To53: (Migrator m, Schema53 schema) async {
+          await m.addColumn(schema.gymSets, schema.gymSets.dropSet);
+        },
       ),
     );
   }
 
   @override
-  int get schemaVersion => 52;
+  int get schemaVersion => 53;
 }

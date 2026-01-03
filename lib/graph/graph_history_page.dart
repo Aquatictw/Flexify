@@ -281,7 +281,7 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
       Variable.withString(widget.name),
       Variable.withString(widget.name),
       Variable.withInt(limit),
-    ]).get();
+    ],).get();
 
     setState(() {
       workouts = result.map((row) {
