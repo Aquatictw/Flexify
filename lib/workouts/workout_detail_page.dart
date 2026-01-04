@@ -12,6 +12,7 @@ import 'package:flexify/records/records_service.dart';
 import 'package:flexify/sets/edit_set_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/utils.dart';
+import 'package:flexify/widgets/bodypart_tag.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -442,6 +443,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     final firstSet = unsortedSets.first; // Use original first for metadata
     final exerciseNotes = firstSet.notes;
     final brandName = firstSet.brandName;
+    final category = firstSet.category;
 
     // Check if any set in this group has records
     final groupHasRecords = sets.any((s) => recordsMap.containsKey(s.id));
@@ -523,8 +525,12 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             Flexible(
               child: Text(exerciseName),
             ),
+            if (category != null && category.isNotEmpty) ...[
+              const SizedBox(width: 6),
+              BodypartTag(bodypart: category),
+            ],
             if (brandName != null && brandName.isNotEmpty) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
