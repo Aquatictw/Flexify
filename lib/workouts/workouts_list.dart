@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:flexify/database/database.dart';
 import 'package:flexify/main.dart';
+import 'package:flexify/records/records_service.dart';
 import 'package:flexify/workouts/workout_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -11,6 +12,7 @@ class WorkoutWithSets {
   final int exerciseCount;
   final List<String> exerciseNames;
   final double totalVolume;
+  final int recordCount;
 
   WorkoutWithSets({
     required this.workout,
@@ -18,6 +20,7 @@ class WorkoutWithSets {
     required this.exerciseCount,
     required this.exerciseNames,
     this.totalVolume = 0,
+    this.recordCount = 0,
   });
 }
 
@@ -134,6 +137,10 @@ class _WorkoutsListState extends State<WorkoutsList> {
           (sum, s) => sum + (s.weight * s.reps),
         );
 
+        // Get record count for this workout
+        final records = await getWorkoutRecords(workout.id);
+        final recordCount = records.length;
+
         result.add(
           WorkoutWithSets(
             workout: workout,
@@ -141,6 +148,7 @@ class _WorkoutsListState extends State<WorkoutsList> {
             exerciseCount: exerciseNames.length,
             exerciseNames: exerciseNames,
             totalVolume: totalVolume,
+            recordCount: recordCount,
           ),
         );
       }
@@ -311,12 +319,26 @@ class _WorkoutCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          workout.name ?? 'Workout',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                workout.name ?? 'Workout',
+                                style:
+                                    Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                              ),
+                            ),
+                            if (workoutWithSets.recordCount > 0) ...[
+                              const SizedBox(width: 6),
+                              Icon(
+                                Icons.emoji_events,
+                                size: 18,
+                                color: Colors.amber.shade600,
+                              ),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -434,6 +456,13 @@ class _WorkoutCard extends StatelessWidget {
                       _formatVolume(workoutWithSets.totalVolume),
                     ),
                   ],
+                  if (workoutWithSets.recordCount > 0) ...[
+                    const SizedBox(width: 8),
+                    _buildRecordChip(
+                      context,
+                      workoutWithSets.recordCount,
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -458,6 +487,47 @@ class _WorkoutCard extends StatelessWidget {
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
+    );
+  }
+
+  Widget _buildRecordChip(BuildContext context, int count) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.amber.shade400,
+            Colors.orange.shade500,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.withValues(alpha: 0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.emoji_events,
+            size: 12,
+            color: Colors.white,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$count PR${count > 1 ? 's' : ''}',
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

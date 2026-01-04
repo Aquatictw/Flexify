@@ -6,6 +6,8 @@ import 'package:flexify/graph/cardio_page.dart';
 import 'package:flexify/graph/strength_page.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/plan/plan_state.dart';
+import 'package:flexify/records/record_notification.dart';
+import 'package:flexify/records/records_service.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/timer/timer_state.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +21,7 @@ class SetData {
   int? savedSetId;
   bool isWarmup;
   bool isDropSet;
+  Set<RecordType> records;
 
   SetData({
     required this.weight,
@@ -27,7 +30,8 @@ class SetData {
     this.savedSetId,
     this.isWarmup = false,
     this.isDropSet = false,
-  });
+    Set<RecordType>? records,
+  }) : records = records ?? {};
 }
 
 class ExerciseSetsCard extends StatefulWidget {
@@ -434,6 +438,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     if (sets[index].completed) return;
 
     final settings = context.read<SettingsState>().value;
+    final setData = sets[index];
 
     HapticFeedback.mediumImpact();
 
@@ -450,8 +455,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       });
     } else {
       // Fallback: Insert new record (shouldn't happen with auto-save)
-      final setData = sets[index];
-
       final gymSet = await db.into(db.gymSets).insertReturning(
             GymSetsCompanion.insert(
               name: widget.exercise.exercise,
@@ -475,6 +478,33 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         sets[index].completed = true;
         sets[index].savedSetId = gymSet.id;
       });
+    }
+
+    // Check for records (only for non-warmup, non-cardio sets)
+    if (!setData.isWarmup && setData.weight > 0 && setData.reps > 0) {
+      final achievements = await checkForRecords(
+        exerciseName: widget.exercise.exercise,
+        weight: setData.weight,
+        reps: setData.reps.toDouble(),
+        unit: unit,
+        excludeSetId: sets[index].savedSetId, // Exclude this set to compare against previous bests
+      );
+
+      if (achievements.isNotEmpty) {
+        // Update the set's records
+        setState(() {
+          sets[index].records = achievements.map((a) => a.type).toSet();
+        });
+
+        // Show the celebration notification
+        if (mounted) {
+          showRecordNotification(
+            context,
+            achievements: achievements,
+            exerciseName: widget.exercise.exercise,
+          );
+        }
+      }
     }
 
     // Start rest timer
@@ -944,6 +974,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                               index: displayIndex,
                               setData: sets[index],
                               unit: unit,
+                              records: sets[index].records,
                               onWeightChanged: (value) {
                                 setState(() => sets[index].weight = value);
                                 if (sets[index].savedSetId != null) {
@@ -1123,6 +1154,7 @@ class _SetRow extends StatelessWidget {
   final int index;
   final SetData setData;
   final String unit;
+  final Set<RecordType> records;
   final ValueChanged<double> onWeightChanged;
   final ValueChanged<int> onRepsChanged;
   final VoidCallback onToggle;
@@ -1134,6 +1166,7 @@ class _SetRow extends StatelessWidget {
     required this.index,
     required this.setData,
     required this.unit,
+    required this.records,
     required this.onWeightChanged,
     required this.onRepsChanged,
     required this.onToggle,
@@ -1356,6 +1389,12 @@ class _SetRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
+            // Record crown indicator
+            if (records.isNotEmpty && completed)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: RecordCrown(records: records, size: 20),
+              ),
             // Complete/Toggle button
             _CompleteButton(
               completed: completed,
