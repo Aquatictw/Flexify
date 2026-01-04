@@ -130,15 +130,15 @@ const Map<String, (String, String)> hevyToFlexifyMapping = {
   'techno gym cable standing roa': ('Cable row', 'Back'),
 
   // Shoulder exercises
-  'overhead press (barbell)': ('Barbell shoulder press', 'Shoulders'),
+  'overhead press (barbell)': ('Overhead press', 'Shoulders'),
   'overhead press (dumbbell)': ('Dumbbell shoulder press', 'Shoulders'),
-  'overhead press': ('Barbell shoulder press', 'Shoulders'),
+  'overhead press': ('Overhead press', 'Shoulders'),
   'overhead press (smith machine)': (
     'Overhead press (Smith machine)',
     'Shoulders'
   ),
-  'military press': ('Barbell shoulder press', 'Shoulders'),
-  'shoulder press (barbell)': ('Barbell shoulder press', 'Shoulders'),
+  'military press': ('Overhead press', 'Shoulders'),
+  'shoulder press (barbell)': ('Overhead press', 'Shoulders'),
   'shoulder press (dumbbell)': ('Dumbbell shoulder press', 'Shoulders'),
   'shoulder press (machine)': ('Shoulder press (Machine)', 'Shoulders'),
   'shoulder press (machine plates)': ('Shoulder press (Machine)', 'Shoulders'),
