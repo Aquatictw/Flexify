@@ -462,9 +462,17 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       // Show all sets
       ...(() {
         int workingSetNumber = 0;
+        int dropSetNumber = 0;
         return sets.map((set) {
-          if (!set.warmup) workingSetNumber++;
-          return _buildSetTile(set, workingSetNumber);
+          if (set.dropSet) {
+            dropSetNumber++;
+            return _buildSetTile(set, dropSetNumber, isDropSet: true);
+          } else if (!set.warmup) {
+            workingSetNumber++;
+            return _buildSetTile(set, workingSetNumber);
+          } else {
+            return _buildSetTile(set, 0);
+          }
         }).toList();
       })(),
     ];
@@ -531,7 +539,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     );
   }
 
-  Widget _buildSetTile(GymSet set, int setNumber) {
+  Widget _buildSetTile(GymSet set, int setNumber, {bool isDropSet = false}) {
     final reps = toString(set.reps);
     final weight = toString(set.weight);
     final minutes = set.duration.floor();
@@ -560,7 +568,9 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         decoration: BoxDecoration(
           color: isWarmup
               ? colorScheme.tertiaryContainer
-              : colorScheme.surfaceContainerHighest,
+              : isDropSet
+                  ? colorScheme.secondaryContainer
+                  : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Center(
@@ -570,18 +580,24 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                   size: 14,
                   color: colorScheme.tertiary,
                 )
-              : Text(
-                  '$setNumber',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
+              : isDropSet
+                  ? Icon(
+                      Icons.trending_down,
+                      size: 14,
+                      color: colorScheme.secondary,
+                    )
+                  : Text(
+                      '$setNumber',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
         ),
       ),
       title: Text(
         subtitle,
-        style: isWarmup
+        style: (isWarmup || isDropSet)
             ? TextStyle(color: colorScheme.onSurfaceVariant)
             : null,
       ),
