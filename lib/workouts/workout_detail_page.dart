@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flexify/database/database.dart';
 import 'package:flexify/main.dart';
+import 'package:flexify/records/record_notification.dart';
+import 'package:flexify/records/records_service.dart';
 import 'package:flexify/sets/edit_set_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/utils.dart';
@@ -21,6 +23,7 @@ class WorkoutDetailPage extends StatefulWidget {
 
 class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   late Stream<List<GymSet>> setsStream;
+  Map<int, Set<RecordType>> _recordsMap = {};
 
   @override
   void initState() {
@@ -34,6 +37,16 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             (s) => OrderingTerm(expression: s.created, mode: OrderingMode.asc)
           ]))
         .watch();
+    _loadRecords();
+  }
+
+  Future<void> _loadRecords() async {
+    final records = await getWorkoutRecords(widget.workout.id);
+    if (mounted) {
+      setState(() {
+        _recordsMap = records;
+      });
+    }
   }
 
   @override
@@ -173,7 +186,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
               ),
               // Stats section
               SliverToBoxAdapter(
-                child: _buildStatsSection(sets, totalVolume, uniqueExerciseNames),
+                child: _buildStatsSection(sets, totalVolume, uniqueExerciseNames, _recordsMap.length),
               ),
               // Notes section
               if (widget.workout.notes?.isNotEmpty == true)
@@ -196,6 +209,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                       group.name,
                       group.sets,
                       showImages,
+                      _recordsMap,
                     );
                   },
                   childCount: exerciseGroups.length,
@@ -245,7 +259,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     );
   }
 
-  Widget _buildStatsSection(List<GymSet> sets, double totalVolume, int exerciseCount) {
+  Widget _buildStatsSection(List<GymSet> sets, double totalVolume, int exerciseCount, int recordCount) {
     final colorScheme = Theme.of(context).colorScheme;
     final duration = widget.workout.endTime != null
         ? widget.workout.endTime!.difference(widget.workout.startTime)
@@ -289,30 +303,44 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                 'volume',
               ),
             ],
+            if (recordCount > 0) ...[
+              _buildStatDivider(),
+              _buildStatItem(
+                Icons.emoji_events,
+                '$recordCount',
+                'PRs',
+                isHighlighted: true,
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatItem(IconData icon, String value, String label) {
+  Widget _buildStatItem(IconData icon, String value, String label, {bool isHighlighted = false}) {
     final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
-        Icon(icon, size: 20, color: colorScheme.primary),
+        Icon(
+          icon,
+          size: 20,
+          color: isHighlighted ? Colors.amber : colorScheme.primary,
+        ),
         const SizedBox(height: 6),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            color: isHighlighted ? Colors.amber.shade700 : null,
           ),
         ),
         Text(
           label,
           style: TextStyle(
             fontSize: 11,
-            color: colorScheme.onSurfaceVariant,
+            color: isHighlighted ? Colors.amber.shade600 : colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -395,6 +423,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     String exerciseName,
     List<GymSet> unsortedSets,
     bool showImages,
+    Map<int, Set<RecordType>> recordsMap,
   ) {
     // Sort sets: warmups first, then by creation time
     final sets = List<GymSet>.from(unsortedSets)
@@ -409,6 +438,9 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     final firstSet = unsortedSets.first; // Use original first for metadata
     final exerciseNotes = firstSet.notes;
     final brandName = firstSet.brandName;
+
+    // Check if any set in this group has records
+    final groupHasRecords = sets.any((s) => recordsMap.containsKey(s.id));
 
     Widget? leading;
     if (showImages && firstSet.image != null) {
@@ -464,14 +496,15 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         int workingSetNumber = 0;
         int dropSetNumber = 0;
         return sets.map((set) {
+          final setRecords = recordsMap[set.id] ?? {};
           if (set.dropSet) {
             dropSetNumber++;
-            return _buildSetTile(set, dropSetNumber, isDropSet: true);
+            return _buildSetTile(set, dropSetNumber, isDropSet: true, records: setRecords);
           } else if (!set.warmup) {
             workingSetNumber++;
-            return _buildSetTile(set, workingSetNumber);
+            return _buildSetTile(set, workingSetNumber, records: setRecords);
           } else {
-            return _buildSetTile(set, 0);
+            return _buildSetTile(set, 0, records: setRecords);
           }
         }).toList();
       })(),
@@ -500,6 +533,14 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                   color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
               ),
+            ),
+          ],
+          if (groupHasRecords) ...[
+            const SizedBox(width: 8),
+            Icon(
+              Icons.emoji_events,
+              size: 18,
+              color: Colors.amber.shade600,
             ),
           ],
         ],
@@ -539,7 +580,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     );
   }
 
-  Widget _buildSetTile(GymSet set, int setNumber, {bool isDropSet = false}) {
+  Widget _buildSetTile(GymSet set, int setNumber, {bool isDropSet = false, Set<RecordType> records = const {}}) {
     final reps = toString(set.reps);
     final weight = toString(set.weight);
     final minutes = set.duration.floor();
@@ -548,6 +589,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     final distance = toString(set.distance);
     final colorScheme = Theme.of(context).colorScheme;
     final isWarmup = set.warmup;
+    final hasRecords = records.isNotEmpty;
 
     String subtitle;
     if (set.cardio) {
@@ -570,8 +612,13 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
               ? colorScheme.tertiaryContainer
               : isDropSet
                   ? colorScheme.secondaryContainer
-                  : colorScheme.surfaceContainerHighest,
+                  : hasRecords
+                      ? Colors.amber.withValues(alpha: 0.2)
+                      : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
+          border: hasRecords
+              ? Border.all(color: Colors.amber.shade400, width: 1.5)
+              : null,
         ),
         child: Center(
           child: isWarmup
@@ -590,16 +637,27 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                       '$setNumber',
                       style: TextStyle(
                         fontSize: 12,
-                        color: colorScheme.onSurface,
+                        color: hasRecords ? Colors.amber.shade700 : colorScheme.onSurface,
+                        fontWeight: hasRecords ? FontWeight.bold : null,
                       ),
                     ),
         ),
       ),
-      title: Text(
-        subtitle,
-        style: (isWarmup || isDropSet)
-            ? TextStyle(color: colorScheme.onSurfaceVariant)
-            : null,
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              subtitle,
+              style: (isWarmup || isDropSet)
+                  ? TextStyle(color: colorScheme.onSurfaceVariant)
+                  : hasRecords
+                      ? TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)
+                      : null,
+            ),
+          ),
+          if (hasRecords)
+            RecordCrown(records: records, size: 18),
+        ],
       ),
       onTap: () {
         Navigator.push(
