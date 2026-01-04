@@ -155,7 +155,7 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
