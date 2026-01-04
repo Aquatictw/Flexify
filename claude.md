@@ -78,6 +78,8 @@ Workout Session (e.g., "Monday Chest - Dec 29, 5pm")
 | `lib/plan/exercise_sets_card.dart` | Exercise card with sets, popup menu, notes dialog |
 | `lib/plan/plans_page.dart` | Plans list page with freeform workout option |
 | `lib/plan/plan_tile.dart` | Plan list tile - checks for active workout before starting |
+| `lib/records/records_service.dart` | Personal record detection and calculation |
+| `lib/records/record_notification.dart` | PR celebration UI and badge widgets |
 | `lib/app_search.dart` | Reusable search AppBar with optional Add menu item |
 | `lib/graph/overview_page.dart` | Workout overview with stats, heatmap, and muscle charts |
 | `drift_schemas/db/drift_schema_vN.json` | Schema JSON files for each version |
@@ -329,6 +331,153 @@ Custom rest times are configured via:
 - Stored per exercise, not per plan or workout
 
 **Important**: Custom rest times are stored at the GymSet level (not PlanExercise level), meaning they're tied to the exercise name across all workouts.
+
+## Personal Records (PR) Feature
+
+### Overview
+
+The Personal Records feature automatically detects and celebrates when a user achieves a new personal best during their workout. It tracks three types of records per exercise:
+
+1. **Best 1RM** (💪): Estimated one-rep max using Brzycki formula
+2. **Best Volume** (🔥): Single-set volume (weight × reps)
+3. **Best Weight** (🏆): Heaviest weight lifted
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `lib/records/records_service.dart` | Record calculation and checking logic |
+| `lib/records/record_notification.dart` | Celebration notification UI and badge widgets |
+| `lib/plan/exercise_sets_card.dart` | PR checking for plan exercises |
+| `lib/plan/start_plan_page.dart` | PR checking for ad-hoc exercises |
+
+### How It Works
+
+**1. Record Detection** (`records_service.dart`):
+
+When a set is completed, `checkForRecords()` queries the database to compare against historical bests:
+
+```dart
+final achievements = await checkForRecords(
+  exerciseName: exerciseName,
+  weight: weight,
+  reps: reps,
+  unit: unit,
+  excludeSetId: setId, // Exclude current set from comparison
+);
+```
+
+The function:
+- Calculates 1RM using Brzycki formula: `weight / (1.0278 - 0.0278 * reps)`
+- Handles negative weights (bodyweight assistance): `weight * (1.0278 - 0.0278 * reps)`
+- Compares current set against all-time bests for that exercise
+- Returns list of `RecordAchievement` objects for each record broken
+
+**2. Celebration Notification** (`record_notification.dart`):
+
+When records are detected, `showRecordNotification()` displays an animated celebration dialog:
+
+```dart
+if (achievements.isNotEmpty && mounted) {
+  showRecordNotification(
+    context,
+    achievements: achievements,
+    exerciseName: exerciseName,
+  );
+}
+```
+
+Features:
+- Heavy haptic feedback on record achievement
+- Animated confetti particles (30 particles with physics)
+- Elastic bounce animation using `Curves.elasticOut`
+- Golden crown icon with shimmer effect
+- Shows all records broken in one notification
+- Displays improvement percentage over previous best
+- Auto-dismisses after 3 seconds
+
+**Important**: The notification uses `.clamp(0.0, 1.0)` on opacity values because `Curves.easeOutBack` overshoots 1.0, which would cause assertion errors in the `Opacity` widget.
+
+**3. Visual Indicators**:
+
+- **RecordCrown**: Badge showing crown icon for sets that hold records
+  - Colored by record type (amber for weight, orange for 1RM, deep orange for volume)
+  - Shows tooltip with record types (e.g., "PR: Weight, 1RM")
+  - Used in workout detail view to highlight PR sets
+
+- **RecordIndicator**: Compact row of mini icons for each record type
+  - Used in history/list views where space is limited
+
+**4. Implementation in Exercise Cards**:
+
+Both `ExerciseSetsCard` (plan exercises) and `_AdHocExerciseCard` (ad-hoc exercises) check for PRs in their `_completeSet()` methods:
+
+```dart
+// Check for records (only for non-warmup, non-cardio sets)
+final setData = sets[index];
+if (!setData.isWarmup && setData.weight > 0 && setData.reps > 0) {
+  final achievements = await checkForRecords(
+    exerciseName: exerciseName,
+    weight: setData.weight,
+    reps: setData.reps.toDouble(),
+    unit: unit,
+    excludeSetId: sets[index].savedSetId,
+  );
+
+  if (achievements.isNotEmpty) {
+    // Store record types on the set for badge display
+    setState(() {
+      sets[index].records = achievements.map((a) => a.type).toSet();
+    });
+
+    // Show celebration notification
+    if (mounted) {
+      showRecordNotification(
+        context,
+        achievements: achievements,
+        exerciseName: exerciseName,
+      );
+    }
+  }
+}
+```
+
+**5. Record Queries**:
+
+Other utility functions in `records_service.dart`:
+
+- `getSetRecords()`: Check if a specific set holds any records
+- `getWorkoutRecords()`: Get all record-holding sets in a workout
+- `workoutHasRecords()`: Boolean check if workout contains any PRs
+- `getWorkoutRecordCount()`: Count of record-breaking sets in a workout
+- `getBatchWorkoutRecordCounts()`: Efficient batch query for multiple workouts
+
+All queries exclude hidden sets (`hidden = 0`) and use SQL MAX aggregations for performance.
+
+### Brzycki Formula Implementation
+
+The 1RM calculation handles both standard weights and bodyweight assistance:
+
+```dart
+double calculate1RM(double weight, double reps) {
+  if (reps <= 0) return 0;
+  if (reps == 1) return weight;
+  if (weight >= 0) {
+    return weight / (1.0278 - 0.0278 * reps);  // Standard weights
+  } else {
+    return weight * (1.0278 - 0.0278 * reps);  // Bodyweight assistance
+  }
+}
+```
+
+### Important Notes
+
+- PRs are checked **only** for non-warmup, non-cardio sets with weight > 0 and reps > 0
+- Records are tracked per exercise name (case-sensitive)
+- The `excludeSetId` parameter prevents comparing a set against itself when editing
+- Multiple records can be broken in a single set (e.g., both best weight and best 1RM)
+- Record badges are stored in the set's local state for immediate UI updates
+- The notification dialog uses `useRootNavigator: true` to appear above overlays
 
 ## Development Commands
 

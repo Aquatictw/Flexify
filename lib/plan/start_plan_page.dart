@@ -8,6 +8,8 @@ import 'package:flexify/graph/strength_page.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/plan/exercise_sets_card.dart';
 import 'package:flexify/plan/plan_state.dart';
+import 'package:flexify/records/record_notification.dart';
+import 'package:flexify/records/records_service.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/timer/timer_state.dart';
 import 'package:flexify/workouts/workout_state.dart';
@@ -1604,6 +1606,34 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
         sets[index].completed = true;
         sets[index].savedSetId = gymSet.id;
       });
+    }
+
+    // Check for records (only for non-warmup, non-cardio sets)
+    final setData = sets[index];
+    if (!setData.isWarmup && setData.weight > 0 && setData.reps > 0) {
+      final achievements = await checkForRecords(
+        exerciseName: widget.exerciseName,
+        weight: setData.weight,
+        reps: setData.reps.toDouble(),
+        unit: unit,
+        excludeSetId: sets[index].savedSetId,
+      );
+
+      if (achievements.isNotEmpty) {
+        // Update the set's records
+        setState(() {
+          sets[index].records = achievements.map((a) => a.type).toSet();
+        });
+
+        // Show the celebration notification
+        if (mounted) {
+          showRecordNotification(
+            context,
+            achievements: achievements,
+            exerciseName: widget.exerciseName,
+          );
+        }
+      }
     }
 
     // Start rest timer
