@@ -1,13 +1,10 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/drift.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flexify/animated_fab.dart';
 import 'package:flexify/constants.dart';
 import 'package:flexify/database/database.dart';
 import 'package:flexify/database/gym_sets.dart';
 import 'package:flexify/graph/add_exercise_page.dart';
-import 'package:flexify/graph/cardio_data.dart';
-import 'package:flexify/graph/flex_line.dart';
 import 'package:flexify/graphs_filters.dart';
 import 'package:flexify/main.dart';
 import 'package:flexify/plan/plan_state.dart';
@@ -15,7 +12,6 @@ import 'package:flexify/settings/settings_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import 'graph_tile.dart';
@@ -96,59 +92,6 @@ class GraphsPageState extends State<GraphsPage>
           .where((x) => x.planId.equals(plan.id) & x.exercise.isIn(copy));
     }
     state.updatePlans(null);
-  }
-
-  LineTouchTooltipData tooltipData(
-    List<dynamic> data,
-    String unit,
-    String format,
-  ) {
-    return LineTouchTooltipData(
-      getTooltipColor: (touch) => Theme.of(context).colorScheme.surface,
-      getTooltipItems: (touchedSpots) {
-        final row = data.elementAt(touchedSpots.last.spotIndex);
-        final created = DateFormat(format).format(row.created);
-
-        String text;
-        if (row is CardioData)
-          text = "${row.value} ${row.unit} / min";
-        else
-          text = "${row.reps} x ${row.value.toStringAsFixed(2)}$unit $created";
-
-        return [
-          LineTooltipItem(
-            text,
-            TextStyle(color: Theme.of(context).textTheme.bodyLarge!.color),
-          ),
-          if (touchedSpots.length > 1) null,
-        ];
-      },
-    );
-  }
-
-  Widget getPeek(GraphExercise gymSet, List<dynamic> data, String format) {
-    List<FlSpot> spots = [];
-    for (var index = 0; index < data.length; index++) {
-      spots.add(FlSpot(index.toDouble(), data[index].value));
-    }
-
-    return material.SizedBox(
-      height: MediaQuery.of(context).size.height * 0.15,
-      child: material.Padding(
-        padding: const EdgeInsets.only(right: 48.0, top: 16.0, left: 48.0),
-        child: FlexLine(
-          data: data,
-          spots: spots,
-          tooltipData: () => tooltipData(
-            data,
-            gymSet.unit,
-            format,
-          ),
-          hideBottom: true,
-          hideLeft: true,
-        ),
-      ),
-    );
   }
 
   Scaffold graphsPage() {
@@ -547,55 +490,14 @@ class GraphsPageState extends State<GraphsPage>
   material.ListView graphList(List<GraphExercise> gymSets) {
     var itemCount = gymSets.length + 1;
 
-    final settings = context.read<SettingsState>().value;
-    final showPeekGraph = settings.peekGraph && gymSets.firstOrNull != null;
-    if (showPeekGraph) itemCount++;
-
     return ListView.builder(
       itemCount: itemCount,
       controller: scroll,
       padding: const EdgeInsets.only(bottom: 50, top: 8),
       itemBuilder: (context, index) {
-        int currentIdx = index;
-
-        if (showPeekGraph && currentIdx == 0) {
-          return Consumer<SettingsState>(
-            builder: (
-              BuildContext context,
-              SettingsState settings,
-              Widget? child,
-            ) {
-              if (!settings.value.peekGraph) return const SizedBox();
-              if (gymSets.firstOrNull == null) return const SizedBox();
-
-              return FutureBuilder(
-                builder: (context, snapshot) => snapshot.data != null
-                    ? getPeek(
-                        gymSets.first,
-                        snapshot.data!,
-                        settings.value.shortDateFormat,
-                      )
-                    : const SizedBox(),
-                future: gymSets.first.cardio
-                    ? getCardioData(name: gymSets.first.name)
-                    : getStrengthData(
-                        target: gymSets.first.unit,
-                        name: gymSets.first.name,
-                        metric: StrengthMetric.bestWeight,
-                        period: Period.months3,
-                      ),
-              );
-            },
-          );
-        }
-
         if (index == itemCount - 1) return const SizedBox(height: 96);
 
-        if (showPeekGraph && currentIdx > 0) {
-          currentIdx--;
-        }
-
-        final set = gymSets.elementAtOrNull(currentIdx);
+        final set = gymSets.elementAtOrNull(index);
         if (set == null) return const SizedBox();
 
         return GraphTile(

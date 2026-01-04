@@ -10,6 +10,7 @@ import 'package:flexify/records/record_notification.dart';
 import 'package:flexify/records/records_service.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/timer/timer_state.dart';
+import 'package:flexify/widgets/bodypart_tag.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -72,6 +73,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
   int _defaultReps = 8;
   String? _brandName;
   String? _exerciseType;
+  String? _category;
   int? _restMs; // Custom rest time for this exercise
 
   // Store previous sets by type for smarter set creation
@@ -137,6 +139,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     final defaultUnit = referenceSet?.unit ?? settings.strengthUnit;
     _brandName = referenceSet?.brandName;
     _exerciseType = referenceSet?.exerciseType;
+    _category = referenceSet?.category;
     _restMs = referenceSet?.restMs; // Load custom rest time
 
     // Get ALL sets (including uncompleted/hidden ones) in this workout for this specific exercise instance
@@ -810,8 +813,12 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                     ),
                               ),
                             ),
+                            if (_category != null && _category!.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              BodypartTag(bodypart: _category),
+                            ],
                             if (_brandName != null && _brandName!.isNotEmpty) ...[
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(

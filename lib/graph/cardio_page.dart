@@ -9,6 +9,7 @@ import 'package:flexify/graph/cardio_data.dart';
 import 'package:flexify/graph/edit_graph_page.dart';
 import 'package:flexify/graph/graph_history_page.dart';
 import 'package:flexify/main.dart';
+import 'package:flexify/widgets/bodypart_tag.dart';
 import 'package:flexify/workouts/workout_detail_page.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +43,7 @@ class _CardioPageState extends State<CardioPage> {
   DateTime lastTap = DateTime(0);
   int? selectedIndex;
   String? brandName;
+  String? category;
 
   @override
   void initState() {
@@ -49,6 +51,7 @@ class _CardioPageState extends State<CardioPage> {
     widget.tabCtrl?.addListener(_onTabChanged);
     setData();
     _loadBrandName();
+    _loadCategory();
   }
 
   @override
@@ -76,6 +79,21 @@ class _CardioPageState extends State<CardioPage> {
     if (mounted) {
       setState(() {
         brandName = result?.brandName;
+      });
+    }
+  }
+
+  Future<void> _loadCategory() async {
+    final result = await (db.gymSets.select()
+          ..where((tbl) => tbl.name.equals(widget.name))
+          ..orderBy([
+            (u) => drift.OrderingTerm(expression: u.created, mode: drift.OrderingMode.desc),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
+    if (mounted) {
+      setState(() {
+        category = result?.category;
       });
     }
   }
@@ -123,8 +141,12 @@ class _CardioPageState extends State<CardioPage> {
             Flexible(
               child: Text(widget.name),
             ),
+            if (category != null && category!.isNotEmpty) ...[
+              const SizedBox(width: 6),
+              BodypartTag(bodypart: category),
+            ],
             if (brandName != null && brandName!.isNotEmpty) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(

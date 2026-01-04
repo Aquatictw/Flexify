@@ -5,6 +5,7 @@ import 'package:flexify/database/gym_sets.dart';
 import 'package:flexify/graph/cardio_page.dart';
 import 'package:flexify/graph/strength_page.dart';
 import 'package:flexify/settings/settings_state.dart';
+import 'package:flexify/widgets/bodypart_tag.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -107,9 +108,13 @@ class GraphTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            if (exercise.category != null && exercise.category!.isNotEmpty) ...[
+              const SizedBox(width: 6),
+              BodypartTag(bodypart: exercise.category),
+            ],
             if (exercise.brandName != null &&
                 exercise.brandName!.isNotEmpty) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(

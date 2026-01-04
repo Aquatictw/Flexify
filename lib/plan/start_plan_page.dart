@@ -12,6 +12,7 @@ import 'package:flexify/records/record_notification.dart';
 import 'package:flexify/records/records_service.dart';
 import 'package:flexify/settings/settings_state.dart';
 import 'package:flexify/timer/timer_state.dart';
+import 'package:flexify/widgets/bodypart_tag.dart';
 import 'package:flexify/workouts/workout_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -834,7 +835,7 @@ class _ExercisePickerModal extends StatefulWidget {
 
 class _ExercisePickerModalState extends State<_ExercisePickerModal> {
   String _search = '';
-  List<({String name, String? brandName, int workoutCount})> _allExercises = [];
+  List<({String name, String? brandName, String? category, int workoutCount})> _allExercises = [];
   bool _loading = true;
 
   @override
@@ -844,7 +845,7 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
   }
 
   Future<void> _loadExercises() async {
-    // Get distinct exercise names with brand names and workout counts from gym_sets
+    // Get distinct exercise names with brand names, categories, and workout counts from gym_sets
     // Sort by workout count descending (most frequently used exercises first)
     // Note: COUNT(DISTINCT workout_id) excludes NULL values, so exercises that
     // have never been used in any workout will have a count of 0
@@ -856,6 +857,7 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
           ..addColumns([
             db.gymSets.name,
             db.gymSets.brandName,
+            db.gymSets.category,
             workoutCountCol,
           ])
           // Don't filter by hidden - we want to show all exercises including ones
@@ -870,6 +872,7 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
     final exerciseList = results.map((r) => (
       name: r.read(db.gymSets.name)!,
       brandName: r.read(db.gymSets.brandName),
+      category: r.read(db.gymSets.category),
       workoutCount: r.read(workoutCountCol) ?? 0,
     )).toList();
 
@@ -881,7 +884,7 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
     }
   }
 
-  List<({String name, String? brandName, int workoutCount})> get _filteredExercises {
+  List<({String name, String? brandName, String? category, int workoutCount})> get _filteredExercises {
     if (_search.isEmpty) return _allExercises;
     return _allExercises
         .where((e) => e.name.toLowerCase().contains(_search.toLowerCase()))
@@ -1131,8 +1134,12 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
+                                  if (exercise.category != null && exercise.category!.isNotEmpty) ...[
+                                    const SizedBox(width: 5),
+                                    BodypartTag(bodypart: exercise.category, fontSize: 9),
+                                  ],
                                   if (exercise.brandName != null && exercise.brandName!.isNotEmpty) ...[
-                                    const SizedBox(width: 6),
+                                    const SizedBox(width: 5),
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                                       decoration: BoxDecoration(
