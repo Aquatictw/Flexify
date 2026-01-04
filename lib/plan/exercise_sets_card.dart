@@ -487,7 +487,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         weight: setData.weight,
         reps: setData.reps.toDouble(),
         unit: unit,
-        excludeSetId: null, // Include this set in the check
+        excludeSetId: sets[index].savedSetId, // Exclude this set to compare against previous bests
       );
 
       if (achievements.isNotEmpty) {
