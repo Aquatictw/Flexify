@@ -94,7 +94,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     final maxSets = widget.exercise.maxSets ?? settings.maxSets;
 
     // Get the most recent workout that had this exercise (completed sets only)
-    final recentWorkoutId = await (db.gymSets.selectOnly()
+    final recentWorkoutRow = await (db.gymSets.selectOnly()
           ..addColumns([db.gymSets.workoutId])
           ..where(db.gymSets.name.equals(widget.exercise.exercise) &
                   db.gymSets.hidden.equals(false) &
@@ -103,8 +103,9 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
             OrderingTerm(expression: db.gymSets.created, mode: OrderingMode.desc),
           ])
           ..limit(1))
-        .getSingleOrNull()
-        ?.read(db.gymSets.workoutId);
+        .getSingleOrNull();
+
+    final recentWorkoutId = recentWorkoutRow?.read(db.gymSets.workoutId);
 
     List<GymSet> previousSets = [];
     if (recentWorkoutId != null) {

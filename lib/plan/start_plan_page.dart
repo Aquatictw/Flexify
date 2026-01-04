@@ -1219,7 +1219,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     final settings = context.read<SettingsState>().value;
 
     // Get the most recent workout that had this exercise (completed sets only)
-    final recentWorkoutId = await (db.gymSets.selectOnly()
+    final recentWorkoutRow = await (db.gymSets.selectOnly()
           ..addColumns([db.gymSets.workoutId])
           ..where(db.gymSets.name.equals(widget.exerciseName) &
                   db.gymSets.hidden.equals(false) &
@@ -1228,8 +1228,9 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
             OrderingTerm(expression: db.gymSets.created, mode: OrderingMode.desc),
           ])
           ..limit(1))
-        .getSingleOrNull()
-        ?.read(db.gymSets.workoutId);
+        .getSingleOrNull();
+
+    final recentWorkoutId = recentWorkoutRow?.read(db.gymSets.workoutId);
 
     List<GymSet> previousSets = [];
     if (recentWorkoutId != null) {
