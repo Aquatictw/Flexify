@@ -101,10 +101,10 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      margin: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 4),
+      margin: const EdgeInsets.only(left: 12, right: 12, top: 6, bottom: 2),
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: colorScheme.shadow.withValues(alpha: 0.1),
@@ -116,7 +116,7 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           onTap: () {
             if (plan != null) {
               final navKey = workoutState.plansNavigatorKey;
@@ -140,14 +140,14 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
             }
           },
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: colorScheme.primary,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(
                     Icons.fitness_center,
@@ -155,7 +155,7 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,10 +183,52 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                     ],
                   ),
                 ),
-                TextButton.icon(
+                // Discard button
+                IconButton(
                   onPressed: () async {
                     final confirmed = await showDialog<bool>(
                       context: context,
+                      useRootNavigator: true,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Discard Workout?'),
+                        content: const Text(
+                          'All sets from this workout will be permanently deleted. This action cannot be undone.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: colorScheme.error,
+                            ),
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Discard'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed == true) {
+                      final timerState = context.read<TimerState>();
+                      await timerState.stopTimer();
+                      await workoutState.discardWorkout();
+                    }
+                  },
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: colorScheme.error,
+                    size: 18,
+                  ),
+                  tooltip: 'Discard workout',
+                ),
+                const SizedBox(width: 4),
+                // End button
+                IconButton(
+                  onPressed: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      useRootNavigator: true,
                       builder: (context) => AlertDialog(
                         title: const Text('End Workout?'),
                         content: const Text(
@@ -205,7 +247,6 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                       ),
                     );
                     if (confirmed == true) {
-                      // Stop rest timer if running
                       final timerState = context.read<TimerState>();
                       await timerState.stopTimer();
                       await workoutState.stopWorkout();
@@ -216,10 +257,7 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                     color: colorScheme.error,
                     size: 18,
                   ),
-                  label: Text(
-                    'End',
-                    style: TextStyle(color: colorScheme.error),
-                  ),
+                  tooltip: 'End workout',
                 ),
               ],
             ),

@@ -335,7 +335,7 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
 
   Widget _buildViewToggle() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: SegmentedButton<HistoryView>(
         segments: const [
           ButtonSegment<HistoryView>(

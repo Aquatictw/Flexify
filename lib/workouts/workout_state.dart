@@ -93,6 +93,24 @@ class WorkoutState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> discardWorkout() async {
+    if (_activeWorkout == null) return;
+
+    // Delete all gym sets associated with this workout
+    await (db.gymSets.delete()
+          ..where((tbl) => tbl.workoutId.equals(_activeWorkout!.id)))
+        .go();
+
+    // Delete the workout itself
+    await (db.workouts.delete()
+          ..where((w) => w.id.equals(_activeWorkout!.id)))
+        .go();
+
+    _activeWorkout = null;
+    _activePlan = null;
+    notifyListeners();
+  }
+
   Future<void> refresh() async {
     await _loadActiveWorkout();
   }

@@ -88,8 +88,9 @@ class _AppSearchState extends State<AppSearch> {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 16),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
       child: SearchBar(
+        constraints: const BoxConstraints(maxHeight: 48),
         hintText: "Search...",
         controller: ctrl,
         padding: WidgetStateProperty.all(
