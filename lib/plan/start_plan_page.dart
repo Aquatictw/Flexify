@@ -837,6 +837,8 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
   Future<void> _loadExercises() async {
     // Get distinct exercise names with brand names and workout counts from gym_sets
     // Sort by workout count descending (most frequently used exercises first)
+    // Note: COUNT(DISTINCT workout_id) excludes NULL values, so exercises that
+    // have never been used in any workout will have a count of 0
     final workoutCountCol = const CustomExpression<int>(
       'COUNT(DISTINCT workout_id)',
     );
@@ -847,7 +849,8 @@ class _ExercisePickerModalState extends State<_ExercisePickerModal> {
             db.gymSets.brandName,
             workoutCountCol,
           ])
-          ..where(db.gymSets.hidden.equals(false))
+          // Don't filter by hidden - we want to show all exercises including ones
+          // that have never been completed (workout count = 0)
           ..orderBy([
             OrderingTerm(expression: workoutCountCol, mode: OrderingMode.desc),
             OrderingTerm(expression: db.gymSets.name, mode: OrderingMode.asc),
