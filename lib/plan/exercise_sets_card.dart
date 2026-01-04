@@ -70,6 +70,11 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
   String? _exerciseType;
   int? _restMs; // Custom rest time for this exercise
 
+  // Store previous sets by type for smarter set creation
+  List<GymSet> _previousWarmups = [];
+  List<GymSet> _previousDropSets = [];
+  List<GymSet> _previousWorkingSets = [];
+
   @override
   void initState() {
     super.initState();
@@ -88,21 +93,46 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     final settings = context.read<SettingsState>().value;
     final maxSets = widget.exercise.maxSets ?? settings.maxSets;
 
-    // Get the last set for this exercise to get default weight
-    final lastSet = await (db.gymSets.select()
-          ..where((tbl) => tbl.name.equals(widget.exercise.exercise))
+    // Get the most recent workout that had this exercise (completed sets only)
+    final recentWorkoutId = await (db.gymSets.selectOnly()
+          ..addColumns([db.gymSets.workoutId])
+          ..where(db.gymSets.name.equals(widget.exercise.exercise) &
+                  db.gymSets.hidden.equals(false) &
+                  db.gymSets.workoutId.isNotNull())
           ..orderBy([
-            (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+            OrderingTerm(expression: db.gymSets.created, mode: OrderingMode.desc),
           ])
           ..limit(1))
-        .getSingleOrNull();
+        .getSingleOrNull()
+        ?.read(db.gymSets.workoutId);
 
-    _defaultWeight = lastSet?.weight ?? 0.0;
-    _defaultReps = lastSet?.reps.toInt() ?? 8;
-    final defaultUnit = lastSet?.unit ?? settings.strengthUnit;
-    _brandName = lastSet?.brandName;
-    _exerciseType = lastSet?.exerciseType;
-    _restMs = lastSet?.restMs; // Load custom rest time
+    List<GymSet> previousSets = [];
+    if (recentWorkoutId != null) {
+      // Get all sets from that workout for this exercise
+      previousSets = await (db.gymSets.select()
+            ..where((tbl) =>
+                tbl.name.equals(widget.exercise.exercise) &
+                tbl.workoutId.equals(recentWorkoutId) &
+                tbl.hidden.equals(false))
+            ..orderBy([
+              (u) => OrderingTerm(expression: u.created, mode: OrderingMode.asc),
+            ]))
+          .get();
+    }
+
+    // Separate sets by type
+    _previousWarmups = previousSets.where((s) => s.warmup).toList();
+    _previousDropSets = previousSets.where((s) => s.dropSet).toList();
+    _previousWorkingSets = previousSets.where((s) => !s.warmup && !s.dropSet).toList();
+
+    // Get default values from the first working set, or first set, or fallback
+    GymSet? referenceSet = _previousWorkingSets.firstOrNull ?? previousSets.firstOrNull;
+    _defaultWeight = referenceSet?.weight ?? 0.0;
+    _defaultReps = referenceSet?.reps.toInt() ?? 8;
+    final defaultUnit = referenceSet?.unit ?? settings.strengthUnit;
+    _brandName = referenceSet?.brandName;
+    _exerciseType = referenceSet?.exerciseType;
+    _restMs = referenceSet?.restMs; // Load custom rest time
 
     // Get ALL sets (including uncompleted/hidden ones) in this workout for this specific exercise instance
     List<GymSet> existingSets = [];
@@ -121,7 +151,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     if (!mounted) return;
 
     if (existingSets.isNotEmpty) {
-      // Load existing sets from database
+      // Load existing sets from database (resuming workout)
       final loadedSets = existingSets.map((set) {
         return SetData(
           weight: set.weight,
@@ -139,15 +169,34 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         _initialized = true;
       });
     } else {
-      // No existing sets - create and persist them immediately
+      // No existing sets - create new sets based on previous workout
       if (widget.workoutId != null) {
         final newSets = <SetData>[];
+
+        // Create working sets based on previous working sets
         for (int i = 0; i < maxSets; i++) {
+          double weight;
+          int reps;
+
+          if (i < _previousWorkingSets.length) {
+            // Use the value from the corresponding previous working set
+            weight = _previousWorkingSets[i].weight;
+            reps = _previousWorkingSets[i].reps.toInt();
+          } else if (_previousWorkingSets.isNotEmpty) {
+            // Use the last previous working set value
+            weight = _previousWorkingSets.last.weight;
+            reps = _previousWorkingSets.last.reps.toInt();
+          } else {
+            // Fallback to defaults
+            weight = _defaultWeight;
+            reps = _defaultReps;
+          }
+
           final gymSet = await db.into(db.gymSets).insertReturning(
             GymSetsCompanion.insert(
               name: widget.exercise.exercise,
-              reps: _defaultReps.toDouble(),
-              weight: _defaultWeight,
+              reps: reps.toDouble(),
+              weight: weight,
               unit: defaultUnit,
               created: DateTime.now().toLocal(),
               planId: Value(widget.planId),
@@ -158,9 +207,10 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               exerciseType: Value(_exerciseType),
             ),
           );
+
           newSets.add(SetData(
-            weight: _defaultWeight,
-            reps: _defaultReps,
+            weight: weight,
+            reps: reps,
             completed: false,
             savedSetId: gymSet.id,
           ));
@@ -176,11 +226,27 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         // No workout ID - memory only (shouldn't happen normally)
         setState(() {
           unit = defaultUnit;
-          sets = List.generate(maxSets, (_) => SetData(
-            weight: _defaultWeight,
-            reps: _defaultReps,
-            completed: false,
-          ));
+          sets = List.generate(maxSets, (i) {
+            if (i < _previousWorkingSets.length) {
+              return SetData(
+                weight: _previousWorkingSets[i].weight,
+                reps: _previousWorkingSets[i].reps.toInt(),
+                completed: false,
+              );
+            } else if (_previousWorkingSets.isNotEmpty) {
+              return SetData(
+                weight: _previousWorkingSets.last.weight,
+                reps: _previousWorkingSets.last.reps.toInt(),
+                completed: false,
+              );
+            } else {
+              return SetData(
+                weight: _defaultWeight,
+                reps: _defaultReps,
+                completed: false,
+              );
+            }
+          });
           _initialized = true;
         });
       }
@@ -467,13 +533,61 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       insertIndex = sets.length - sets.where((s) => s.isDropSet).length;
     }
 
-    final baseWeight = sets.isNotEmpty ? sets.last.weight : _defaultWeight;
-    final weight = isWarmup
-        ? (baseWeight * 0.5).roundToDouble()
-        : isDropSet
-          ? (baseWeight * 0.75).roundToDouble()
-          : baseWeight;
-    final reps = sets.isNotEmpty ? sets.last.reps : _defaultReps;
+    // Determine weight and reps based on set type and previous sets
+    double weight;
+    int reps;
+
+    if (isWarmup) {
+      // Use previous warmup sets
+      final currentWarmupCount = sets.where((s) => s.isWarmup).length;
+      if (currentWarmupCount < _previousWarmups.length) {
+        // Use the corresponding previous warmup set
+        weight = _previousWarmups[currentWarmupCount].weight;
+        reps = _previousWarmups[currentWarmupCount].reps.toInt();
+      } else if (_previousWarmups.isNotEmpty) {
+        // Use the last previous warmup set
+        weight = _previousWarmups.last.weight;
+        reps = _previousWarmups.last.reps.toInt();
+      } else {
+        // Fallback: 50% of base weight
+        final baseWeight = _previousWorkingSets.firstOrNull?.weight ?? _defaultWeight;
+        weight = (baseWeight * 0.5).roundToDouble();
+        reps = _defaultReps;
+      }
+    } else if (isDropSet) {
+      // Use previous drop sets
+      final currentDropCount = sets.where((s) => s.isDropSet).length;
+      if (currentDropCount < _previousDropSets.length) {
+        // Use the corresponding previous drop set
+        weight = _previousDropSets[currentDropCount].weight;
+        reps = _previousDropSets[currentDropCount].reps.toInt();
+      } else if (_previousDropSets.isNotEmpty) {
+        // Use the last previous drop set
+        weight = _previousDropSets.last.weight;
+        reps = _previousDropSets.last.reps.toInt();
+      } else {
+        // Fallback: 75% of last working set weight
+        final baseWeight = _previousWorkingSets.lastOrNull?.weight ?? _defaultWeight;
+        weight = (baseWeight * 0.75).roundToDouble();
+        reps = _defaultReps;
+      }
+    } else {
+      // Working set - use previous working sets
+      final currentWorkingCount = sets.where((s) => !s.isWarmup && !s.isDropSet).length;
+      if (currentWorkingCount < _previousWorkingSets.length) {
+        // Use the corresponding previous working set
+        weight = _previousWorkingSets[currentWorkingCount].weight;
+        reps = _previousWorkingSets[currentWorkingCount].reps.toInt();
+      } else if (_previousWorkingSets.isNotEmpty) {
+        // Use the last previous working set
+        weight = _previousWorkingSets.last.weight;
+        reps = _previousWorkingSets.last.reps.toInt();
+      } else {
+        // Fallback to defaults
+        weight = _defaultWeight;
+        reps = _defaultReps;
+      }
+    }
 
     if (widget.workoutId != null) {
       final gymSet = await db.into(db.gymSets).insertReturning(
