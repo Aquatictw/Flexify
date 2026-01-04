@@ -1218,6 +1218,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
   int _defaultReps = 8;
   String? _brandName;
   String? _exerciseType;
+  String? _category;
   int? _restMs; // Custom rest time for this exercise
 
   // Store previous sets by type for smarter set creation
@@ -1274,6 +1275,7 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
     final defaultUnit = referenceSet?.unit ?? settings.strengthUnit;
     _brandName = referenceSet?.brandName;
     _exerciseType = referenceSet?.exerciseType;
+    _category = referenceSet?.category;
     _restMs = referenceSet?.restMs; // Load custom rest time
 
     // Get ALL sets (including uncompleted/hidden ones) in this workout for this specific exercise instance
@@ -1924,8 +1926,12 @@ class _AdHocExerciseCardState extends State<_AdHocExerciseCard> {
                                     ),
                               ),
                             ),
+                            if (_category != null && _category!.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              BodypartTag(bodypart: _category),
+                            ],
                             if (_brandName != null && _brandName!.isNotEmpty) ...[
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
