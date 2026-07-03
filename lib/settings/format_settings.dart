@@ -6,6 +6,7 @@ import 'package:timeago/timeago.dart' as timeago;
 
 import '../database/database.dart';
 import '../main.dart';
+import '../theme/tokens.dart';
 import 'plan_settings.dart';
 import 'settings_state.dart';
 
@@ -40,77 +41,91 @@ List<Widget> getFormatSettings(String term, Setting settings) {
   return [
     if ('strength unit'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: DropdownButtonFormField<String>(
-          decoration: const InputDecoration(labelText: 'Strength unit'),
-          initialValue: settings.strengthUnit,
-          items: const [
-            DropdownMenuItem(
-              value: 'last-entry',
-              child: Text('Last entry'),
+        padding: const EdgeInsets.symmetric(horizontal: space16),
+        child: Builder(
+          builder: (context) => DropdownButtonFormField<String>(
+            decoration: InputDecoration(
+              labelText: 'Strength unit',
+              filled: true,
+              fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+              border: const OutlineInputBorder(borderRadius: brSm),
             ),
-            DropdownMenuItem(
-              value: 'kg',
-              child: Text('Kilograms (kg)'),
-            ),
-            DropdownMenuItem(
-              value: 'lb',
-              child: Text('Pounds (lb)'),
-            ),
-            DropdownMenuItem(
-              value: 'stone',
-              child: Text('Stone'),
-            ),
-          ],
-          onChanged: (value) {
-            db.settings.update().write(
-                  SettingsCompanion(
-                    strengthUnit: Value(value!),
-                  ),
-                );
-          },
+            initialValue: settings.strengthUnit,
+            items: const [
+              DropdownMenuItem(
+                value: 'last-entry',
+                child: Text('Last entry'),
+              ),
+              DropdownMenuItem(
+                value: 'kg',
+                child: Text('Kilograms (kg)'),
+              ),
+              DropdownMenuItem(
+                value: 'lb',
+                child: Text('Pounds (lb)'),
+              ),
+              DropdownMenuItem(
+                value: 'stone',
+                child: Text('Stone'),
+              ),
+            ],
+            onChanged: (value) {
+              db.settings.update().write(
+                    SettingsCompanion(
+                      strengthUnit: Value(value!),
+                    ),
+                  );
+            },
+          ),
         ),
       ),
     if ('cardio unit'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: DropdownButtonFormField<String>(
-          decoration: const InputDecoration(labelText: 'Cardio unit'),
-          initialValue: settings.cardioUnit,
-          items: const [
-            DropdownMenuItem(
-              value: 'last-entry',
-              child: Text('Last entry'),
+        padding: const EdgeInsets.symmetric(horizontal: space16),
+        child: Builder(
+          builder: (context) => DropdownButtonFormField<String>(
+            decoration: InputDecoration(
+              labelText: 'Cardio unit',
+              filled: true,
+              fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+              border: const OutlineInputBorder(borderRadius: brSm),
             ),
-            DropdownMenuItem(
-              value: 'km',
-              child: Text('Kilometers (km)'),
-            ),
-            DropdownMenuItem(
-              value: 'mi',
-              child: Text('Miles (mi)'),
-            ),
-            DropdownMenuItem(
-              value: 'm',
-              child: Text('Meters (m)'),
-            ),
-            DropdownMenuItem(
-              value: 'kcal',
-              child: Text('Kilocalories (kcal)'),
-            ),
-          ],
-          onChanged: (value) {
-            db.settings.update().write(
-                  SettingsCompanion(
-                    cardioUnit: Value(value!),
-                  ),
-                );
-          },
+            initialValue: settings.cardioUnit,
+            items: const [
+              DropdownMenuItem(
+                value: 'last-entry',
+                child: Text('Last entry'),
+              ),
+              DropdownMenuItem(
+                value: 'km',
+                child: Text('Kilometers (km)'),
+              ),
+              DropdownMenuItem(
+                value: 'mi',
+                child: Text('Miles (mi)'),
+              ),
+              DropdownMenuItem(
+                value: 'm',
+                child: Text('Meters (m)'),
+              ),
+              DropdownMenuItem(
+                value: 'kcal',
+                child: Text('Kilocalories (kcal)'),
+              ),
+            ],
+            onChanged: (value) {
+              db.settings.update().write(
+                    SettingsCompanion(
+                      cardioUnit: Value(value!),
+                    ),
+                  );
+            },
+          ),
         ),
       ),
     if ('long date format'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: space16),
         child: Tooltip(
           message: 'Used where space is abundant',
           child: Builder(
@@ -136,6 +151,9 @@ List<Widget> getFormatSettings(String term, Setting settings) {
                     ),
                 decoration: InputDecoration(
                   labelText: 'Long date format ($format)',
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  border: const OutlineInputBorder(borderRadius: brSm),
                 ),
               );
             },
@@ -144,25 +162,30 @@ List<Widget> getFormatSettings(String term, Setting settings) {
       ),
     if ('short date format'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: space16),
         child: Tooltip(
           message: 'For where space is cramped (Graph lines)',
-          child: DropdownButtonFormField<String>(
-            initialValue: settings.shortDateFormat,
-            items: short.map((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value),
-              );
-            }).toList(),
-            onChanged: (value) => db.settings.update().write(
-                  SettingsCompanion(
-                    shortDateFormat: Value(value!),
+          child: Builder(
+            builder: (context) => DropdownButtonFormField<String>(
+              initialValue: settings.shortDateFormat,
+              items: short.map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+              onChanged: (value) => db.settings.update().write(
+                    SettingsCompanion(
+                      shortDateFormat: Value(value!),
+                    ),
                   ),
-                ),
-            decoration: InputDecoration(
-              labelText:
-                  'Short date format (${DateFormat(settings.shortDateFormat).format(DateTime.now())})',
+              decoration: InputDecoration(
+                labelText:
+                    'Short date format (${DateFormat(settings.shortDateFormat).format(DateTime.now())})',
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                border: const OutlineInputBorder(borderRadius: brSm),
+              ),
             ),
           ),
         ),
@@ -197,7 +220,7 @@ class _PlansAndFormatsSettingsState extends State<PlansAndFormatsSettings> {
       body: ListView(
         children: [
           ...getFormatSettings('', settings),
-          const Divider(),
+          const Divider(), // uses global DividerThemeData, no custom color
           ...getPlanSettings('', settings, max, warmup),
         ],
       ),

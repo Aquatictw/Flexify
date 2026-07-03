@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../database/database.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 
 class ServerSettingsPage extends StatefulWidget {
   const ServerSettingsPage({super.key});
@@ -194,7 +195,7 @@ class _ServerSettingsPageState extends State<ServerSettingsPage> {
         title: const Text('Backup Server'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(space16),
         child: ListView(
           children: [
             TextFormField(
@@ -208,7 +209,7 @@ class _ServerSettingsPageState extends State<ServerSettingsPage> {
               keyboardType: TextInputType.url,
               onFieldSubmitted: (_) => _saveUrl(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: space16),
             TextFormField(
               controller: _apiKeyController,
               focusNode: _apiKeyFocusNode,
@@ -230,7 +231,7 @@ class _ServerSettingsPageState extends State<ServerSettingsPage> {
               obscureText: _obscureApiKey,
               onFieldSubmitted: (_) => _saveApiKey(),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: space24),
             FilledButton.tonal(
               onPressed: canTest ? _testConnection : null,
               child: _isTesting
@@ -243,44 +244,43 @@ class _ServerSettingsPageState extends State<ServerSettingsPage> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.wifi_find),
-                        SizedBox(width: 8),
+                        SizedBox(width: space8),
                         Text('Test Connection'),
                       ],
                     ),
             ),
             if (_testResult != null) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: _testSuccess == true
-                      ? Colors.green.withValues(alpha: 0.1)
-                      : Colors.red.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _testSuccess == true
-                          ? Icons.check_circle
-                          : Icons.error,
-                      color: _testSuccess == true
-                          ? Colors.green
-                          : Colors.red,
+              const SizedBox(height: space16),
+              Builder(
+                builder: (context) {
+                  final statusColor = _testSuccess == true
+                      ? context.jl.success
+                      : context.jl.danger;
+                  return Container(
+                    padding: const EdgeInsets.all(space12),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.1),
+                      borderRadius: brSm,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _testResult!,
-                        style: TextStyle(
-                          color: _testSuccess == true
-                              ? Colors.green
-                              : Colors.red,
+                    child: Row(
+                      children: [
+                        Icon(
+                          _testSuccess == true
+                              ? Icons.check_circle
+                              : Icons.error,
+                          color: statusColor,
                         ),
-                      ),
+                        const SizedBox(width: space8),
+                        Expanded(
+                          child: Text(
+                            _testResult!,
+                            style: TextStyle(color: statusColor),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
             ],
           ],

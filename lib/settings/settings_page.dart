@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../database/database.dart';
 import '../fivethreeone/block_creation_dialog.dart';
+import '../theme/tokens.dart';
 import 'appearance_settings.dart';
 import 'data_settings.dart';
 import 'format_settings.dart';
@@ -97,14 +98,14 @@ class _SettingsPageState extends State<SettingsPage>
         title: const Text('Settings'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(space8),
         child: Column(
           children: <Widget>[
             SearchBar(
               hintText: 'Search...',
               controller: searchCtrl,
               padding: WidgetStateProperty.all(
-                const EdgeInsets.symmetric(horizontal: 16),
+                const EdgeInsets.symmetric(horizontal: space16),
               ),
               onChanged: (_) {
                 setState(() {});
@@ -112,10 +113,11 @@ class _SettingsPageState extends State<SettingsPage>
               leading: const Icon(Icons.search),
             ),
             const SizedBox(
-              height: 8,
+              height: space8,
             ),
             Expanded(
               child: ListView(
+                padding: EdgeInsets.only(bottom: bottomBarClearance(context)),
                 children: searchCtrl.text.isNotEmpty
                     ? filtered
                     : [

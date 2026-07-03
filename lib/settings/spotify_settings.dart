@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../database/database.dart';
 import '../main.dart';
 import '../spotify/spotify_state.dart';
+import '../theme/components.dart';
+import '../theme/tokens.dart';
 import '../utils.dart';
 import 'settings_state.dart';
 
@@ -90,12 +92,14 @@ class _SpotifySettingsState extends State<SpotifySettings> {
         title: const Text('Spotify'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(space8),
         child: ListView(
           children: [
             // Connection status indicator
-            Card(
+            AppCard(
+              margin: const EdgeInsets.only(bottom: space8),
               child: ListTile(
+                contentPadding: EdgeInsets.zero,
                 leading: Icon(
                   isConnected
                       ? Icons.check_circle
@@ -105,12 +109,12 @@ class _SpotifySettingsState extends State<SpotifySettings> {
                               ? Icons.schedule
                               : Icons.music_note_outlined,
                   color: isConnected
-                      ? Colors.green
+                      ? context.jl.success
                       : hasError
                           ? Theme.of(context).colorScheme.error
                           : isTokenExpired
-                              ? Colors.orange
-                              : Colors.grey,
+                              ? Theme.of(context).colorScheme.tertiary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 title: Text(
                   isConnected
@@ -128,7 +132,6 @@ class _SpotifySettingsState extends State<SpotifySettings> {
                         : null,
               ),
             ),
-            const SizedBox(height: 8),
 
             // Disconnect button (visible when connected)
             if (isConnected)
@@ -146,7 +149,7 @@ class _SpotifySettingsState extends State<SpotifySettings> {
                 onTap: _isProcessing ? null : _reconnectSpotify,
               ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: space8),
           ],
         ),
       ),

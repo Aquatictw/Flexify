@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 
 import '../database/database.dart';
 import '../main.dart';
+import '../theme/components.dart';
+import '../theme/tokens.dart';
 import '../utils.dart';
 import 'settings_state.dart';
 
@@ -120,7 +122,7 @@ List<Widget> getTimerSettings(
       ),
     if ('rest minutes seconds'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(space16),
         child: Tooltip(
           message: 'How long before rest alarms go off?',
           child: material.Column(
@@ -128,14 +130,14 @@ List<Widget> getTimerSettings(
               material.Row(
                 children: [
                   const Icon(Icons.public),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: space8),
                   Text(
                     'Global default',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: space16),
               Row(
                 children: [
                   Expanded(
@@ -162,7 +164,7 @@ List<Widget> getTimerSettings(
                     ),
                   ),
                   const SizedBox(
-                    width: 8,
+                    width: space8,
                   ),
                   Expanded(
                     child: TextField(
@@ -362,33 +364,29 @@ class _TimerSettingsState extends State<TimerSettings> {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(space16),
       child: material.Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 24),
+          const SizedBox(height: space24),
           material.Row(
             children: [
               const Icon(Icons.fitness_center),
-              const SizedBox(width: 8),
+              const SizedBox(width: space8),
               Text(
                 'Per-exercise rest times',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: space8),
           Text(
             'These exercises have custom rest durations',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.color
-                      ?.withAlpha((255 * 0.7).round()),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: space16),
           ...exercisesWithCustomTimers.map((exercise) {
             final exerciseName = exercise.name.value;
             if (minuteControllers[exerciseName] == null ||
@@ -397,78 +395,75 @@ class _TimerSettingsState extends State<TimerSettings> {
             final minController = minuteControllers[exerciseName]!;
             final secController = secondControllers[exerciseName]!;
 
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: material.Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    material.Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            exerciseName,
-                            style: Theme.of(context).textTheme.titleMedium,
+            return AppCard(
+              margin: const EdgeInsets.only(bottom: space12),
+              child: material.Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  material.Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          exerciseName,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () => _removeCustomTimer(exerciseName),
+                        tooltip: 'Remove custom timer (use global default)',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: space12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Minutes',
+                            border: OutlineInputBorder(borderRadius: brSm),
                           ),
+                          controller: minController,
+                          keyboardType: TextInputType.number,
+                          onTap: () => selectAll(minController),
+                          onChanged: (value) {
+                            final minutes = int.tryParse(value) ?? 0;
+                            final seconds =
+                                int.tryParse(secController.text) ?? 0;
+                            _updateExerciseRestTime(
+                              exerciseName,
+                              minutes,
+                              seconds,
+                            );
+                          },
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: () => _removeCustomTimer(exerciseName),
-                          tooltip: 'Remove custom timer (use global default)',
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            decoration: const InputDecoration(
-                              labelText: 'Minutes',
-                              border: OutlineInputBorder(),
-                            ),
-                            controller: minController,
-                            keyboardType: TextInputType.number,
-                            onTap: () => selectAll(minController),
-                            onChanged: (value) {
-                              final minutes = int.tryParse(value) ?? 0;
-                              final seconds =
-                                  int.tryParse(secController.text) ?? 0;
-                              _updateExerciseRestTime(
-                                exerciseName,
-                                minutes,
-                                seconds,
-                              );
-                            },
+                      ),
+                      const SizedBox(width: space12),
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Seconds',
+                            border: OutlineInputBorder(borderRadius: brSm),
                           ),
+                          controller: secController,
+                          keyboardType: TextInputType.number,
+                          onTap: () => selectAll(secController),
+                          onChanged: (value) {
+                            final minutes =
+                                int.tryParse(minController.text) ?? 0;
+                            final seconds = int.tryParse(value) ?? 0;
+                            _updateExerciseRestTime(
+                              exercise.name.value,
+                              minutes,
+                              seconds,
+                            );
+                          },
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            decoration: const InputDecoration(
-                              labelText: 'Seconds',
-                              border: OutlineInputBorder(),
-                            ),
-                            controller: secController,
-                            keyboardType: TextInputType.number,
-                            onTap: () => selectAll(secController),
-                            onChanged: (value) {
-                              final minutes =
-                                  int.tryParse(minController.text) ?? 0;
-                              final seconds = int.tryParse(value) ?? 0;
-                              _updateExerciseRestTime(
-                                exercise.name.value,
-                                minutes,
-                                seconds,
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             );
           }),

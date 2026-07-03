@@ -7,6 +7,7 @@ import 'animated_fab.dart';
 import 'database/database.dart';
 import 'main.dart';
 import 'settings/settings_state.dart';
+import 'theme/tokens.dart';
 
 class PermissionsPage extends StatefulWidget {
   const PermissionsPage({super.key});
@@ -31,7 +32,7 @@ class _PermissionsPageState extends State<PermissionsPage> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(space16),
           child: ListView(
             children: [
               const ListTile(

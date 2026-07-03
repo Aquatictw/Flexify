@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../animated_fab.dart';
 import '../database/database.dart';
 import '../main.dart';
+import '../theme/tokens.dart';
 import '../utils.dart';
 import 'settings_state.dart';
 
@@ -59,14 +60,14 @@ class _TabSettingsState extends State<TabSettings> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(title: const Text('Tabs')),
       body: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(space8),
         child: material.Column(
           children: [
             ListTile(
               title: const material.Row(
                 children: [
                   Icon(Icons.swipe),
-                  SizedBox(width: 8),
+                  SizedBox(width: space8),
                   Text('Swipe between tabs'),
                 ],
               ),
@@ -112,7 +113,7 @@ class _TabSettingsState extends State<TabSettings> {
                       title: const material.Row(
                         children: [
                           Icon(Icons.history),
-                          SizedBox(width: 8),
+                          SizedBox(width: space8),
                           Text('History'),
                         ],
                       ),
@@ -132,7 +133,7 @@ class _TabSettingsState extends State<TabSettings> {
                       title: const material.Row(
                         children: [
                           Icon(Icons.calendar_today_outlined),
-                          SizedBox(width: 8),
+                          SizedBox(width: space8),
                           Text('Plans'),
                         ],
                       ),
@@ -152,7 +153,7 @@ class _TabSettingsState extends State<TabSettings> {
                       title: const material.Row(
                         children: [
                           Icon(Icons.music_note),
-                          SizedBox(width: 8),
+                          SizedBox(width: space8),
                           Text('Music'),
                         ],
                       ),
@@ -172,7 +173,7 @@ class _TabSettingsState extends State<TabSettings> {
                       title: const material.Row(
                         children: [
                           Icon(Icons.insights_rounded),
-                          SizedBox(width: 8),
+                          SizedBox(width: space8),
                           Text('Graphs'),
                         ],
                       ),
@@ -192,7 +193,7 @@ class _TabSettingsState extends State<TabSettings> {
                       title: const material.Row(
                         children: [
                           Icon(Icons.note),
-                          SizedBox(width: 8),
+                          SizedBox(width: space8),
                           Text('Notes'),
                         ],
                       ),
@@ -212,7 +213,7 @@ class _TabSettingsState extends State<TabSettings> {
                       title: const material.Row(
                         children: [
                           Icon(Icons.settings),
-                          SizedBox(width: 8),
+                          SizedBox(width: space8),
                           Text('Settings'),
                         ],
                       ),

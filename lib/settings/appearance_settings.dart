@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../database/database.dart';
 import '../main.dart';
+import '../theme/app_theme.dart';
+import '../theme/tokens.dart';
 import '../widgets/artistic_color_picker.dart';
 import 'settings_state.dart';
 
@@ -15,13 +17,15 @@ List<Widget> getAppearanceSettings(
   return [
     if ('theme'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: space16),
         child: DropdownButtonFormField<ThemeMode>(
           initialValue: ThemeMode.values
               .byName(settings.value.themeMode.replaceFirst('ThemeMode.', '')),
-          decoration: const InputDecoration(
-            labelStyle: TextStyle(),
+          decoration: InputDecoration(
             labelText: 'Theme',
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+            border: const OutlineInputBorder(borderRadius: brSm),
           ),
           items: const [
             DropdownMenuItem(
@@ -46,7 +50,7 @@ List<Widget> getAppearanceSettings(
       ),
     if ('system color scheme'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.only(top: space8),
         child: Tooltip(
           message: 'Use the primary color of your device for the app',
           child: ListTile(
@@ -73,7 +77,7 @@ List<Widget> getAppearanceSettings(
     if ('custom color'.contains(term.toLowerCase()) ||
         'app color'.contains(term.toLowerCase()))
       Padding(
-        padding: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.only(top: space8),
         child: Tooltip(
           message: 'Choose a custom color for your app theme',
           child: ListTile(
@@ -84,10 +88,7 @@ List<Widget> getAppearanceSettings(
                   : 'Tap to customize',
               style: TextStyle(
                 color: settings.value.systemColors
-                    ? Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.5)
+                    ? Theme.of(context).colorScheme.onSurfaceVariant
                     : null,
               ),
             ),
@@ -95,7 +96,7 @@ List<Widget> getAppearanceSettings(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Color(settings.value.customColorSeed),
+                color: effectiveSeed(settings.value.customColorSeed),
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: Theme.of(context).colorScheme.outline,
@@ -103,13 +104,15 @@ List<Widget> getAppearanceSettings(
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Color(settings.value.customColorSeed)
+                    color: effectiveSeed(settings.value.customColorSeed)
                         .withValues(alpha: 0.4),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),
                 ],
               ),
+              // White reads legibly on any arbitrary user-chosen swatch color,
+              // same rationale as the artistic_color_picker literal exception.
               child: const Icon(Icons.palette, color: Colors.white, size: 20),
             ),
             enabled: !settings.value.systemColors,
@@ -119,7 +122,8 @@ List<Widget> getAppearanceSettings(
                     final color = await showDialog<Color>(
                       context: context,
                       builder: (context) => ArtisticColorPicker(
-                        initialColor: Color(settings.value.customColorSeed),
+                        initialColor:
+                            effectiveSeed(settings.value.customColorSeed),
                         onColorChanged: (color) {},
                       ),
                     );
@@ -136,10 +140,7 @@ List<Widget> getAppearanceSettings(
                 : Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.5),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
           ),
         ),
@@ -183,7 +184,7 @@ class AppearanceSettings extends StatelessWidget {
         title: const Text('Appearance'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(space8),
         child: ListView(
           children: getAppearanceSettings(context, '', settings),
         ),
