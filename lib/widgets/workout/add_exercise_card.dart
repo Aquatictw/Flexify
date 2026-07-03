@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/tokens.dart';
+
 class AddExerciseCard extends StatelessWidget {
 
   const AddExerciseCard({required this.onTap, super.key});
@@ -10,16 +12,17 @@ class AddExerciseCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: space12, vertical: space8),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: brMd,
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            padding: const EdgeInsets.symmetric(
+                vertical: space16, horizontal: space16,),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: brMd,
               border: Border.all(
                 color: colorScheme.primary.withValues(alpha: 0.3),
                 width: 2,
@@ -37,10 +40,10 @@ class AddExerciseCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(space8),
                   decoration: BoxDecoration(
                     color: colorScheme.primary.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: brSm,
                   ),
                   child: Icon(
                     Icons.add_circle_outline,
@@ -48,14 +51,12 @@ class AddExerciseCard extends StatelessWidget {
                     size: 24,
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: space12),
                 Text(
                   'Add Exercise',
-                  style: TextStyle(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: colorScheme.primary,
+                      ),
                 ),
               ],
             ),

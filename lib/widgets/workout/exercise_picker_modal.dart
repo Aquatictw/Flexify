@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import '../../graph/add_exercise_page.dart';
 import '../../main.dart';
+import '../../theme/tokens.dart';
 import '../bodypart_tag.dart';
 
 class ExercisePickerModal extends StatefulWidget {
@@ -99,30 +100,30 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
         return DecoratedBox(
           decoration: BoxDecoration(
             color: colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(radiusLg)),
           ),
           child: Column(
             children: [
               // Handle
               Container(
-                margin: const EdgeInsets.only(top: 8, bottom: 4),
+                margin: const EdgeInsets.only(top: space8, bottom: space4),
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
                   color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: brPill,
                 ),
               ),
               // Title
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                padding: const EdgeInsets.fromLTRB(space16, space4, space16, space8),
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(space8),
                       decoration: BoxDecoration(
                         color: colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: brSm,
                       ),
                       child: Icon(
                         Icons.add_circle,
@@ -130,20 +131,17 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
                         size: 20,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: space8),
                     Text(
                       'Add Exercise',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                          ),
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ],
                 ),
               ),
               // Search bar
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                padding: const EdgeInsets.fromLTRB(space16, 0, space16, space8),
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Search exercises...',
@@ -155,13 +153,13 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
                           )
                         : null,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: brSm,
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
                     fillColor: colorScheme.surfaceContainerHighest,
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 12,),
+                        horizontal: space12, vertical: space12,),
                     isDense: true,
                   ),
                   onChanged: (value) => setState(() => _search = value),
@@ -169,19 +167,19 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
               ),
               // Create Custom Exercise Button
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                padding: const EdgeInsets.fromLTRB(space16, 0, space16, space8),
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () => _showCreateExerciseDialog(context),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: brSm,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                        horizontal: 12,
+                        vertical: space8,
+                        horizontal: space12,
                       ),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: brSm,
                         border: Border.all(
                           color: colorScheme.primary.withValues(alpha: 0.4),
                           width: 1.5,
@@ -204,14 +202,13 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
                             color: colorScheme.primary,
                             size: 18,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: space8),
                           Text(
                             'Create Custom Exercise',
-                            style: TextStyle(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(color: colorScheme.primary),
                           ),
                         ],
                       ),
@@ -222,7 +219,7 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
               // Divider with text
               Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: space16, vertical: space4),
                 child: Row(
                   children: [
                     Expanded(
@@ -232,16 +229,13 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: space8),
                       child: Text(
                         'RECENT EXERCISES',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.6),
-                          letterSpacing: 0.8,
-                        ),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.6),
+                            ),
                       ),
                     ),
                     Expanded(

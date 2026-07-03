@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'theme/tokens.dart';
+
 class AnimatedFab extends StatefulWidget {
 
   const AnimatedFab({
@@ -44,17 +46,17 @@ class _AnimatedFabState extends State<AnimatedFab> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 96),
+      padding: EdgeInsets.only(bottom: bottomBarClearance(context)),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
+        duration: durFast,
+        curve: curveStandard,
         width: extended ? 100 : 56,
         height: 56,
         child: FloatingActionButton.extended(
           heroTag: 'hero',
           onPressed: () => widget.onPressed(),
           label: AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
+            duration: durFast,
             opacity: extended ? 1.0 : 0.0,
             child: widget.label,
           ),

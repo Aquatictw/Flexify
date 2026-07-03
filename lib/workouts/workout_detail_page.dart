@@ -20,6 +20,7 @@ import '../records/record_notification.dart';
 import '../records/records_service.dart';
 import '../sets/edit_set_page.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../utils.dart';
 import '../widgets/bodypart_tag.dart';
 import '../widgets/sets/set_row.dart';
@@ -532,7 +533,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
               height: 4,
               decoration: BoxDecoration(
                 color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: brPill,
               ),
             ),
             Padding(
@@ -957,11 +958,11 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: _addExercise,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: brSm,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: space16),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: brSm,
                             border: Border.all(
                               color: colorScheme.primary.withValues(alpha: 0.4),
                               width: 1.5,
@@ -1119,7 +1120,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         color: hasSelfie
             ? Colors.white.withValues(alpha: 0.2)
             : colorScheme.primary.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: brSm,
         border: Border.all(
           color: hasSelfie
               ? Colors.white.withValues(alpha: 0.4)
@@ -1163,7 +1164,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: brMd,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -1227,25 +1228,22 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         Icon(
           icon,
           size: 20,
-          color: isHighlighted ? Colors.amber : colorScheme.primary,
+          color: isHighlighted ? context.jl.pr : colorScheme.primary,
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: space4),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: isHighlighted ? Colors.amber.shade700 : null,
-          ),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: isHighlighted ? context.jl.pr : null,
+              ),
         ),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 11,
-            color: isHighlighted
-                ? Colors.amber.shade600
-                : colorScheme.onSurfaceVariant,
-          ),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: isHighlighted
+                    ? context.jl.pr
+                    : colorScheme.onSurfaceVariant,
+              ),
         ),
       ],
     );
@@ -1268,7 +1266,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: brMd,
           border: Border.all(
             color: colorScheme.primary.withValues(alpha: 0.2),
           ),
@@ -1329,14 +1327,13 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   ) {
     final group = _exerciseGroups[index];
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      elevation: 1,
+      margin: const EdgeInsets.symmetric(horizontal: space12, vertical: space4),
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: brSm,
           ),
           child: Icon(
             Icons.fitness_center,
@@ -1380,8 +1377,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     final exerciseName = group.name;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      elevation: 2,
+      margin: const EdgeInsets.symmetric(horizontal: space12, vertical: space8),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
@@ -1400,7 +1396,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: brSm,
                     ),
                     child: Icon(
                       Icons.fitness_center,
@@ -1475,14 +1471,14 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                 Expanded(
                   child: InkWell(
                     onTap: () => _addSetToExercise(exerciseIndex, isWarmup: true),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: brSm,
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: colorScheme.tertiary.withValues(alpha: 0.5),
                         ),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: brSm,
                         color: colorScheme.tertiaryContainer.withValues(alpha: 0.2),
                       ),
                       child: Row(
@@ -1512,14 +1508,14 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                 Expanded(
                   child: InkWell(
                     onTap: () => _addSetToExercise(exerciseIndex, isDropSet: true),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: brSm,
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: colorScheme.secondary.withValues(alpha: 0.5),
                         ),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: brSm,
                         color: colorScheme.secondaryContainer.withValues(alpha: 0.2),
                       ),
                       child: Row(
@@ -1549,14 +1545,14 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                 Expanded(
                   child: InkWell(
                     onTap: () => _addSetToExercise(exerciseIndex),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: brSm,
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: colorScheme.primary.withValues(alpha: 0.5),
                         ),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: brSm,
                         color: colorScheme.primaryContainer.withValues(alpha: 0.2),
                       ),
                       child: Row(
@@ -1774,7 +1770,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
               Icon(
                 Icons.emoji_events,
                 size: 18,
-                color: Colors.amber.shade600,
+                color: context.jl.pr,
               ),
             ],
           ],
@@ -1850,17 +1846,18 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   }
 
   Widget _buildInitialBadge(String name) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
+        color: colorScheme.primary,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Center(
+      child: Center(
         child: Icon(
           Icons.fitness_center,
-          color: Colors.white,
+          color: colorScheme.onPrimary,
           size: 20,
         ),
       ),
@@ -1899,11 +1896,11 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
               : isDropSet
                   ? colorScheme.secondaryContainer
                   : hasRecords
-                      ? Colors.amber.withValues(alpha: 0.2)
+                      ? context.jl.pr.withValues(alpha: 0.2)
                       : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
           border: hasRecords
-              ? Border.all(color: Colors.amber.shade400, width: 1.5)
+              ? Border.all(color: context.jl.pr, width: 1.5)
               : null,
         ),
         child: Center(
@@ -1921,13 +1918,11 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                     )
                   : Text(
                       '$setNumber',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: hasRecords
-                            ? Colors.amber.shade700
-                            : colorScheme.onSurface,
-                        fontWeight: hasRecords ? FontWeight.bold : null,
-                      ),
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: hasRecords
+                                ? context.jl.pr
+                                : colorScheme.onSurface,
+                          ),
                     ),
         ),
       ),
@@ -1963,15 +1958,15 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                   switch (recordType) {
                     case RecordType.best1RM:
                       label = '1RM Record';
-                      color = Colors.orange;
+                      color = context.jl.pr;
                       break;
                     case RecordType.bestVolume:
                       label = 'Volume Record';
-                      color = Colors.deepOrange;
+                      color = colorScheme.tertiary;
                       break;
                     case RecordType.bestWeight:
                       label = 'Weight Record';
-                      color = Colors.amber;
+                      color = colorScheme.secondary;
                       break;
                   }
                   return Container(
@@ -2026,7 +2021,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
               height: 4,
               decoration: BoxDecoration(
                 color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: brPill,
               ),
             ),
             Padding(
@@ -2178,7 +2173,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
               height: 4,
               decoration: BoxDecoration(
                 color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: brPill,
               ),
             ),
             Padding(

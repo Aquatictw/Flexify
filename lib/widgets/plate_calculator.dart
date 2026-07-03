@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../theme/tokens.dart';
+
 /// Represents a weight plate with its properties
 class WeightPlate { // Relative size for visual representation
 
@@ -161,7 +163,7 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500, maxHeight: 700),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(space24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -299,10 +301,10 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
     final result = _result!;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(space12),
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: brSm,
         border: Border.all(
           color: colorScheme.primary.withValues(alpha: 0.3),
         ),
@@ -397,7 +399,7 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                   decoration: BoxDecoration(
                     color: colorScheme.outline,
                     borderRadius: const BorderRadius.horizontal(
-                      left: Radius.circular(10),
+                      left: Radius.circular(radiusSm),
                     ),
                   ),
                 ),
@@ -449,12 +451,12 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: space8),
         ...plateCount.entries.map((entry) {
           final plate =
               availablePlates.firstWhere((p) => p.weight == entry.key);
           return Padding(
-            padding: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.only(bottom: space8),
             child: Row(
               children: [
                 Container(
@@ -468,7 +470,7 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: space12),
                 Expanded(
                   child: Text(
                     '${plate.weight} kg (${plate.colorName})',
@@ -477,12 +479,12 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
+                    horizontal: space12,
+                    vertical: space4,
                   ),
                   decoration: BoxDecoration(
                     color: colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: brSm,
                   ),
                   child: Text(
                     'x${entry.value}',
@@ -556,8 +558,8 @@ class _PlatePainter extends CustomPainter {
     canvas.drawRRect(
       RRect.fromRectAndCorners(
         Rect.fromLTWH(0, centerY - barHeight / 2, barWidth, barHeight),
-        topRight: const Radius.circular(12),
-        bottomRight: const Radius.circular(12),
+        topRight: const Radius.circular(radiusSm),
+        bottomRight: const Radius.circular(radiusSm),
       ),
       barPaint,
     );

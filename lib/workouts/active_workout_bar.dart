@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../database/database.dart';
 import '../plan/start_plan_page.dart';
+import '../theme/tokens.dart';
 import '../timer/timer_state.dart';
 import 'selfie_capture_dialog.dart';
 import 'workout_state.dart';
@@ -130,10 +131,11 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
         }
       },
       child: Container(
-        margin: const EdgeInsets.only(left: 12, right: 12, top: 6, bottom: 2),
+        margin: const EdgeInsets.only(
+            left: space12, right: space12, top: space8, bottom: space4,),
         decoration: BoxDecoration(
           color: colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: brSm,
           boxShadow: [
             BoxShadow(
               color: colorScheme.shadow.withValues(alpha: 0.1),
@@ -143,14 +145,15 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+              horizontal: space12, vertical: space8,),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(space8),
                 decoration: BoxDecoration(
                   color: colorScheme.primary,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: brSm,
                 ),
                 child: Icon(
                   Icons.fitness_center,
@@ -158,7 +161,7 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                   size: 20,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: space12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,22 +169,22 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                   children: [
                     Text(
                       workout.name ?? 'Workout',
-                      style: TextStyle(
-                        color: colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: colorScheme.onPrimaryContainer,
+                          ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: space4),
                     Text(
                       _formatDuration(_elapsed),
-                      style: TextStyle(
-                        color: colorScheme.onPrimaryContainer
-                            .withValues(alpha: 0.7),
-                        fontSize: 12,
-                      ),
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelMedium
+                          ?.copyWith(
+                            color: colorScheme.onPrimaryContainer
+                                .withValues(alpha: 0.7),
+                          ),
                     ),
                   ],
                 ),
@@ -224,7 +227,7 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                 ),
                 tooltip: 'Discard workout',
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: space4),
               // End button
               IconButton(
                 onPressed: () async {

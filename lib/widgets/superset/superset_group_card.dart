@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../database/database.dart';
+import '../../theme/tokens.dart';
 import 'superset_badge.dart';
 import 'superset_utils.dart';
 
@@ -21,12 +22,11 @@ class SupersetGroupCard extends StatelessWidget {
     final textColor = getSupersetTextColor(context, supersetIndex);
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: space12, vertical: space8),
       clipBehavior: Clip.antiAlias,
-      elevation: 3,
       shadowColor: supersetColor.withValues(alpha: 0.4),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: brMd,
         side: BorderSide(
           color: supersetColor.withValues(alpha: 0.3),
           width: 2,
@@ -48,7 +48,7 @@ class SupersetGroupCard extends StatelessWidget {
           children: [
             // Superset header
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(space16),
               decoration: BoxDecoration(
                 color: supersetColor.withValues(alpha: 0.15),
                 border: Border(
@@ -60,7 +60,7 @@ class SupersetGroupCard extends StatelessWidget {
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(space8),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -70,7 +70,7 @@ class SupersetGroupCard extends StatelessWidget {
                           supersetColor.withValues(alpha: 0.7),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: brSm,
                       boxShadow: [
                         BoxShadow(
                           color: supersetColor.withValues(alpha: 0.3),
@@ -85,7 +85,7 @@ class SupersetGroupCard extends StatelessWidget {
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: space12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,7 +184,7 @@ class SupersetGroupCard extends StatelessWidget {
           // Exercise content
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 12, right: 16),
+              padding: const EdgeInsets.only(top: space12, bottom: space12, right: space16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -195,48 +195,44 @@ class SupersetGroupCard extends StatelessWidget {
                         supersetIndex: supersetIndex,
                         position: position,
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: space8),
                       Expanded(
                         child: Text(
                           exerciseName,
-                          style:
-                              Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                          style: Theme.of(context).textTheme.titleSmall,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: space8),
 
                   // Sets summary
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
+                    spacing: space8,
+                    runSpacing: space4,
                     children: sets.map((set) {
                       return InkWell(
                         onTap: () => onSetTap(set),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: brSm,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
+                            horizontal: space12,
+                            vertical: space8,
                           ),
                           decoration: BoxDecoration(
                             color: colorScheme.surfaceContainerHighest
                                 .withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: brSm,
                             border: Border.all(
                               color: supersetColor.withValues(alpha: 0.2),
                             ),
                           ),
                           child: Text(
                             '${set.weight.toStringAsFixed(set.weight.truncateToDouble() == set.weight ? 0 : 1)}${set.unit} x ${set.reps.toInt()}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: colorScheme.onSurface,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(color: colorScheme.onSurface),
                           ),
                         ),
                       );

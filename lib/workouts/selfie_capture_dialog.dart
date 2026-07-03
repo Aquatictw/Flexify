@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../theme/tokens.dart';
+
 class SelfieCaptureDialog extends StatelessWidget {
   const SelfieCaptureDialog({super.key});
 
@@ -16,7 +18,7 @@ class SelfieCaptureDialog extends StatelessWidget {
             'Take a selfie to remember this workout!',
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: space16),
           FilledButton.icon(
             onPressed: () async {
               final picker = ImagePicker();
@@ -31,7 +33,7 @@ class SelfieCaptureDialog extends StatelessWidget {
             icon: const Icon(Icons.camera_alt),
             label: const Text('Camera'),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: space8),
           OutlinedButton.icon(
             onPressed: () async {
               final picker = ImagePicker();

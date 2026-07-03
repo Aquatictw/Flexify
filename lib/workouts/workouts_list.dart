@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../database/database.dart';
 import '../main.dart';
 import '../records/records_service.dart';
+import '../theme/tokens.dart';
 import 'workout_detail_page.dart';
 
 class WorkoutWithSets {
@@ -179,7 +180,8 @@ class _WorkoutsListState extends State<WorkoutsList> {
 
         return ListView.builder(
           controller: widget.scroll,
-          padding: const EdgeInsets.only(bottom: 140, top: 8),
+          padding: EdgeInsets.only(
+              bottom: bottomBarClearance(context), top: space8,),
           itemCount: workouts.length,
           itemBuilder: (context, index) {
             final workoutWithSets = workouts[index];
@@ -224,7 +226,7 @@ class _WorkoutCard extends StatelessWidget {
       shadowColor: colorScheme.shadow.withValues(alpha: 0.2),
       color: isSelected ? colorScheme.primary.withValues(alpha: .08) : null,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: brSm,
         side: BorderSide(
           color: isSelected
               ? colorScheme.primary.withValues(alpha: 0.3)
@@ -247,9 +249,9 @@ class _WorkoutCard extends StatelessWidget {
         onLongPress: () {
           onSelect(workout.id);
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: brSm,
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(space12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -260,7 +262,7 @@ class _WorkoutCard extends StatelessWidget {
                   // Selection indicator or Date badge
                   if (selected.isNotEmpty)
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 150),
+                      duration: durFast,
                       transitionBuilder: (child, animation) {
                         return ScaleTransition(scale: animation, child: child);
                       },
@@ -334,7 +336,7 @@ class _WorkoutCard extends StatelessWidget {
                               Icon(
                                 Icons.emoji_events,
                                 size: 18,
-                                color: Colors.amber.shade600,
+                                color: context.jl.pr,
                               ),
                             ],
                           ],
@@ -490,19 +492,23 @@ class _WorkoutCard extends StatelessWidget {
   }
 
   Widget _buildRecordChip(BuildContext context, int count) {
+    final pr = context.jl.pr;
+    final onPr = ThemeData.estimateBrightnessForColor(pr) == Brightness.dark
+        ? Colors.white
+        : Colors.black87;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.amber.shade400,
-            Colors.orange.shade500,
+            pr,
+            pr.withValues(alpha: 0.8),
           ],
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: brSm,
         boxShadow: [
           BoxShadow(
-            color: Colors.amber.withValues(alpha: 0.3),
+            color: pr.withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -511,19 +517,17 @@ class _WorkoutCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.emoji_events,
             size: 12,
-            color: Colors.white,
+            color: onPr,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: space4),
           Text(
             '$count PR${count > 1 ? 's' : ''}',
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: onPr,
+                ),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme/tokens.dart';
 import '../bodypart_tag.dart';
 
 class ExerciseHeader extends StatelessWidget {
@@ -32,7 +33,7 @@ class ExerciseHeader extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: space16, vertical: space12),
         decoration: BoxDecoration(
           gradient: allCompleted
               ? LinearGradient(
@@ -48,12 +49,12 @@ class ExerciseHeader extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(space8),
               decoration: BoxDecoration(
                 color: allCompleted
                     ? colorScheme.primary
                     : colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: brSm,
               ),
               child: Icon(
                 allCompleted ? Icons.check : Icons.fitness_center,
@@ -62,7 +63,7 @@ class ExerciseHeader extends StatelessWidget {
                 size: 20,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: space12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,11 +97,12 @@ class ExerciseHeader extends StatelessWidget {
                           ),
                           child: Text(
                             brandName!,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: colorScheme.onSecondaryContainer,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: colorScheme.onSecondaryContainer,
+                                ),
                           ),
                         ),
                       ],
@@ -170,7 +172,7 @@ class ExerciseHeader extends StatelessWidget {
             ),
             AnimatedRotation(
               turns: isExpanded ? 0.5 : 0,
-              duration: const Duration(milliseconds: 200),
+              duration: durFast,
               child: Icon(
                 Icons.keyboard_arrow_down,
                 color: colorScheme.onSurfaceVariant,

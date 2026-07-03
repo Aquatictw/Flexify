@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import '../../database/database.dart';
 import '../../main.dart';
+import '../../theme/tokens.dart';
 import 'superset_utils.dart';
 
 /// Dialog for creating a superset from selected exercises
@@ -63,9 +64,9 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
 
     return Dialog(
       backgroundColor: colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: const RoundedRectangleBorder(borderRadius: brLg),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(space24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,10 +75,10 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(space8),
                   decoration: BoxDecoration(
                     color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: brSm,
                   ),
                   child: Icon(
                     Icons.link,
@@ -85,7 +86,7 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
                     size: 24,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: space16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,16 +112,16 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: space24),
 
             // Info message if some exercises are already in supersets
             if (!_isLoading && _existingSupersets.isNotEmpty)
               Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(space12),
+                margin: const EdgeInsets.only(bottom: space12),
                 decoration: BoxDecoration(
                   color: colorScheme.secondaryContainer.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: brSm,
                   border: Border.all(
                     color: colorScheme.secondary.withValues(alpha: 0.3),
                   ),
@@ -132,14 +133,13 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
                       size: 18,
                       color: colorScheme.secondary,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: space8),
                     Expanded(
                       child: Text(
                         '${_existingSupersets.length} exercise${_existingSupersets.length > 1 ? 's are' : ' is'} already grouped',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSecondaryContainer,
-                        ),
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: colorScheme.onSecondaryContainer,
+                            ),
                       ),
                     ),
                   ],
@@ -168,7 +168,7 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
                     final isDisabled = isAlreadyInSuperset;
 
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(bottom: space8),
                       child: Material(
                         color: Colors.transparent,
                         child: InkWell(
@@ -184,11 +184,11 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
                                     }
                                   });
                                 },
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: brSm,
                           child: Opacity(
                             opacity: isDisabled ? 0.5 : 1.0,
                             child: Container(
-                              padding: const EdgeInsets.all(12),
+                              padding: const EdgeInsets.all(space12),
                               decoration: BoxDecoration(
                                 color: isDisabled
                                     ? colorScheme.surfaceContainerHighest
@@ -207,7 +207,7 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
                                           : Colors.transparent,
                                   width: 2,
                                 ),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: brSm,
                               ),
                               child: Row(
                                 children: [
@@ -230,7 +230,8 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
                                                 : colorScheme.outline,
                                         width: 2,
                                       ),
-                                      borderRadius: BorderRadius.circular(6),
+                                      borderRadius: const BorderRadius.all(
+                                          Radius.circular(6),),
                                     ),
                                     child: isDisabled
                                         ? Icon(
@@ -246,7 +247,7 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
                                               )
                                             : null,
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: space12),
                                   // Exercise name
                                   Expanded(
                                     child: Column(
@@ -255,22 +256,26 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
                                       children: [
                                         Text(
                                           exercise.name,
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: isSelected
-                                                ? FontWeight.w600
-                                                : FontWeight.normal,
-                                          ),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyLarge
+                                              ?.copyWith(
+                                                fontWeight: isSelected
+                                                    ? FontWeight.w600
+                                                    : FontWeight.normal,
+                                              ),
                                         ),
                                         if (isDisabled)
                                           Text(
                                             'Already in a superset',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color:
-                                                  colorScheme.onSurfaceVariant,
-                                              fontStyle: FontStyle.italic,
-                                            ),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .labelMedium
+                                                ?.copyWith(
+                                                  color: colorScheme
+                                                      .onSurfaceVariant,
+                                                  fontStyle: FontStyle.italic,
+                                                ),
                                           ),
                                       ],
                                     ),
@@ -296,20 +301,22 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
                                   if (isSelected)
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
+                                        horizontal: space8,
+                                        vertical: space4,
                                       ),
                                       decoration: BoxDecoration(
                                         color: colorScheme.primary,
-                                        borderRadius: BorderRadius.circular(8),
+                                        borderRadius: const BorderRadius.all(
+                                            Radius.circular(8),),
                                       ),
                                       child: Text(
                                         '${_selectedSequences.toList().indexOf(exercise.sequence) + 1}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: colorScheme.onPrimary,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelMedium
+                                            ?.copyWith(
+                                              color: colorScheme.onPrimary,
+                                            ),
                                       ),
                                     ),
                                 ],
@@ -323,7 +330,7 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
                 ),
               ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: space24),
 
             // Action buttons
             Row(
@@ -334,31 +341,28 @@ class _SupersetManagerDialogState extends State<SupersetManagerDialog> {
                         _isCreating ? null : () => Navigator.of(context).pop(),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: brPill,
                       ),
                     ),
                     child: const Text('Cancel'),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: space12),
                 Expanded(
                   child: FilledButton(
                     onPressed:
                         canCreate && !_isCreating ? _createSuperset : null,
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                     ),
                     child: _isCreating
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: colorScheme.onPrimary,
                             ),
                           )
                         : const Text('Create'),
