@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../spotify/spotify_state.dart';
+import '../../theme/tokens.dart';
 import '../../utils.dart';
 
 /// Auth prompt widget for first-time Spotify connection
@@ -77,18 +78,23 @@ class _AuthPromptState extends State<AuthPrompt> {
 
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.fromLTRB(
+          space24,
+          space24,
+          space24,
+          bottomBarClearance(context),
+        ),
         child: Card(
           elevation: 0,
           color: colorScheme.surfaceContainerLow,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: brLg,
             side: BorderSide(
               color: colorScheme.outlineVariant,
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(space32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -98,7 +104,7 @@ class _AuthPromptState extends State<AuthPrompt> {
                   height: 80,
                   decoration: BoxDecoration(
                     color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: brMd,
                   ),
                   child: Icon(
                     Icons.music_note_rounded,
@@ -107,7 +113,7 @@ class _AuthPromptState extends State<AuthPrompt> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: space24),
 
                 // Heading
                 Text(
@@ -119,7 +125,7 @@ class _AuthPromptState extends State<AuthPrompt> {
                   textAlign: TextAlign.center,
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: space12),
 
                 // Explanation
                 Text(
@@ -130,7 +136,7 @@ class _AuthPromptState extends State<AuthPrompt> {
                   textAlign: TextAlign.center,
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: space32),
 
                 // Connect button
                 SizedBox(
@@ -151,24 +157,18 @@ class _AuthPromptState extends State<AuthPrompt> {
                         : const Icon(Icons.link_rounded),
                     label: Text(
                       _isConnecting ? 'Connecting...' : 'Connect with Spotify',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: textTheme.labelLarge,
                     ),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                        vertical: 16,
-                        horizontal: 24,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        vertical: space16,
+                        horizontal: space24,
                       ),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: space16),
 
                 // Info text
                 Text(

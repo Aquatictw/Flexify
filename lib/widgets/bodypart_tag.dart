@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/tokens.dart';
+
 /// A small, compact tag widget that displays a bodypart/muscle group
 class BodypartTag extends StatelessWidget {
 
@@ -22,7 +24,7 @@ class BodypartTag extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: colorScheme.tertiaryContainer.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: brPill,
       ),
       child: Text(
         bodypart!,

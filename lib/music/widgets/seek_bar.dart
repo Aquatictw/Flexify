@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../spotify/spotify_service.dart';
 import '../../spotify/spotify_state.dart';
+import '../../theme/tokens.dart';
 
 /// Seek bar widget for Spotify playback position control
 /// Displays current position, total duration, and interactive slider
@@ -61,7 +62,7 @@ class _SeekBarState extends State<SeekBar> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: space24),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

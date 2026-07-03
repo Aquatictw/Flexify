@@ -8,7 +8,15 @@ import '../fivethreeone/block_creation_dialog.dart';
 import '../fivethreeone/block_overview_page.dart';
 import '../fivethreeone/fivethreeone_state.dart';
 import '../main.dart';
+import '../theme/tokens.dart';
 import 'note_editor_page.dart';
+
+/// Notes can have an arbitrary background color (preset or user-picked), so
+/// foreground ink must contrast against that color, not the app theme.
+Color _inkOn(Color bg) =>
+    bg.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
+Color _inkMutedOn(Color bg) =>
+    bg.computeLuminance() > 0.5 ? Colors.black54 : Colors.white70;
 
 class NotesPage extends StatefulWidget {
   const NotesPage({super.key});
@@ -177,8 +185,8 @@ class _NotesPageState extends State<NotesPage> {
                         },
                       )
                     : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                border: const OutlineInputBorder(
+                  borderRadius: brSm,
                 ),
                 filled: true,
               ),
@@ -310,15 +318,19 @@ class _NotesPageState extends State<NotesPage> {
                 child: _isReorderMode && _searchQuery.isEmpty
                     // ReorderableListView when in reorder mode (list layout)
                     ? ReorderableListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
+                        padding: EdgeInsets.fromLTRB(
+                          space12,
+                          space8,
+                          space12,
+                          bottomBarClearance(context),
+                        ),
                         itemCount: _localNotes!.length,
                         proxyDecorator: (child, index, animation) {
                           return Material(
                             elevation: 8,
                             shadowColor:
                                 colorScheme.shadow.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: brMd,
                             child: child,
                           );
                         },
@@ -414,10 +426,10 @@ class _TrainingMaxBanner extends StatelessWidget {
         : 'Start a 5/3/1 block \u2192';
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      margin: const EdgeInsets.fromLTRB(space12, space8, space12, space4),
       child: Material(
         elevation: 3,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: brMd,
         color: backgroundColor,
         child: InkWell(
           onTap: () {
@@ -434,11 +446,14 @@ class _TrainingMaxBanner extends StatelessWidget {
               );
             }
           },
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: brMd,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+              horizontal: space16,
+              vertical: 10,
+            ),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: brMd,
               gradient: LinearGradient(
                 colors: [
                   backgroundColor,
@@ -456,16 +471,15 @@ class _TrainingMaxBanner extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: iconColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: brSm,
                   ),
                   child: hasBlock
                       ? Text(
                           fiveThreeOneState.cycleBadge,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: iconColor,
-                          ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelLarge
+                              ?.copyWith(color: iconColor),
                         )
                       : Icon(
                           Icons.fitness_center,
@@ -473,16 +487,14 @@ class _TrainingMaxBanner extends StatelessWidget {
                           color: iconColor,
                         ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: space16),
                 Expanded(
                   child: Text(
                     label,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                      letterSpacing: 0.2,
-                    ),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: textColor,
+                          letterSpacing: 0.2,
+                        ),
                   ),
                 ),
                 Icon(
@@ -527,12 +539,17 @@ class _ReorderableGridViewState extends State<_ReorderableGridView> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.fromLTRB(
+        space12,
+        space8,
+        space12,
+        bottomBarClearance(context),
+      ),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.85,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        crossAxisSpacing: space12,
+        mainAxisSpacing: space12,
       ),
       itemCount: widget.notes.length,
       itemBuilder: (context, index) {
@@ -562,7 +579,7 @@ class _ReorderableGridViewState extends State<_ReorderableGridView> {
           builder: (context, candidateData, rejectedData) {
             return LongPressDraggable<int>(
               data: index,
-              delay: const Duration(milliseconds: 200),
+              delay: durFast,
               onDragStarted: () {
                 setState(() => _draggedIndex = index);
               },
@@ -575,7 +592,7 @@ class _ReorderableGridViewState extends State<_ReorderableGridView> {
               feedback: Material(
                 elevation: 8,
                 shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: brMd,
                 child: SizedBox(
                   width: (MediaQuery.of(context).size.width - 36) / 2,
                   height: ((MediaQuery.of(context).size.width - 36) / 2) / 0.85,
@@ -599,10 +616,11 @@ class _ReorderableGridViewState extends State<_ReorderableGridView> {
                 ),
               ),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: durMed,
+                curve: curveStandard,
                 decoration: isTarget
                     ? BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: brMd,
                         border: Border.all(
                           color: colorScheme.primary,
                           width: 2,
@@ -647,19 +665,23 @@ class _NoteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('MMM d, y');
     final timeFormat = DateFormat('h:mm a');
+    final ink = _inkOn(color);
+    final inkMuted = _inkMutedOn(color);
+    final textTheme = Theme.of(context).textTheme;
 
     return Card(
       elevation: 2,
       color: color,
-      margin: isGridMode ? EdgeInsets.zero : const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+      margin:
+          isGridMode ? EdgeInsets.zero : const EdgeInsets.symmetric(vertical: 6),
+      shape: const RoundedRectangleBorder(
+        borderRadius: brMd,
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: brMd,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(space16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: isGridMode ? MainAxisSize.max : MainAxisSize.min,
@@ -670,18 +692,14 @@ class _NoteCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       note.title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+                      style: textTheme.titleMedium?.copyWith(color: ink),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline, size: 20),
-                    color: Colors.black54,
+                    color: inkMuted,
                     onPressed: onDelete,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -689,47 +707,38 @@ class _NoteCard extends StatelessWidget {
                 ],
               ),
               if (note.content.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: space8),
                 isGridMode
                     ? Expanded(
                         child: Text(
                           note.content,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.black87,
-                            height: 1.4,
-                          ),
+                          style: textTheme.bodyMedium
+                              ?.copyWith(color: ink, height: 1.4),
                           maxLines: 6,
                           overflow: TextOverflow.ellipsis,
                         ),
                       )
                     : Text(
                         note.content,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.black87,
-                          height: 1.4,
-                        ),
+                        style: textTheme.bodyMedium
+                            ?.copyWith(color: ink, height: 1.4),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
               ],
-              const SizedBox(height: 12),
+              const SizedBox(height: space12),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.access_time,
                     size: 12,
-                    color: Colors.black54,
+                    color: inkMuted,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: space4),
                   Flexible(
                     child: Text(
                       '${dateFormat.format(note.updated)} ${timeFormat.format(note.updated)}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.black54,
-                      ),
+                      style: textTheme.labelSmall?.copyWith(color: inkMuted),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),

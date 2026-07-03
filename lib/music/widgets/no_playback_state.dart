@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../theme/tokens.dart';
+
 /// Widget displayed when user is authenticated but no Spotify playback is active.
 /// Shows placeholder UI with disabled controls and an "Open Spotify" button.
 class NoPlaybackState extends StatefulWidget {
@@ -67,11 +69,11 @@ class _NoPlaybackStateState extends State<NoPlaybackState> {
     final colorScheme = theme.colorScheme;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(space16),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 32),
+          const SizedBox(height: space32),
 
           // Placeholder album art
           Container(
@@ -79,7 +81,7 @@ class _NoPlaybackStateState extends State<NoPlaybackState> {
             height: 240,
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: brSm,
             ),
             child: Icon(
               Icons.music_note_rounded,
@@ -88,7 +90,7 @@ class _NoPlaybackStateState extends State<NoPlaybackState> {
             ),
           ),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: space32),
 
           // Track title
           Text(
@@ -100,7 +102,7 @@ class _NoPlaybackStateState extends State<NoPlaybackState> {
             textAlign: TextAlign.center,
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: space8),
 
           // Artist/instruction text
           Text(
@@ -111,7 +113,7 @@ class _NoPlaybackStateState extends State<NoPlaybackState> {
             textAlign: TextAlign.center,
           ),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: space32),
 
           // Disabled seek bar
           Column(
@@ -132,7 +134,7 @@ class _NoPlaybackStateState extends State<NoPlaybackState> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: space24),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -156,7 +158,7 @@ class _NoPlaybackStateState extends State<NoPlaybackState> {
             ],
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: space24),
 
           // Disabled playback controls
           Row(
@@ -211,7 +213,7 @@ class _NoPlaybackStateState extends State<NoPlaybackState> {
             ],
           ),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: space32),
 
           // "Open Spotify" button
           FilledButton.icon(
@@ -219,11 +221,11 @@ class _NoPlaybackStateState extends State<NoPlaybackState> {
             icon: const Icon(Icons.open_in_new_rounded),
             label: const Text('Open Spotify'),
             style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: space32, vertical: space16),
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: space16),
 
           // Helpful hint
           Text(
@@ -234,7 +236,7 @@ class _NoPlaybackStateState extends State<NoPlaybackState> {
             textAlign: TextAlign.center,
           ),
 
-          const SizedBox(height: 32),
+          SizedBox(height: bottomBarClearance(context)),
         ],
       ),
     );

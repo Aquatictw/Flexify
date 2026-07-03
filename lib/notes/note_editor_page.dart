@@ -3,6 +3,18 @@ import 'package:flutter/material.dart';
 
 import '../database/database.dart';
 import '../main.dart';
+import '../theme/tokens.dart';
+
+/// Notes let the user pick an arbitrary background color (like a sticky
+/// note), so foreground content must contrast against whatever was chosen —
+/// not against the app's light/dark theme. Compute readable ink colors from
+/// the note's own background luminance instead of hardcoding black.
+Color _inkOn(Color bg) =>
+    bg.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
+Color _inkFaintOn(Color bg) =>
+    bg.computeLuminance() > 0.5 ? Colors.black38 : Colors.white38;
+Color _inkBorderOn(Color bg) =>
+    bg.computeLuminance() > 0.5 ? Colors.black26 : Colors.white24;
 
 class NoteEditorPage extends StatefulWidget {
 
@@ -203,7 +215,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
           backgroundColor: _currentColor,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black87),
+            icon: Icon(Icons.arrow_back, color: _inkOn(_currentColor)),
             onPressed: () async {
               if (await _onWillPop()) {
                 if (mounted) Navigator.pop(context);
@@ -212,7 +224,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.check, color: Colors.black87),
+              icon: Icon(Icons.check, color: _inkOn(_currentColor)),
               onPressed: _saveNote,
               tooltip: 'Save',
             ),
@@ -223,18 +235,19 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
             // Color picker
             Container(
               color: _currentColor,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: space16,
+                vertical: space8,
+              ),
               child: Row(
                 children: [
-                  const Text(
+                  Text(
                     'Color: ',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black87,
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: _inkOn(_currentColor),
+                        ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: space8),
                   Expanded(
                     child: SizedBox(
                       height: 40,
@@ -247,10 +260,10 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                           if (index == _noteColors.length) {
                             final isSelected = _customColor != null;
                             return Padding(
-                              padding: const EdgeInsets.only(right: 8),
+                              padding: const EdgeInsets.only(right: space8),
                               child: InkWell(
                                 onTap: _showCustomColorPicker,
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: brPill,
                                 child: Container(
                                   width: 40,
                                   height: 40,
@@ -259,14 +272,14 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: isSelected
-                                          ? Colors.black87
-                                          : Colors.black26,
+                                          ? _inkOn(_currentColor)
+                                          : _inkBorderOn(_currentColor),
                                       width: isSelected ? 3 : 1,
                                     ),
                                   ),
                                   child: Icon(
                                     isSelected ? Icons.check : Icons.add,
-                                    color: Colors.black87,
+                                    color: _inkOn(_currentColor),
                                     size: 20,
                                   ),
                                 ),
@@ -278,7 +291,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                           final isSelected = index == _selectedColorIndex &&
                               _customColor == null;
                           return Padding(
-                            padding: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.only(right: space8),
                             child: InkWell(
                               onTap: () {
                                 setState(() {
@@ -287,7 +300,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                                   _isModified = true;
                                 });
                               },
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: brPill,
                               child: Container(
                                 width: 40,
                                 height: 40,
@@ -296,15 +309,15 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: isSelected
-                                        ? Colors.black87
-                                        : Colors.black26,
+                                        ? _inkOn(_currentColor)
+                                        : _inkBorderOn(_currentColor),
                                     width: isSelected ? 3 : 1,
                                   ),
                                 ),
                                 child: isSelected
-                                    ? const Icon(
+                                    ? Icon(
                                         Icons.check,
-                                        color: Colors.black87,
+                                        color: _inkOn(_currentColor),
                                         size: 20,
                                       )
                                     : null,
@@ -322,40 +335,37 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
             Expanded(
               child: Container(
                 color: _currentColor,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(space16),
                 child: Column(
                   children: [
                     TextField(
                       controller: _titleController,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                      decoration: const InputDecoration(
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: _inkOn(_currentColor),
+                          ),
+                      decoration: InputDecoration(
                         hintText: 'Title',
                         hintStyle: TextStyle(
-                          color: Colors.black38,
+                          color: _inkFaintOn(_currentColor),
                         ),
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    const Divider(color: Colors.black26),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: space4),
+                    Divider(color: _inkBorderOn(_currentColor)),
+                    const SizedBox(height: space8),
                     Expanded(
                       child: TextField(
                         controller: _contentController,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.black87,
-                          height: 1.5,
-                        ),
-                        decoration: const InputDecoration(
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: _inkOn(_currentColor),
+                              height: 1.5,
+                            ),
+                        decoration: InputDecoration(
                           hintText: 'Start writing...',
                           hintStyle: TextStyle(
-                            color: Colors.black38,
+                            color: _inkFaintOn(_currentColor),
                           ),
                           border: InputBorder.none,
                         ),
@@ -411,11 +421,13 @@ class _SimpleColorPickerDialogState extends State<_SimpleColorPickerDialog> {
               height: 80,
               decoration: BoxDecoration(
                 color: currentColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.black26),
+                borderRadius: brSm,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: space24),
             // Hue slider
             _buildSlider(
               label: 'Hue',
@@ -452,7 +464,7 @@ class _SimpleColorPickerDialogState extends State<_SimpleColorPickerDialog> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: space16),
             // Saturation slider
             _buildSlider(
               label: 'Saturation',
@@ -472,7 +484,7 @@ class _SimpleColorPickerDialogState extends State<_SimpleColorPickerDialog> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: space16),
             // Lightness slider
             _buildSlider(
               label: 'Lightness',
@@ -522,15 +534,17 @@ class _SimpleColorPickerDialogState extends State<_SimpleColorPickerDialog> {
       children: [
         Text(
           '$label: ${value.round()}',
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          style: Theme.of(context).textTheme.labelLarge,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: space8),
         Container(
           height: 24,
           decoration: BoxDecoration(
             gradient: gradient,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.black26),
+            borderRadius: brSm,
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: SliderTheme(
             data: SliderTheme.of(context).copyWith(

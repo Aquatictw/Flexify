@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../spotify/spotify_state.dart';
+import '../../theme/tokens.dart';
 
 /// Shows the Spotify playback queue in a bottom sheet
 /// Displays upcoming tracks with album art, title, and artist
@@ -35,30 +36,30 @@ class QueueBottomSheet extends StatelessWidget {
         return DecoratedBox(
           decoration: BoxDecoration(
             color: colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(radiusLg)),
           ),
           child: Column(
             children: [
               // Drag handle
               Container(
-                margin: const EdgeInsets.only(top: 8, bottom: 4),
+                margin: const EdgeInsets.only(top: space8, bottom: space4),
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
                   color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: brPill,
                 ),
               ),
               // Header
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                padding: const EdgeInsets.fromLTRB(space16, space4, space16, space8),
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(space8),
                       decoration: BoxDecoration(
                         color: colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: brSm,
                       ),
                       child: Icon(
                         Icons.queue_music,
@@ -66,13 +67,10 @@ class QueueBottomSheet extends StatelessWidget {
                         size: 20,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: space8),
                     Text(
                       'Queue',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                          ),
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const Spacer(),
                     IconButton(
@@ -97,20 +95,18 @@ class QueueBottomSheet extends StatelessWidget {
                               color: colorScheme.onSurfaceVariant
                                   .withValues(alpha: 0.5),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: space12),
                             Text(
                               'Queue is empty',
-                              style: TextStyle(
-                                fontSize: 16,
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 color: colorScheme.onSurfaceVariant
                                     .withValues(alpha: 0.8),
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: space4),
                             Text(
                               'Add songs to your queue in Spotify',
-                              style: TextStyle(
-                                fontSize: 14,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurfaceVariant
                                     .withValues(alpha: 0.6),
                               ),
@@ -120,15 +116,15 @@ class QueueBottomSheet extends StatelessWidget {
                       )
                     : ListView.builder(
                         controller: scrollController,
-                        padding: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.only(bottom: space16),
                         itemCount: queue.length,
                         itemBuilder: (context, index) {
                           final track = queue[index];
 
                           return ListTile(
                             contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
+                              horizontal: space16,
+                              vertical: space4,
                             ),
                             onTap: track.uri != null
                                 ? () async {
@@ -153,12 +149,12 @@ class QueueBottomSheet extends StatelessWidget {
                               width: 48,
                               height: 48,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: brSm,
                                 color: colorScheme.surfaceContainerHighest,
                               ),
                               child: track.artworkUrl != null
                                   ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(4),
+                                      borderRadius: brSm,
                                       child: Image.network(
                                         track.artworkUrl!,
                                         fit: BoxFit.cover,
@@ -180,17 +176,13 @@ class QueueBottomSheet extends StatelessWidget {
                             ),
                             title: Text(
                               track.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
+                              style: Theme.of(context).textTheme.titleSmall,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             subtitle: Text(
                               track.artist,
-                              style: TextStyle(
-                                fontSize: 13,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurfaceVariant
                                     .withValues(alpha: 0.8),
                               ),

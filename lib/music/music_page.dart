@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../spotify/spotify_state.dart';
+import '../theme/tokens.dart';
 import 'widgets/animated_equalizer.dart';
 import 'widgets/auth_prompt.dart';
 import 'widgets/no_playback_state.dart';
@@ -78,8 +79,10 @@ class _MusicPageState extends State<MusicPage> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: space24,
+                    vertical: space16,
+                  ),
                   child: Column(
                     children: [
                       // Add top spacing to center content vertically
@@ -87,7 +90,7 @@ class _MusicPageState extends State<MusicPage> {
 
                       // Large album art
                       _buildAlbumArt(context, spotifyState),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: space32),
 
                       // Track name (bold, large text)
                       _buildTrackTitle(theme, spotifyState),
@@ -103,7 +106,7 @@ class _MusicPageState extends State<MusicPage> {
 
                       // Playing from context
                       _buildPlayingFromContext(theme, spotifyState),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: space24),
 
                       // Seek bar with position/duration
                       const SeekBar(),
@@ -111,7 +114,7 @@ class _MusicPageState extends State<MusicPage> {
 
                       // Player controls (shuffle, previous, play/pause, next, repeat)
                       const PlayerControls(),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: space8),
 
                       // Action buttons row (Queue and Recently Played)
                       Row(
@@ -136,8 +139,8 @@ class _MusicPageState extends State<MusicPage> {
                         ],
                       ),
 
-                      // Add bottom padding to clear navigation bar and active workout bar
-                      const SizedBox(height: 160),
+                      // Clear the floating nav/timer/active-workout bars.
+                      SizedBox(height: bottomBarClearance(context)),
                     ],
                   ),
                 ),
@@ -158,39 +161,40 @@ class _MusicPageState extends State<MusicPage> {
       width: artSize,
       height: artSize,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: brMd,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.2),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: brMd,
         child: spotifyState.currentTrack.artworkUrl != null
             ? Image.network(
                 spotifyState.currentTrack.artworkUrl!,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
-                  return _buildPlaceholderArt();
+                  return _buildPlaceholderArt(context);
                 },
               )
-            : _buildPlaceholderArt(),
+            : _buildPlaceholderArt(context),
       ),
     );
   }
 
   /// Placeholder album art for when image is unavailable
-  Widget _buildPlaceholderArt() {
+  Widget _buildPlaceholderArt(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: Colors.grey[800],
+      color: colorScheme.surfaceContainerHighest,
       child: Center(
         child: Icon(
           Icons.music_note,
           size: 120,
-          color: Colors.grey[600],
+          color: colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -233,7 +237,7 @@ class _MusicPageState extends State<MusicPage> {
     return Text(
       spotifyState.currentTrack.artist,
       style: theme.textTheme.titleMedium?.copyWith(
-        color: Colors.grey[600],
+        color: theme.colorScheme.onSurfaceVariant,
       ),
       textAlign: TextAlign.center,
       maxLines: 1,
@@ -329,7 +333,7 @@ class _MusicPageState extends State<MusicPage> {
       icon: const Icon(Icons.queue_music),
       label: const Text('Queue'),
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: space16, vertical: space12),
       ),
     );
   }
@@ -348,7 +352,7 @@ class _MusicPageState extends State<MusicPage> {
       icon: const Icon(Icons.history),
       label: const Text('Recent'),
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: space16, vertical: space12),
       ),
     );
   }

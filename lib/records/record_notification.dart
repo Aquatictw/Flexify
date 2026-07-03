@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../theme/tokens.dart';
 import 'records_service.dart';
 
 /// Shows a celebratory notification when a new record is achieved
@@ -21,7 +22,7 @@ void showRecordNotification(
     barrierDismissible: true,
     barrierLabel: 'Dismiss',
     barrierColor: Colors.black54,
-    transitionDuration: const Duration(milliseconds: 400),
+    transitionDuration: durSlow,
     pageBuilder: (context, animation, secondaryAnimation) {
       return _RecordNotificationDialog(
         achievements: achievements,
@@ -116,8 +117,8 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
                     colorScheme.primary,
                     colorScheme.secondary,
                     colorScheme.tertiary,
-                    Colors.amber,
-                    Colors.orange,
+                    context.jl.pr,
+                    colorScheme.primary,
                   ],
                 ),
               );
@@ -142,7 +143,7 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
                       colorScheme.surface,
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: brLg,
                   boxShadow: [
                     BoxShadow(
                       color: colorScheme.primary.withValues(alpha: 0.3),
@@ -170,7 +171,7 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
                               height: 100,
                               decoration: BoxDecoration(
                                 borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(22),
+                                  top: Radius.circular(radiusLg),
                                 ),
                                 gradient: LinearGradient(
                                   begin: Alignment(
@@ -199,21 +200,21 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
                             );
                           },
                           child: Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(space16),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  Colors.amber.shade300,
-                                  Colors.amber.shade600,
-                                  Colors.orange.shade700,
+                                  context.jl.pr,
+                                  context.jl.pr.withValues(alpha: 0.85),
+                                  colorScheme.primary,
                                 ],
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.amber.withValues(alpha: 0.5),
+                                  color: context.jl.pr.withValues(alpha: 0.5),
                                   blurRadius: 16,
                                   spreadRadius: 2,
                                 ),
@@ -230,7 +231,12 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
                     ),
                     // Content
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      padding: const EdgeInsets.fromLTRB(
+                        space24,
+                        0,
+                        space24,
+                        space24,
+                      ),
                       child: Column(
                         children: [
                           // Title
@@ -243,15 +249,15 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
                               foreground: Paint()
                                 ..shader = LinearGradient(
                                   colors: [
-                                    Colors.amber.shade400,
-                                    Colors.orange.shade600,
+                                    context.jl.pr,
+                                    colorScheme.primary,
                                   ],
                                 ).createShader(
                                   const Rect.fromLTWH(0, 0, 200, 30),
                                 ),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: space8),
                           // Exercise name
                           Text(
                             widget.exerciseName,
@@ -260,11 +266,10 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
                                 .titleMedium
                                 ?.copyWith(
                                   color: colorScheme.onSurface,
-                                  fontWeight: FontWeight.w600,
                                 ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: space24),
                           // Record achievements
                           ...widget.achievements.map(
                             (achievement) =>
@@ -295,7 +300,7 @@ class _RecordBadge extends StatelessWidget {
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 400),
+      duration: durSlow,
       curve: Curves.easeOutBack,
       builder: (context, value, child) {
         return Transform.scale(
@@ -308,10 +313,13 @@ class _RecordBadge extends StatelessWidget {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: space16,
+          vertical: space12,
+        ),
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: brMd,
           border: Border.all(
             color: colorScheme.primary.withValues(alpha: 0.2),
           ),
@@ -330,7 +338,7 @@ class _RecordBadge extends StatelessWidget {
               achievement.emoji,
               style: const TextStyle(fontSize: 24),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: space12),
             // Record type and value
             Expanded(
               child: Column(
@@ -338,20 +346,16 @@ class _RecordBadge extends StatelessWidget {
                 children: [
                   Text(
                     achievement.displayName,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.primary,
-                      letterSpacing: 0.5,
-                    ),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: colorScheme.primary,
+                        ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     _formatValue(achievement),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
                   ),
                 ],
               ),
@@ -361,32 +365,30 @@ class _RecordBadge extends StatelessWidget {
                 achievement.improvement > 0)
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: space8,
+                  vertical: space4,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: context.jl.success.withValues(alpha: 0.1),
+                  borderRadius: brSm,
                   border: Border.all(
-                    color: Colors.green.withValues(alpha: 0.3),
+                    color: context.jl.success.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.arrow_upward,
                       size: 14,
-                      color: Colors.green,
+                      color: context.jl.success,
                     ),
                     const SizedBox(width: 2),
                     Text(
                       '+${achievement.improvement.toStringAsFixed(1)}%',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: context.jl.success,
+                          ),
                     ),
                   ],
                 ),
@@ -508,13 +510,14 @@ class RecordCrown extends StatelessWidget {
     if (records.isEmpty) return const SizedBox.shrink();
 
     // Choose color based on record types
+    final colorScheme = Theme.of(context).colorScheme;
     Color crownColor;
     if (records.contains(RecordType.bestWeight)) {
-      crownColor = Colors.amber;
+      crownColor = context.jl.pr;
     } else if (records.contains(RecordType.best1RM)) {
-      crownColor = Colors.orange;
+      crownColor = colorScheme.primary;
     } else {
-      crownColor = Colors.deepOrange;
+      crownColor = colorScheme.tertiary;
     }
 
     final tooltip = records.map((r) {
@@ -574,15 +577,17 @@ class RecordIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     if (records.isEmpty) return const SizedBox.shrink();
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (records.contains(RecordType.bestWeight))
-          _buildMiniIcon(Icons.emoji_events, Colors.amber),
+          _buildMiniIcon(Icons.emoji_events, context.jl.pr),
         if (records.contains(RecordType.best1RM))
-          _buildMiniIcon(Icons.fitness_center, Colors.orange),
+          _buildMiniIcon(Icons.fitness_center, colorScheme.primary),
         if (records.contains(RecordType.bestVolume))
-          _buildMiniIcon(Icons.local_fire_department, Colors.deepOrange),
+          _buildMiniIcon(Icons.local_fire_department, colorScheme.tertiary),
       ],
     );
   }

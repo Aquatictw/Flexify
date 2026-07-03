@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
+import '../theme/tokens.dart';
+
 class ArtisticColorPicker extends StatefulWidget {
 
   const ArtisticColorPicker({
@@ -92,7 +94,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
 
   Widget _buildHeader(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(space16),
       child: Column(
         children: [
           Row(
@@ -119,7 +121,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: space16),
           _buildPreview(),
         ],
       ),
@@ -135,13 +137,13 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
     return Container(
       height: 120,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: brSm,
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+          color: Theme.of(context).colorScheme.outlineVariant,
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: brSm,
         child: Row(
           children: [
             _buildPreviewColor(scheme.primary, 'Primary'),
@@ -229,7 +231,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
     };
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(space16),
       children: palettes.entries.map((entry) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,7 +248,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
               runSpacing: 8,
               children: entry.value.map(_buildColorChip).toList(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: space16),
           ],
         );
       }).toList(),
@@ -255,16 +257,20 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
 
   Widget _buildColorChip(Color color) {
     final isSelected = _selectedColor.toARGB32() == color.toARGB32();
+    // Chip is a literal swatch value (user-pickable), but the selection
+    // checkmark is chrome — pick readable ink from the swatch's luminance.
+    final checkColor =
+        color.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
 
     return InkWell(
       onTap: () => _updateColor(color),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: brSm,
       child: Container(
         width: 56,
         height: 56,
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: brSm,
           border: Border.all(
             color: isSelected
                 ? Theme.of(context).colorScheme.primary
@@ -279,21 +285,21 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
             ),
           ],
         ),
-        child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
+        child: isSelected ? Icon(Icons.check, color: checkColor) : null,
       ),
     );
   }
 
   Widget _buildCustomTab() {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(space16),
       children: [
         _buildHueSlider(),
-        const SizedBox(height: 24),
+        const SizedBox(height: space24),
         _buildSaturationSlider(),
-        const SizedBox(height: 24),
+        const SizedBox(height: space24),
         _buildLightnessSlider(),
-        const SizedBox(height: 32),
+        const SizedBox(height: space32),
         _buildColorCodeDisplay(),
       ],
     );
@@ -307,7 +313,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
           'Hue',
           style: Theme.of(context).textTheme.titleSmall,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: space8),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             trackHeight: 12,
@@ -334,7 +340,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
       height: 12,
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: brPill,
         gradient: const LinearGradient(
           colors: [
             Colors.red,
@@ -358,7 +364,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
           'Saturation',
           style: Theme.of(context).textTheme.titleSmall,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: space8),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             trackHeight: 12,
@@ -388,7 +394,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
       height: 12,
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: brPill,
         gradient: LinearGradient(
           colors: [baseColor, saturatedColor],
         ),
@@ -404,7 +410,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
           'Lightness',
           style: Theme.of(context).textTheme.titleSmall,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: space8),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             trackHeight: 12,
@@ -433,7 +439,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
       height: 12,
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: brPill,
         gradient: LinearGradient(
           colors: [darkColor, lightColor],
         ),
@@ -446,10 +452,10 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
         '#${_selectedColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(space16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: brSm,
       ),
       child: Column(
         children: [
@@ -469,7 +475,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: space8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -492,7 +498,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
 
   Widget _buildGridTab() {
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(space16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 6,
         crossAxisSpacing: 8,
@@ -532,7 +538,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
 
   Widget _buildFooter(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(space16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -540,7 +546,7 @@ class _ArtisticColorPickerState extends State<ArtisticColorPicker>
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: space8),
           FilledButton(
             onPressed: () {
               Navigator.of(context).pop(_selectedColor);

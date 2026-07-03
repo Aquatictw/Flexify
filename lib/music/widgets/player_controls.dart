@@ -6,6 +6,7 @@ import 'package:spotify_sdk/models/player_options.dart' as player_options;
 
 import '../../spotify/spotify_service.dart';
 import '../../spotify/spotify_state.dart';
+import '../../theme/tokens.dart';
 import '../../utils.dart';
 
 /// Player controls widget for Spotify playback
@@ -151,7 +152,7 @@ class _PlayerControlsState extends State<PlayerControls> {
     final repeatMode = spotifyState.repeatMode;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: space16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
@@ -166,7 +167,7 @@ class _PlayerControlsState extends State<PlayerControls> {
                 : colorScheme.onSurfaceVariant.withValues(alpha: 0.38),
             onPressed: controlsEnabled ? _handleToggleShuffle : null,
             tooltip: 'Shuffle',
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(space12),
             constraints: const BoxConstraints(
               minWidth: 56,
               minHeight: 56,
@@ -182,7 +183,7 @@ class _PlayerControlsState extends State<PlayerControls> {
                 : colorScheme.onSurfaceVariant.withValues(alpha: 0.38),
             onPressed: controlsEnabled ? _handleSkipPrevious : null,
             tooltip: 'Previous',
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(space12),
             constraints: const BoxConstraints(
               minWidth: 56,
               minHeight: 56,
@@ -221,7 +222,7 @@ class _PlayerControlsState extends State<PlayerControls> {
                 : colorScheme.onSurfaceVariant.withValues(alpha: 0.38),
             onPressed: controlsEnabled ? _handleSkipNext : null,
             tooltip: 'Next',
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(space12),
             constraints: const BoxConstraints(
               minWidth: 56,
               minHeight: 56,
@@ -239,7 +240,7 @@ class _PlayerControlsState extends State<PlayerControls> {
                 : colorScheme.onSurfaceVariant.withValues(alpha: 0.38),
             onPressed: controlsEnabled ? _handleToggleRepeat : null,
             tooltip: 'Repeat',
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(space12),
             constraints: const BoxConstraints(
               minWidth: 56,
               minHeight: 56,

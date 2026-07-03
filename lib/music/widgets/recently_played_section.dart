@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../spotify/spotify_state.dart';
+import '../../theme/tokens.dart';
 
 /// Horizontal scrollable section showing recently played tracks
 class RecentlyPlayedSection extends StatelessWidget {
@@ -22,11 +23,13 @@ class RecentlyPlayedSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: space24,
+            vertical: space8,
+          ),
           child: Text(
             'Recently Played',
             style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
               color: colorScheme.onSurface,
             ),
           ),
@@ -35,12 +38,12 @@ class RecentlyPlayedSection extends StatelessWidget {
           height: 100,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: space16),
             itemCount: recentlyPlayed.length,
             itemBuilder: (context, index) {
               final track = recentlyPlayed[index];
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: space8),
                 child: SizedBox(
                   width: 80,
                   child: Column(
@@ -50,17 +53,17 @@ class RecentlyPlayedSection extends StatelessWidget {
                         width: 80,
                         height: 80,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: brSm,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
+                              color: colorScheme.shadow.withValues(alpha: 0.15),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
                           ],
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: brSm,
                           child: track.artworkUrl != null
                               ? Image.network(
                                   track.artworkUrl!,
