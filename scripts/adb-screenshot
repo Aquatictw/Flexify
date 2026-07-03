@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Capture the current Android screen over adb into a PNG the agent can Read.
+# Usage: ./scripts/adb-screenshot [output-path]
+# Prints the absolute path of the saved image on success.
+set -euo pipefail
+
+out="${1:-$(dirname "$0")/../.screenshots/screen.png}"
+mkdir -p "$(dirname "$out")"
+
+if ! command -v adb >/dev/null 2>&1; then
+  echo "adb not found on PATH" >&2
+  exit 1
+fi
+
+if [ -z "$(adb devices | awk 'NR>1 && $2=="device"')" ]; then
+  echo "No adb device connected (check 'adb devices' and USB debugging)" >&2
+  exit 1
+fi
+
+# exec-out streams raw bytes with no line-ending translation, unlike shell screencap
+adb exec-out screencap -p > "$out"
+
+abs="$(cd "$(dirname "$out")" && pwd)/$(basename "$out")"
+echo "$abs"

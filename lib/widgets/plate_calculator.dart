@@ -177,13 +177,15 @@ class _PlateCalculatorDialogState extends State<PlateCalculatorDialog> {
                     size: 28,
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    'Plate Calculator',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      'Plate Calculator',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),

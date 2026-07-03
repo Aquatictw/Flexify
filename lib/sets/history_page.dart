@@ -19,7 +19,6 @@ import 'history_list.dart';
 enum HistoryView { workouts, sets }
 
 class HistoryDay {
-
   HistoryDay({required this.name, required this.gymSets, required this.day});
   final String name;
   final List<GymSet> gymSets;
@@ -27,7 +26,6 @@ class HistoryDay {
 }
 
 class HistoryPage extends StatefulWidget {
-
   const HistoryPage({required this.tabController, super.key});
   final TabController tabController;
 
@@ -67,7 +65,6 @@ class HistoryPageState extends State<HistoryPage>
 }
 
 class _HistoryPageWidget extends StatefulWidget {
-
   const _HistoryPageWidget({required this.navigatorKey});
   final GlobalKey<NavigatorState> navigatorKey;
 
@@ -99,8 +96,21 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
       resizeToAvoidBottomInset: false,
       body: material.Column(
         children: [
-          _buildViewToggle(),
           if (historyView == HistoryView.workouts) ...[
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(space24, space16, space24, 0),
+                child: Text(
+                  'History',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.25,
+                  ),
+                ),
+              ),
+            ),
             AppSearch(
               showMenu: false,
               onChange: (value) {
@@ -127,7 +137,9 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
                 final workouts = await (db.workouts.select()
                       ..orderBy([
                         (w) => OrderingTerm(
-                            expression: w.startTime, mode: OrderingMode.desc,),
+                              expression: w.startTime,
+                              mode: OrderingMode.desc,
+                            ),
                       ])
                       ..limit(limit))
                     .get();
@@ -222,7 +234,8 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
                               )
                               .join(', ');
                           await SharePlus.instance.share(
-                              ShareParams(text: 'I just did $summaries'),);
+                            ShareParams(text: 'I just did $summaries'),
+                          );
                           setState(() {
                             selected.clear();
                           });
@@ -248,7 +261,8 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
                         onSelect: () => setState(() {
                           if (snapshot.data == null) return;
                           selected.addAll(
-                              snapshot.data!.map((gymSet) => gymSet.id),);
+                            snapshot.data!.map((gymSet) => gymSet.id),
+                          );
                         }),
                         selected: selected,
                         onEdit: () => Navigator.push(
@@ -337,42 +351,17 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
     );
   }
 
-  Widget _buildViewToggle() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: space16, vertical: space4),
-      child: SegmentedButton<HistoryView>(
-        segments: const [
-          ButtonSegment<HistoryView>(
-            value: HistoryView.workouts,
-            label: Text('Workouts'),
-            icon: Icon(Icons.fitness_center),
-          ),
-          ButtonSegment<HistoryView>(
-            value: HistoryView.sets,
-            label: Text('Sets'),
-            icon: Icon(Icons.list),
-          ),
-        ],
-        selected: {historyView},
-        onSelectionChanged: (Set<HistoryView> selection) {
-          setState(() {
-            historyView = selection.first;
-            limit = 100;
-          });
-        },
-      ),
-    );
-  }
-
   List<HistoryDay> getHistoryDays(List<GymSet> gymSets) {
     final List<HistoryDay> historyDays = [];
     for (final gymSet in gymSets) {
       final day = DateUtils.dateOnly(gymSet.created);
       // Group by day, workout, AND exercise name to properly group sets
-      final index = historyDays.indexWhere((hd) =>
-          isSameDay(hd.day, day) &&
-          hd.name == gymSet.name &&
-          hd.gymSets.first.workoutId == gymSet.workoutId,);
+      final index = historyDays.indexWhere(
+        (hd) =>
+            isSameDay(hd.day, day) &&
+            hd.name == gymSet.name &&
+            hd.gymSets.first.workoutId == gymSet.workoutId,
+      );
       if (index == -1)
         historyDays.add(
           HistoryDay(name: gymSet.name, gymSets: [gymSet], day: day),

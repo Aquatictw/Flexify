@@ -23,6 +23,13 @@ enum RecordType {
   bestWeight,
 }
 
+/// Compact badge label for history cards, e.g. "1RM PR" / "Vol PR" / "Wt PR".
+String recordShortLabel(RecordType t) => switch (t) {
+      RecordType.best1RM => '1RM',
+      RecordType.bestVolume => 'Vol',
+      RecordType.bestWeight => 'Wt',
+    };
+
 /// Represents a personal record achievement
 class RecordAchievement {
 

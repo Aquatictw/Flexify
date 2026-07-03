@@ -65,4 +65,71 @@ class JlColors {
   Color get success =>
       _dark ? const Color(0xFF81C784) : const Color(0xFF2E7D32);
   Color get danger => _scheme.error;
+
+  // Push / Pull / Legs identity colors for the history feed. Fixed hues,
+  // independent of the app theme, so the rails stay distinguishable (orange /
+  // blue / green) whatever primary color the user picks.
+  Color get push => _dark ? const Color(0xFFFF8A65) : const Color(0xFFE64A19);
+  Color get pull => _dark ? const Color(0xFF9575CD) : const Color(0xFF5E35B1);
+  Color get legs =>
+      _dark ? const Color(0xFF81C784) : const Color(0xFF2E7D32);
+  Color get otherMuscle => _scheme.onSurfaceVariant;
+
+  Color muscleColor(MuscleGroup g) => switch (g) {
+        MuscleGroup.push => push,
+        MuscleGroup.pull => pull,
+        MuscleGroup.legs => legs,
+        MuscleGroup.other => otherMuscle,
+      };
+}
+
+enum MuscleGroup { push, pull, legs, other }
+
+String muscleLabel(MuscleGroup g) => switch (g) {
+      MuscleGroup.push => 'Push',
+      MuscleGroup.pull => 'Pull',
+      MuscleGroup.legs => 'Legs',
+      MuscleGroup.other => 'Other',
+    };
+
+/// Bucket a set into Push / Pull / Legs. The stored `category` is authoritative
+/// when recognized; otherwise fall back to keywords in the exercise name.
+/// Core, cardio, and anything unknown fall through to `other` (grey).
+// ponytail: keyword heuristic, not a real muscle DB — good enough for freeform
+// logs; swap for a name→muscle table if it ever misclassifies noticeably.
+MuscleGroup muscleGroupOf(String? category, String name) {
+  final c = category?.toLowerCase().trim() ?? '';
+  if (c.contains('chest') ||
+      c.contains('shoulder') ||
+      c.contains('tricep') ||
+      c == 'push') return MuscleGroup.push;
+  if (c.contains('back') || c.contains('bicep') || c == 'pull')
+    return MuscleGroup.pull;
+  if (c.contains('leg') ||
+      c.contains('quad') ||
+      c.contains('hamstring') ||
+      c.contains('glute') ||
+      c.contains('calf') ||
+      c.contains('calv')) return MuscleGroup.legs;
+
+  // Name fallback — order matters: legs first catches "leg press"/"leg curl".
+  final n = name.toLowerCase();
+  bool has(List<String> ks) => ks.any(n.contains);
+  if (has(const [
+    'squat', 'leg', 'calf', 'calv', 'lunge', 'hamstring', 'quad', 'glute',
+  ])) {
+    return MuscleGroup.legs;
+  }
+  if (has(const [
+    'row', 'pull', 'deadlift', 'curl', 'chin', 'shrug', 'face', 'rear',
+  ])) {
+    return MuscleGroup.pull;
+  }
+  if (has(const [
+    'bench', 'press', 'dip', 'fly', 'pushdown', 'skull', 'tricep', 'overhead',
+    'lateral', 'push',
+  ])) {
+    return MuscleGroup.push;
+  }
+  return MuscleGroup.other;
 }
