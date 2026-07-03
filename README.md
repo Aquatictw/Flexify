@@ -20,174 +20,68 @@
 
 ---
 
-## Why JackedLog?
-
-- **🎯 100% Free Forever**: No ads, no subscriptions, no premium tiers. Every feature unlocked.
-- **✈️ Offline-First**: Pure SQLite—no internet, no servers, no data mining. Train anywhere.
-- **🎊 PR Celebrations**: Automatic detection with animated confetti when you hit new maxes.
-- **📊 Advanced Analytics**: Training heatmaps, muscle group charts, and progressive overload tracking.
-- **🎨 Full Customization**: Artistic color picker lets you personalize the entire app theme.
-- **📱 Android Native**: Optimized for Android devices with offline-first architecture.
-
----
-
 ## Screenshots
 
-### Workout Execution & Tracking
 <p align="center">
-  <img src="screenshots/workout_execution.png" alt="Workout Execution" width="200">
-  <img src="screenshots/active_workout_bar.png" alt="Active Workout Bar" width="200">
-  <img src="screenshots/plate_calculator.png" alt="Exercise Notes" width="202.5">
-  <img src="screenshots/exercise_notes.png" alt="Exercise Notes" width="200">
+  <img src="screenshots/readme_history.png" alt="Workout history" width="180">
+  <img src="screenshots/readme_plans.png" alt="Training plans" width="180">
+  <img src="screenshots/readme_overview.png" alt="Training overview" width="180">
+  <img src="screenshots/readme_bodyweight.png" alt="Bodyweight tracking" width="180">
+  <img src="screenshots/readme_settings.png" alt="Settings" width="180">
 </p>
 
-*Exercise list, active workout page, exercise notes and plate calculator*
-
-### Personal Records & Celebrations
-<p align="center">
-  <img src="screenshots/pr_notification.png" alt="PR Notification" width="250">
-  <img src="screenshots/workout_detail_with_prs.png" alt="Workout with PRs" width="250">
-  <img src="screenshots/history_sets.png" alt="Sets History" width="250">
-</p>
-
-*PR celebrations, history workouts and sets*
-
-### Training Overview & Heatmap
-<p align="center">
-  <img src="screenshots/overview_stats.png" alt="Overview Stats" width="200">
-  <img src="screenshots/muscle_charts.png" alt="Muscle Analytics" width="200">
-  <img src="screenshots/detailed_exercise.png" alt="Exercise Graphs" width="200">
-  <img src="screenshots/bodyweight_tracking.png" alt="Repetition Records" width="208">
-</p>
-
-*Overview period stats and calendar, muscle group analytics, detailed exercise graphs and bodyweight_tracking*
-
-### Custom Theming and Settings
-<p align="center">
-  <img src="screenshots/color_picker_palettes.png" alt="Color Palettes" width="180">
-  <img src="screenshots/color_picker_custom.png" alt="Custom HSL Sliders" width="180">
-  <img src="screenshots/color_picker_grid.png" alt="Color Grid" width="180">
-  <img src="screenshots/settings.png" alt="Various Settings" width="248">
-</p>
-
-*Custom app color picker, Material Design 3 themes, Settings*
-
-
-### Planning & Templates
-<p align="center">
-  <img src="screenshots/plans_list.png" alt="Training Plans" width="200">
-  <img src="screenshots/edit_plan.png" alt="Edit Plan" width="200">
-  <img src="screenshots/custom_exercise.png" alt="Custom Exercise" width="200">
-  <img src="screenshots/add_exercise.png" alt="Add Exercise" width="200">
-</p>
-
-*Customizable Training plans, Custom exercises and add them on the fly*
-
----
+*History, plans, training overview, bodyweight tracking, settings*
 
 ## Features
 
-### 🏋️ Workout Management
+- **Workout tracking** — sessions with start/end times, resumable workouts, drag-and-drop exercise reordering, warmup and drop sets, per-exercise notes
+- **Personal records** — best weight, volume, and 1RM (Brzycki) per exercise, with confetti celebrations when you break one
+- **Analytics** — progressive overload graphs, GitHub-style training heatmap, muscle group volume breakdowns, bodyweight trends
+- **Plans** — pre-built splits or custom templates, plus a built-in 5/3/1 calculator with training max tracking
+- **Tools** — plate calculator, per-exercise rest timers, Hevy import, color-coded notes
+- **Offline-first** — everything lives in a local SQLite database. No account, no network, no data mining
+- **Theming** — Material Design 3 with a full custom color picker
 
-- **Session Tracking**: Group exercises into training sessions with start/end timestamps, with floating indicator showing current session
-- **Resume Workouts**: Pick up where you left off—even resume past workouts for edits
-- **Training Plans & Templates**: Pre-built splits or freeform workouts
-- **Exercise Reordering**: Drag-and-drop to reorganize your training on the fly, with exercise and sets removal on the fly
-- **Exercise Notes**: Add training notes, cues, and form reminders during sessions
-- **Warmup and Drop Sets**: Mark warmup and drop sets separately from working sets with distiunct visual indicators
-- **Drop Sets**: Track drop sets with distinct visual indicators
+## Development
 
-### 📈 Performance Tracking
+Requires the Flutter SDK (3.2.6+).
 
-- **Personal Records**: Tracks best 1RM (Brzycki formula), best volume, and best weight per exercise
-- **Custom Celebrations**: Animated notifications with confetti and improvement percentages when you break records
-- **Progressive Overload Charts**: Visualize strength gains over time with detailed graphs, with period-based stats
-- **Training Heatmap**: GitHub-style activity calendar showing consistency and adherence
-- **Muscle Analytics**: Top muscle groups by volume and set count
-- **Bodyweight Tracking**: Log and track bodyweight over time with trends and historical charts
+```bash
+git clone https://github.com/Aquatictw/JackedLog jackedlog
+cd jackedlog
+flutter pub get
+flutter run
+```
 
-### 🔧 Additional Tools
+If you change the database schema, regenerate the Drift code:
 
-- **5/3/1 Programming**: Built-in calculator for Wendler's 5/3/1 methodology with training max tracking
-- **Plate Calculator**: Calculate plate loading configurations for target weights during workouts
-- **Hevy Import**: Migrate your entire training history from Hevy seamlessly
-- **Custom Rest Timers**: Set per-exercise rest periods with audio and haptic feedback
-- **Exercise Categories**: Organize exercises by muscle group, type (free weight, machine, cable) and brand (Hammer Strength, etc.)
-- **Notes System**: Separate notes feature with custom color-coding for training programs, diet plans, etc.
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
 
+Migrations are written by hand (schema version 66) — see `lib/database/database.dart`.
 
-## Tech Stack
+### Regenerating README screenshots
 
-| Layer            | Technology                  |
-| ---------------- | --------------------------- |
-| Framework        | Flutter (Dart SDK >= 3.2.6) |
-| Database         | Drift 2.28.1 (SQLite ORM)   |
-| State Management | Provider 6.1.1              |
-| Charts           | fl_chart                    |
-| Design           | Material Design 3           |
-| Theming          | dynamic_color package       |
+With an Android device connected over adb:
 
+```bash
+./scripts/readme-screenshots
+```
 
-## Getting Started
+This runs an integration test (`integration_test/readme_screenshots_test.dart`) that seeds a throwaway on-device database with demo data, walks through the app, and writes `screenshots/readme_*.png`. Your real app data is untouched.
 
-### Prerequisites
+## Tech stack
 
-- Flutter SDK (3.2.6 or higher)
-- Dart SDK (included with Flutter)
-- For development: Android Studio for emulator
+Flutter, Drift (SQLite), Provider, fl_chart, Material Design 3.
 
-### Installation
-
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/Aquatictw/JackedLog jackedlog
-   cd jackedlog
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   flutter pub get
-   ```
-
-3. **Generate database code** (if needed)
-
-   ```bash
-   dart run build_runner build --delete-conflicting-outputs
-   ```
-
-4. **Run the app**
-
-   ```bash
-   # Debug mode
-   flutter run
-
-   # Release mode 
-   flutter run --release
-   ```
-
-
-- **Offline-First**: Data stored locally in SQLite—zero network dependency
-- **Provider Pattern**: Global state management for active workouts and timers—seamless UX
-- **Migration System**: Schema versioning (currently v55) with step-by-step migrations—data integrity guaranteed
-
-See [CLAUDE.md](CLAUDE.md) for complete schema documentation.
-
----
-
-### Contributing
-
-Contributions are welcome! This is an open-source project and improvements are always appreciated.
-
-### Acknowledgments
+## Acknowledgments
 
 > This project is based on [brandonp2412/Flexify](https://github.com/brandonp2412/Flexify) and has been heavily modified and rebuilt with new architecture and features.
 
-### License
+## License
 
 JackedLog is licensed under the [MIT License](LICENSE.md).
-
 
 <p align="center">
   <strong>Built for lifters, by lifters.</strong>

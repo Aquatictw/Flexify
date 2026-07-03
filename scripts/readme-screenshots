@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Regenerates the README screenshots on a connected Android device.
+# Writes screenshots/readme_*.png. Uses a throwaway on-device database
+# (jackedlog_readme_screenshots.sqlite) so real app data is untouched.
+#
+# Usage: ./scripts/readme-screenshots [-d <device-id>] [extra flutter drive args]
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+command -v flutter >/dev/null || { echo "flutter not found in PATH" >&2; exit 1; }
+
+if ! adb devices | awk 'NR>1 && $2=="device"' | grep -q .; then
+  echo "No Android device connected (adb devices shows none)." >&2
+  exit 1
+fi
+
+exec flutter drive \
+  --driver=test_driver/integration_test.dart \
+  --target=integration_test/readme_screenshots_test.dart \
+  --dart-define=JACKEDLOG_DATABASE_FILENAME=jackedlog_readme_screenshots.sqlite \
+  "$@"

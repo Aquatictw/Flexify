@@ -30,15 +30,25 @@ void _ensureTables(Database database) {
   ''');
 }
 
+/// Overridable at compile time so integration tests (e.g. README screenshot
+/// runs) can use a throwaway database instead of the user's real data.
+const databaseFilename = String.fromEnvironment(
+  'JACKEDLOG_DATABASE_FILENAME',
+  defaultValue: 'jackedlog.sqlite',
+);
+
 LazyDatabase createNativeConnection() {
   return LazyDatabase(() async {
     final folder = await getApplicationDocumentsDirectory();
     final oldFile = File(p.join(folder.path, 'flexify.sqlite'));
-    final newFile = File(p.join(folder.path, 'jackedlog.sqlite'));
+    final newFile = File(p.join(folder.path, databaseFilename));
+    const useDefaultDatabase = databaseFilename == 'jackedlog.sqlite';
 
     // Migration: Copy old database to new location if it exists
     try {
-      if (await oldFile.exists() && !await newFile.exists()) {
+      if (useDefaultDatabase &&
+          await oldFile.exists() &&
+          !await newFile.exists()) {
         await oldFile.copy(newFile.path);
         // Verify copy succeeded
         if (await newFile.exists()) {
@@ -55,7 +65,9 @@ LazyDatabase createNativeConnection() {
     } catch (e) {
       debugPrint('Database migration error: $e');
       // Fall back to old file if new one doesn't exist
-      if (!await newFile.exists() && await oldFile.exists()) {
+      if (useDefaultDatabase &&
+          !await newFile.exists() &&
+          await oldFile.exists()) {
         final file = oldFile;
         if (Platform.isAndroid) {
           await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();

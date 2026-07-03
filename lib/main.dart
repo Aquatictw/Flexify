@@ -153,6 +153,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
         );
 
         return MaterialApp(
+          debugShowCheckedModeBanner: false,
           scaffoldMessengerKey: rootScaffoldMessenger,
           title: 'JackedLog',
           theme: jlTheme((colors ? lightDynamic : null) ?? light),
