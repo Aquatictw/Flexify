@@ -74,3 +74,6 @@ test/generated_migrations/
 
 # Prod server details (public repo — never commit; see scripts/prod.env.example)
 /scripts/prod.env
+
+# adb screenshots for agents
+/.screenshots/

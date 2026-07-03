@@ -23,6 +23,15 @@ Single-context: `.planning/CONTEXT.md` + `.planning/docs/adr/`. See `docs/agents
 
 Before broad code search, use `.planning/CONTEXT.md` for product language and current status to choose starting files.
 
+## Inspecting the running app (agents may run this)
+
+The app is tested on a physical Android phone over adb. To see the current
+screen, run `./scripts/adb-screenshot` — it captures the phone display to
+`.screenshots/screen.png` (gitignored) and prints the absolute path. Then Read
+that path to view the image. Use this whenever you need to verify UI, or when
+the user asks for an adb screen check. Requires a phone connected with USB
+debugging (`adb devices` shows a `device`).
+
 ## Server deploys (agents may run these)
 
 The self-hosted server (`server/`) deploys via GHCR + Watchtower: push to `main`
@@ -37,34 +46,6 @@ in `scripts/` automate the loop:
 Config lives in `scripts/prod.env` (copy from `scripts/prod.env.example`).
 **`prod.env` is gitignored and must never be committed — this repo is public.**
 Never hardcode the server URL, API key, or SSH host anywhere tracked by git.
-
-## Shell rules
-
-This repo is usually used from PowerShell on Windows.
-
-Prefer:
-- `pwsh` / PowerShell 7 for interactive agent sessions.
-- `rg --files` to list project files.
-- `rg -n "pattern" .` to search text.
-- `fd "name"` to find files by name.
-- `Get-ChildItem -Force` for directory listings.
-- `Get-ChildItem -Recurse -File` for recursive file listings.
-- `Get-Content -Raw -LiteralPath "path"` to read a whole file.
-- `Get-Content -LiteralPath "path" -TotalCount 200` to preview a file.
-- `Set-Location -LiteralPath "path"` to navigate safely.
-- `just <recipe>` for repeatable project commands.
-
-Avoid Bash-only syntax in this repo's default shell:
-- `ls -la`
-- `cat <<EOF`
-- `grep`
-- `sed -n`
-- `rm -rf`
-- `/tmp/...`
-- `export FOO=bar`
-- Unix-style path assumptions.
-
-For file edits, prefer agent patch/edit tools over shell heredocs.
 
 
 ---

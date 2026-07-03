@@ -20,9 +20,11 @@ import 'graph_history_page.dart';
 import 'strength_data.dart';
 
 class StrengthPage extends StatefulWidget {
-
   const StrengthPage({
-    required this.name, required this.unit, required this.data, super.key,
+    required this.name,
+    required this.unit,
+    required this.data,
+    super.key,
     this.tabCtrl,
   });
   final String name;
@@ -96,7 +98,9 @@ class _StrengthPageState extends State<StrengthPage> {
           ..where((tbl) => tbl.name.equals(widget.name))
           ..orderBy([
             (u) => drift.OrderingTerm(
-                expression: u.created, mode: drift.OrderingMode.desc,),
+                  expression: u.created,
+                  mode: drift.OrderingMode.desc,
+                ),
           ])
           ..limit(1))
         .getSingleOrNull();
@@ -112,7 +116,9 @@ class _StrengthPageState extends State<StrengthPage> {
           ..where((tbl) => tbl.name.equals(widget.name))
           ..orderBy([
             (u) => drift.OrderingTerm(
-                expression: u.created, mode: drift.OrderingMode.desc,),
+                  expression: u.created,
+                  mode: drift.OrderingMode.desc,
+                ),
           ])
           ..limit(1))
         .getSingleOrNull();
@@ -611,7 +617,9 @@ class _StrengthPageState extends State<StrengthPage> {
                       width: 60,
                       child: Text(
                         'Reps',
-                        style: Theme.of(context).textTheme.labelLarge
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelLarge
                             ?.copyWith(color: colorScheme.primary),
                       ),
                     ),
@@ -619,7 +627,9 @@ class _StrengthPageState extends State<StrengthPage> {
                     Expanded(
                       child: Text(
                         'Weight',
-                        style: Theme.of(context).textTheme.labelLarge
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelLarge
                             ?.copyWith(color: colorScheme.primary),
                       ),
                     ),
@@ -777,10 +787,8 @@ class _StrengthPageState extends State<StrengthPage> {
           ),
         ),
         titlesData: FlTitlesData(
-          topTitles:
-              const AxisTitles(),
-          rightTitles:
-              const AxisTitles(),
+          topTitles: const AxisTitles(),
+          rightTitles: const AxisTitles(),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -833,7 +841,9 @@ class _StrengthPageState extends State<StrengthPage> {
           touchSpotThreshold: 50,
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (_) => Colors.transparent,
-            getTooltipItems: (_) => [],
+            getTooltipItems: (spots) => spots
+                .map((_) => const LineTooltipItem('', TextStyle()))
+                .toList(),
           ),
           touchCallback: (event, response) {
             if (response?.lineBarSpots != null &&

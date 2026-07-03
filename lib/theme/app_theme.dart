@@ -29,14 +29,14 @@ ThemeData jlTheme(ColorScheme scheme) {
   final text = base.textTheme;
   return base.copyWith(
     textTheme: text.copyWith(
-      displaySmall:
-          text.displaySmall?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.5),
+      displaySmall: text.displaySmall
+          ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.5),
       headlineMedium: text.headlineMedium
           ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.5),
       headlineSmall: text.headlineSmall
           ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.25),
-      titleLarge:
-          text.titleLarge?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.25),
+      titleLarge: text.titleLarge
+          ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.25),
       titleMedium: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
       titleSmall: text.titleSmall?.copyWith(fontWeight: FontWeight.w700),
       bodyLarge: text.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
@@ -51,6 +51,7 @@ ThemeData jlTheme(ColorScheme scheme) {
       backgroundColor: Colors.transparent,
       elevation: 0,
       titleTextStyle: text.titleLarge?.copyWith(
+        fontSize: 24,
         fontWeight: FontWeight.w800,
         letterSpacing: -0.25,
         color: scheme.onSurface,

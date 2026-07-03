@@ -21,9 +21,11 @@ import 'edit_graph_page.dart';
 import 'graph_history_page.dart';
 
 class CardioPage extends StatefulWidget {
-
   const CardioPage({
-    required this.name, required this.unit, required this.data, super.key,
+    required this.name,
+    required this.unit,
+    required this.data,
+    super.key,
     this.tabCtrl,
   });
   final String name;
@@ -74,7 +76,9 @@ class _CardioPageState extends State<CardioPage> {
           ..where((tbl) => tbl.name.equals(widget.name))
           ..orderBy([
             (u) => drift.OrderingTerm(
-                expression: u.created, mode: drift.OrderingMode.desc,),
+                  expression: u.created,
+                  mode: drift.OrderingMode.desc,
+                ),
           ])
           ..limit(1))
         .getSingleOrNull();
@@ -90,7 +94,9 @@ class _CardioPageState extends State<CardioPage> {
           ..where((tbl) => tbl.name.equals(widget.name))
           ..orderBy([
             (u) => drift.OrderingTerm(
-                expression: u.created, mode: drift.OrderingMode.desc,),
+                  expression: u.created,
+                  mode: drift.OrderingMode.desc,
+                ),
           ])
           ..limit(1))
         .getSingleOrNull();
@@ -384,10 +390,8 @@ class _CardioPageState extends State<CardioPage> {
           ),
         ),
         titlesData: FlTitlesData(
-          topTitles:
-              const AxisTitles(),
-          rightTitles:
-              const AxisTitles(),
+          topTitles: const AxisTitles(),
+          rightTitles: const AxisTitles(),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -439,7 +443,9 @@ class _CardioPageState extends State<CardioPage> {
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (_) => Colors.transparent,
-            getTooltipItems: (_) => [],
+            getTooltipItems: (spots) => spots
+                .map((_) => const LineTooltipItem('', TextStyle()))
+                .toList(),
           ),
           touchCallback: (event, response) {
             if (response?.lineBarSpots != null &&

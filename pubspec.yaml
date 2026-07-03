@@ -29,7 +29,6 @@ dependencies:
   flutter_local_notifications: ^19.3.0
   timeago: ^3.2.2
   archive: ^4.0.0
-  rive: ^0.13.18
   palette_generator: ^0.3.3
 dev_dependencies:
   integration_test:
@@ -45,7 +44,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
-    - assets/animations/
 flutter_launcher_icons:
   android: true
   ios: false

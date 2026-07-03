@@ -45,7 +45,6 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   bool _isEditMode = false;
   bool _isReorderMode = false;
   bool _hasUnsavedChanges = false;
-  String? _originalName;
   List<({String name, int sequence, List<SetData> editableSets, String unit})> _exerciseGroups = [];
 
   Workout get currentWorkout => _currentWorkout ?? widget.workout;
@@ -85,7 +84,6 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   void _enterEditMode(List<({String name, int sequence, List<GymSet> sets})> groups) {
     setState(() {
       _isEditMode = true;
-      _originalName = currentWorkout.name;
       _hasUnsavedChanges = false;
       _exerciseGroups = groups.map((g) => (
         name: g.name,
@@ -114,7 +112,6 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       _isEditMode = false;
       _isReorderMode = false;
       _hasUnsavedChanges = false;
-      _originalName = null;
       _exerciseGroups = [];
     });
   }

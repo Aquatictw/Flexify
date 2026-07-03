@@ -21,9 +21,7 @@ class BlockOverviewPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(block == null
-            ? '5/3/1 Block'
-            : '5/3/1 ${state.positionLabel}'),
+        title: Text(block == null ? '5/3/1 Block' : state.positionLabel),
       ),
       body: block == null
           ? _buildNoBlock(context, state)
@@ -74,7 +72,7 @@ class BlockOverviewPage extends StatelessWidget {
               currentWeek: block.currentWeek,
               block: block,
             ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
           _CompleteWeekButton(block: block),
           const SizedBox(height: 32),
           _CompletedBlockHistory(state: state),
@@ -155,26 +153,56 @@ class _CycleEntry extends StatelessWidget {
           // Right: cycle card
           Expanded(
             child: Card(
+              margin: const EdgeInsets.only(bottom: space12),
+              elevation: isCurrent ? 2 : 0,
               color: isCurrent
                   ? colorScheme.primaryContainer
                   : isCompleted
                       ? colorScheme.surfaceContainerHighest
                       : colorScheme.surfaceContainerLow,
+              shape: RoundedRectangleBorder(
+                borderRadius: brMd,
+                side: isCurrent
+                    ? BorderSide(color: colorScheme.primary, width: 1.5)
+                    : BorderSide.none,
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(space12),
+                padding: const EdgeInsets.all(space16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      cycleNames[cycleIndex],
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight:
-                                isCurrent ? FontWeight.w700 : FontWeight.w500,
+                    Row(
+                      children: [
+                        _CycleBadge(
+                          cycleIndex: cycleIndex,
+                          isCurrent: isCurrent,
+                          isCompleted: isCompleted,
+                        ),
+                        const SizedBox(width: space8),
+                        Expanded(
+                          child: Text(
+                            cycleNames[cycleIndex],
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  fontWeight: isCurrent
+                                      ? FontWeight.w700
+                                      : FontWeight.w600,
+                                  color: isCurrent || isCompleted
+                                      ? null
+                                      : colorScheme.onSurfaceVariant,
+                                ),
                           ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       getMainSchemeName(cycleIndex),
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                     ),
                     if (isCurrent) ..._buildWeekIndicators(context),
                   ],
@@ -210,7 +238,8 @@ class _CycleEntry extends StatelessWidget {
                       ? colorScheme.primary
                       : isWeekCurrent
                           ? colorScheme.onPrimaryContainer
-                          : colorScheme.onPrimaryContainer.withValues(alpha: 0.4),
+                          : colorScheme.onPrimaryContainer
+                              .withValues(alpha: 0.4),
                 ),
               ),
               const SizedBox(width: 8),
@@ -235,7 +264,50 @@ class _CycleEntry extends StatelessWidget {
 
     return widgets;
   }
+}
 
+/// Small colored pill showing the cycle's short badge (L1, L2, D, A, T).
+class _CycleBadge extends StatelessWidget {
+  const _CycleBadge({
+    required this.cycleIndex,
+    required this.isCurrent,
+    required this.isCompleted,
+  });
+
+  final int cycleIndex;
+  final bool isCurrent;
+  final bool isCompleted;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final Color bg;
+    final Color fg;
+    if (isCurrent) {
+      bg = colorScheme.primary;
+      fg = colorScheme.onPrimary;
+    } else if (isCompleted) {
+      bg = colorScheme.primary.withValues(alpha: 0.18);
+      fg = colorScheme.primary;
+    } else {
+      bg = colorScheme.surfaceContainerHighest;
+      fg = colorScheme.onSurfaceVariant;
+    }
+
+    return Container(
+      width: 28,
+      height: 22,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: bg, borderRadius: brSm),
+      child: Text(
+        getCycleBadge(cycleIndex),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: fg,
+              fontWeight: FontWeight.w700,
+            ),
+      ),
+    );
+  }
 }
 
 class _TmCard extends StatefulWidget {
@@ -261,32 +333,48 @@ class _TmCardState extends State<_TmCard> {
   @override
   void initState() {
     super.initState();
-    _squatController = TextEditingController(text: _formatTm(widget.block.squatTm));
-    _benchController = TextEditingController(text: _formatTm(widget.block.benchTm));
-    _deadliftController = TextEditingController(text: _formatTm(widget.block.deadliftTm));
-    _pressController = TextEditingController(text: _formatTm(widget.block.pressTm));
+    _squatController =
+        TextEditingController(text: _formatTm(widget.block.squatTm));
+    _benchController =
+        TextEditingController(text: _formatTm(widget.block.benchTm));
+    _deadliftController =
+        TextEditingController(text: _formatTm(widget.block.deadliftTm));
+    _pressController =
+        TextEditingController(text: _formatTm(widget.block.pressTm));
 
-    _squatFocus = FocusNode()..addListener(() => _onFocusLost(_squatFocus, 'squat', _squatController));
-    _benchFocus = FocusNode()..addListener(() => _onFocusLost(_benchFocus, 'bench', _benchController));
-    _deadliftFocus = FocusNode()..addListener(() => _onFocusLost(_deadliftFocus, 'deadlift', _deadliftController));
-    _pressFocus = FocusNode()..addListener(() => _onFocusLost(_pressFocus, 'press', _pressController));
+    _squatFocus = FocusNode()
+      ..addListener(() => _onFocusLost(_squatFocus, 'squat', _squatController));
+    _benchFocus = FocusNode()
+      ..addListener(() => _onFocusLost(_benchFocus, 'bench', _benchController));
+    _deadliftFocus = FocusNode()
+      ..addListener(
+          () => _onFocusLost(_deadliftFocus, 'deadlift', _deadliftController));
+    _pressFocus = FocusNode()
+      ..addListener(() => _onFocusLost(_pressFocus, 'press', _pressController));
   }
 
   @override
   void didUpdateWidget(covariant _TmCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Update controllers if block values changed externally (e.g. after TM bump)
-    if (!_squatFocus.hasFocus) _squatController.text = _formatTm(widget.block.squatTm);
-    if (!_benchFocus.hasFocus) _benchController.text = _formatTm(widget.block.benchTm);
-    if (!_deadliftFocus.hasFocus) _deadliftController.text = _formatTm(widget.block.deadliftTm);
-    if (!_pressFocus.hasFocus) _pressController.text = _formatTm(widget.block.pressTm);
+    if (!_squatFocus.hasFocus)
+      _squatController.text = _formatTm(widget.block.squatTm);
+    if (!_benchFocus.hasFocus)
+      _benchController.text = _formatTm(widget.block.benchTm);
+    if (!_deadliftFocus.hasFocus)
+      _deadliftController.text = _formatTm(widget.block.deadliftTm);
+    if (!_pressFocus.hasFocus)
+      _pressController.text = _formatTm(widget.block.pressTm);
   }
 
   String _formatTm(double value) {
-    return value == value.roundToDouble() ? value.toInt().toString() : value.toStringAsFixed(1);
+    return value == value.roundToDouble()
+        ? value.toInt().toString()
+        : value.toStringAsFixed(1);
   }
 
-  void _onFocusLost(FocusNode node, String exercise, TextEditingController controller) {
+  void _onFocusLost(
+      FocusNode node, String exercise, TextEditingController controller) {
     if (!node.hasFocus) {
       _saveTm(exercise, controller);
     }
@@ -295,7 +383,9 @@ class _TmCardState extends State<_TmCard> {
   void _saveTm(String exercise, TextEditingController controller) {
     final value = double.tryParse(controller.text);
     if (value != null && value > 0) {
-      context.read<FiveThreeOneState>().updateTm(exercise: exercise, value: value);
+      context
+          .read<FiveThreeOneState>()
+          .updateTm(exercise: exercise, value: value);
     }
   }
 
@@ -434,7 +524,8 @@ class _CompleteWeekButton extends StatelessWidget {
   final FiveThreeOneBlock block;
 
   Widget _buildCompleteButton(BuildContext context, FiveThreeOneState state,
-      bool isComplete, String label, {bool fullWidth = false}) {
+      bool isComplete, String label,
+      {bool fullWidth = false}) {
     return FilledButton.icon(
       onPressed: () async {
         // Confirmation dialog before advancing
@@ -544,7 +635,7 @@ class _CompleteWeekButton extends StatelessWidget {
         }
       },
       icon: const Icon(Icons.undo),
-      label: const Text('Go Back'),
+      label: const Text('Back', maxLines: 1, softWrap: false),
       style: TextButton.styleFrom(
         minimumSize: const Size(0, 48),
       ),

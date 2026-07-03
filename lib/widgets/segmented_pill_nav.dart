@@ -5,9 +5,11 @@ import 'morphing_nav_icon.dart';
 
 /// Unified segmented pill navigation bar with morphing icons
 class SegmentedPillNav extends StatefulWidget {
-
   const SegmentedPillNav({
-    required this.tabs, required this.currentIndex, required this.onTap, super.key,
+    required this.tabs,
+    required this.currentIndex,
+    required this.onTap,
+    super.key,
     this.onLongPress,
   });
   final List<String> tabs;
@@ -60,26 +62,7 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
     super.dispose();
   }
 
-  String _getRiveAssetForTab(String tab) {
-    switch (tab) {
-      case 'HistoryPage':
-        return 'assets/animations/nav_history.riv';
-      case 'PlansPage':
-        return 'assets/animations/nav_plans.riv';
-      case 'MusicPage':
-        return 'assets/animations/nav_music.riv';
-      case 'GraphsPage':
-        return 'assets/animations/nav_graphs.riv';
-      case 'NotesPage':
-        return 'assets/animations/nav_notes.riv';
-      case 'SettingsPage':
-        return 'assets/animations/nav_settings.riv';
-      default:
-        return '';
-    }
-  }
-
-  IconData _getFallbackIconForTab(String tab) {
+  IconData _getIconForTab(String tab) {
     switch (tab) {
       case 'HistoryPage':
         return Icons.history_rounded;
@@ -203,8 +186,7 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             MorphingNavIcon(
-                              animationAsset: _getRiveAssetForTab(tab),
-                              fallbackIcon: _getFallbackIconForTab(tab),
+                              icon: _getIconForTab(tab),
                               isSelected: isSelected,
                               color: isSelected
                                   ? color.onPrimary

@@ -9,10 +9,6 @@ This repo roots its domain docs under `.planning/` (alongside the local-markdown
 - **`.planning/CONTEXT.md`** - the project glossary / domain language.
 - **`.planning/docs/adr/`** - read ADRs that touch the area you're about to work in.
 
-For a multi-context repo, a **`.planning/CONTEXT-MAP.md`** at the root points at one `CONTEXT.md` per context (read each one relevant to the topic), with context-scoped ADRs under each context's own `docs/adr/`.
-
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
-
 ## File structure
 
 Single-context repo (most repos):
@@ -25,22 +21,6 @@ Single-context repo (most repos):
 |       |-- 0001-event-sourced-orders.md
 |       `-- 0002-postgres-for-write-model.md
 `-- lib/
-```
-
-Multi-context repo (presence of `.planning/CONTEXT-MAP.md`):
-
-```text
-/
-|-- .planning/
-|   |-- CONTEXT-MAP.md
-|   `-- docs/adr/                       # system-wide decisions
-`-- src/
-    |-- ordering/
-    |   |-- CONTEXT.md
-    |   `-- docs/adr/                   # context-specific decisions
-    `-- billing/
-        |-- CONTEXT.md
-        `-- docs/adr/
 ```
 
 ## Use the glossary's vocabulary
