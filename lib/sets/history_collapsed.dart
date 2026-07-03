@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../utils.dart';
 import '../utils/duration_format.dart';
 import 'edit_set_page.dart';
@@ -35,7 +36,7 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
 
     return ListView.builder(
       itemCount: widget.days.length,
-      padding: const EdgeInsets.only(bottom: 96, top: 8),
+      padding: EdgeInsets.only(bottom: bottomBarClearance(context), top: space8),
       controller: widget.scroll,
       itemBuilder: (context, index) {
         final history = widget.days[index];
@@ -76,14 +77,14 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
           children: [
             const Expanded(child: Divider()),
             const Icon(Icons.today),
-            const SizedBox(width: 4),
+            const SizedBox(width: space4),
             Selector<SettingsState, String>(
               selector: (context, settings) => settings.value.shortDateFormat,
               builder: (context, value, child) => Text(
                 DateFormat(value).format(prev!.day),
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: space4),
             const Expanded(child: Divider()),
           ],
         ),
@@ -121,22 +122,23 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
                 ),
               );
             } else if (widget.selected.isEmpty) {
+              final colorScheme = Theme.of(context).colorScheme;
               leading = GestureDetector(
                 onTap: () => widget.onSelect(gymSet.id),
                 child: Container(
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor,
-                    borderRadius: BorderRadius.circular(12),
+                    color: colorScheme.primary,
+                    borderRadius: brSm,
                   ),
                   child: Center(
                     child: Text(
                       gymSet.name.isNotEmpty
                           ? gymSet.name[0].toUpperCase()
                           : '?',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: colorScheme.onPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'monospace',
@@ -148,7 +150,7 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
             }
 
             leading = AnimatedSwitcher(
-              duration: const Duration(milliseconds: 150),
+              duration: durFast,
               transitionBuilder: (child, animation) {
                 return ScaleTransition(scale: animation, child: child);
               },
@@ -165,31 +167,31 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
                 children: [
                   if (isWarmup) ...[
                     Container(
-                      padding: const EdgeInsets.all(4),
-                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.all(space4),
+                      margin: const EdgeInsets.only(right: space8),
                       decoration: BoxDecoration(
-                        color: colorScheme.tertiaryContainer,
-                        borderRadius: BorderRadius.circular(4),
+                        color: context.jl.warmup.withValues(alpha: 0.2),
+                        borderRadius: brSm,
                       ),
                       child: Icon(
                         Icons.whatshot,
                         size: 12,
-                        color: colorScheme.tertiary,
+                        color: context.jl.warmup,
                       ),
                     ),
                   ],
                   if (isDropSet) ...[
                     Container(
-                      padding: const EdgeInsets.all(4),
-                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.all(space4),
+                      margin: const EdgeInsets.only(right: space8),
                       decoration: BoxDecoration(
-                        color: colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(4),
+                        color: context.jl.dropSet.withValues(alpha: 0.2),
+                        borderRadius: brSm,
                       ),
                       child: Icon(
                         Icons.trending_down,
                         size: 12,
-                        color: colorScheme.secondary,
+                        color: context.jl.dropSet,
                       ),
                     ),
                   ],

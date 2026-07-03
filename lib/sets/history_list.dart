@@ -7,6 +7,7 @@ import 'package:timeago/timeago.dart' as timeago;
 
 import '../database/database.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../utils.dart';
 import '../utils/duration_format.dart';
 import 'edit_set_page.dart';
@@ -88,12 +89,12 @@ class _HistoryListState extends State<HistoryList> {
     final offsetAnimation = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
-    ).chain(CurveTween(curve: Curves.easeInOut)).animate(animation);
+    ).chain(CurveTween(curve: curveStandard)).animate(animation);
 
     final sizeAnimation = Tween<double>(
       begin: 0,
       end: 1,
-    ).chain(CurveTween(curve: Curves.easeInOut)).animate(animation);
+    ).chain(CurveTween(curve: curveStandard)).animate(animation);
 
     return SizeTransition(
       sizeFactor: sizeAnimation,
@@ -142,20 +143,21 @@ class _HistoryListState extends State<HistoryList> {
         ),
       );
     } else if (widget.selected.isEmpty) {
+      final colorScheme = Theme.of(context).colorScheme;
       leading = GestureDetector(
         onTap: () => widget.onSelect(gymSet.id),
         child: Container(
           width: 24,
           height: 24,
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor,
-            borderRadius: BorderRadius.circular(12),
+            color: colorScheme.primary,
+            borderRadius: brSm,
           ),
           child: Center(
             child: Text(
               gymSet.name.isNotEmpty ? gymSet.name[0].toUpperCase() : '?',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colorScheme.onPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'monospace',
@@ -167,7 +169,7 @@ class _HistoryListState extends State<HistoryList> {
     }
 
     leading = AnimatedSwitcher(
-      duration: const Duration(milliseconds: 150),
+      duration: durFast,
       transitionBuilder: (child, animation) {
         return ScaleTransition(scale: animation, child: child);
       },
@@ -189,21 +191,21 @@ class _HistoryListState extends State<HistoryList> {
             children: [
               const Expanded(child: Divider()),
               const Icon(Icons.today),
-              const SizedBox(width: 4),
+              const SizedBox(width: space4),
               Selector<SettingsState, String>(
                 selector: (context, settings) => settings.value.shortDateFormat,
                 builder: (context, value, child) => Text(
                   DateFormat(value).format(previousGymSet.created),
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: space4),
               const Expanded(child: Divider()),
             ],
           ),
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          margin: const EdgeInsets.symmetric(horizontal: space8, vertical: 2),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: brSm,
             color: widget.selected.contains(gymSet.id)
                 ? Theme.of(context).colorScheme.primary.withValues(alpha: .08)
                 : Colors.transparent,
@@ -219,16 +221,15 @@ class _HistoryListState extends State<HistoryList> {
               children: [
                 Text(gymSet.name),
                 if (gymSet.warmup) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: space8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: space8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .tertiaryContainer
-                          .withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(6),
+                      color: context.jl.warmup.withValues(alpha: 0.16),
+                      borderRadius: brSm,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -236,32 +237,29 @@ class _HistoryListState extends State<HistoryList> {
                         Icon(
                           Icons.whatshot_outlined,
                           size: 10,
-                          color: Theme.of(context).colorScheme.tertiary,
+                          color: context.jl.warmup,
                         ),
                         const SizedBox(width: 2),
                         Text(
                           'Warmup',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: Theme.of(context).colorScheme.tertiary,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: context.jl.warmup,
+                              ),
                         ),
                       ],
                     ),
                   ),
                 ],
                 if (gymSet.dropSet) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: space8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: space8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .secondaryContainer
-                          .withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(6),
+                      color: context.jl.dropSet.withValues(alpha: 0.16),
+                      borderRadius: brSm,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -269,16 +267,14 @@ class _HistoryListState extends State<HistoryList> {
                         Icon(
                           Icons.trending_down,
                           size: 10,
-                          color: Theme.of(context).colorScheme.secondary,
+                          color: context.jl.dropSet,
                         ),
                         const SizedBox(width: 2),
                         Text(
                           'Drop',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: Theme.of(context).colorScheme.secondary,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: context.jl.dropSet,
+                              ),
                         ),
                       ],
                     ),
@@ -286,24 +282,24 @@ class _HistoryListState extends State<HistoryList> {
                 ],
                 if (gymSet.brandName != null &&
                     gymSet.brandName!.isNotEmpty) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: space8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: space8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Theme.of(context)
                           .colorScheme
                           .surfaceContainerHighest
                           .withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: brSm,
                     ),
                     child: Text(
                       gymSet.brandName!,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                     ),
                   ),
                 ],
@@ -319,7 +315,7 @@ class _HistoryListState extends State<HistoryList> {
             ),
             trailing: Text(
               trailing,
-              style: const TextStyle(fontSize: 16),
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 16),
             ),
             onLongPress: () => widget.onSelect(gymSet.id),
             onTap: () {
@@ -348,7 +344,7 @@ class _HistoryListState extends State<HistoryList> {
     return AnimatedList(
       key: _key,
       initialItemCount: _current.length,
-      padding: const EdgeInsets.only(bottom: 96, top: 8),
+      padding: EdgeInsets.only(bottom: bottomBarClearance(context), top: space8),
       controller: widget.scroll,
       itemBuilder: (context, index, animation) {
         return _buildItem(_current[index], animation, index, showImages);

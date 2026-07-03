@@ -11,6 +11,7 @@ import '../main.dart';
 import '../plan/plan_state.dart';
 import '../records/records_service.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../utils.dart';
 
 class EditSetsPage extends StatefulWidget {
@@ -94,7 +95,7 @@ class _EditSetsPageState extends State<EditSetsPage> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(space16),
         child: Form(
           key: key,
           child: ListView(
@@ -142,7 +143,7 @@ class _EditSetsPageState extends State<EditSetsPage> {
                         },
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: space8),
                     Expanded(
                       child: TextFormField(
                         controller: seconds,

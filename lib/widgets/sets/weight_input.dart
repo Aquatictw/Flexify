@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme/tokens.dart';
 
 class WeightInput extends StatefulWidget {
 
@@ -69,21 +70,21 @@ class _WeightInputState extends State<WeightInput> {
       enabled: widget.enabled,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-        color: widget.completed ? widget.accentColor : colorScheme.onSurface,
-      ),
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: widget.completed ? widget.accentColor : colorScheme.onSurface,
+          ),
       decoration: InputDecoration(
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(horizontal: space8, vertical: 10),
         suffixText: widget.unit,
-        suffixStyle: TextStyle(
-          fontSize: 12,
-          color: colorScheme.onSurfaceVariant,
-        ),
+        suffixStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontSize: 12,
+              color: colorScheme.onSurfaceVariant,
+            ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: brSm,
           borderSide: widget.completed
               ? BorderSide(
                   color: widget.accentColor.withValues(alpha: 0.3),
@@ -91,7 +92,7 @@ class _WeightInputState extends State<WeightInput> {
               : BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: brSm,
           borderSide: widget.completed
               ? BorderSide(
                   color: widget.accentColor.withValues(alpha: 0.3),
@@ -99,7 +100,7 @@ class _WeightInputState extends State<WeightInput> {
               : BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: brSm,
           borderSide: BorderSide(color: widget.accentColor, width: 2),
         ),
         filled: true,

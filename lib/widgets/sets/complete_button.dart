@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../records/records_service.dart';
+import '../../theme/tokens.dart';
 
 class CompleteButton extends StatelessWidget {
 
@@ -17,16 +18,20 @@ class CompleteButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final jl = context.jl;
     final accentColor = isWarmup
-        ? colorScheme.tertiary
+        ? jl.warmup
         : isDropSet
-            ? colorScheme.secondary
-            : colorScheme.primary;
-    final onAccentColor = isWarmup
-        ? colorScheme.onTertiary
-        : isDropSet
-            ? colorScheme.onSecondary
-            : colorScheme.onPrimary;
+            ? jl.dropSet
+            : jl.working;
+    // jl.warmup/dropSet are custom semantic colors (not ColorScheme roles), so
+    // pick a contrasting foreground by brightness rather than relying on an
+    // "on*" role that doesn't exist for them.
+    final onAccentColor = isWarmup || isDropSet
+        ? (colorScheme.brightness == Brightness.dark
+            ? Colors.black
+            : Colors.white)
+        : colorScheme.onPrimary;
 
     // If completed and has records, show crown instead of checkmark
     final bool hasPR = completed && records.isNotEmpty;
@@ -39,12 +44,12 @@ class CompleteButton extends StatelessWidget {
         style: IconButton.styleFrom(
           backgroundColor:
               completed ? accentColor : colorScheme.surfaceContainerHighest,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          shape: const RoundedRectangleBorder(
+            borderRadius: brSm,
           ),
         ),
         icon: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
+          duration: durFast,
           child: hasPR
               ? Stack(
                   key: ValueKey('crown_$completed'),
@@ -53,7 +58,7 @@ class CompleteButton extends StatelessWidget {
                     // Golden glow effect
                     Icon(
                       Icons.workspace_premium,
-                      color: Colors.amber.shade300.withValues(alpha: 0.5),
+                      color: jl.pr.withValues(alpha: 0.5),
                       size: 28,
                     ),
                     // Main crown icon

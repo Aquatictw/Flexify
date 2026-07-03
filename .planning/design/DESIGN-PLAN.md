@@ -71,7 +71,7 @@ padding, `brMd`, weight/reps in `titleMedium` (w700), unit in `labelSmall`.
 ## Phases (disjoint file ownership — one commit each)
 - [x] **P0** design plan (this file) — `docs: design plan`
 - [x] **P1** Foundation (Fable, sequential): `lib/theme/{app_theme,tokens,components}.dart` (new), wire `lib/main.dart`, restyle `lib/widgets/stats/stat_card.dart`, resolve nav-flag: delete `_useSegmentedPill` + `lib/bottom_nav.dart`, keep `segmented_pill_nav.dart` (edit `lib/home_page.dart` chrome only) — `feat: design-system foundation`
-- [ ] **P2** History & sets: `lib/sets/**`, `lib/widgets/sets/**`, `lib/filters.dart`, `lib/app_search.dart`, `lib/custom_set_indicator.dart` — `feat: restyle history & sets`
+- [x] **P2** History & sets: `lib/sets/**`, `lib/widgets/sets/**`, `lib/filters.dart`, `lib/app_search.dart`, `lib/custom_set_indicator.dart` — `feat: restyle history & sets`
 - [ ] **P3** Workout logging: `lib/workouts/**` (except `workout_state.dart` logic), `lib/widgets/workout/**`, `lib/widgets/superset/**`, `lib/widgets/plate_calculator.dart`, `lib/animated_fab.dart` — `feat: restyle workout logging`
 - [ ] **P4** Plans & 5/3/1: `lib/plan/**`, `lib/fivethreeone/**`, `lib/widgets/five_three_one_calculator.dart`, `lib/day_selector.dart` — `feat: restyle plans & 531`
 - [ ] **P5** Graphs & stats: `lib/graph/**`, `lib/widgets/stats/period_selector.dart`, `lib/graphs_filters.dart`, `lib/widgets/bodyweight_entry_tile.dart`, `lib/widgets/bodyweight_entry_dialog.dart` — `feat: restyle graphs & stats`

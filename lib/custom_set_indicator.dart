@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'theme/tokens.dart';
+
 class CustomSetIndicator extends StatelessWidget {
   const CustomSetIndicator({
     required this.count, required this.max, super.key,
@@ -15,18 +17,18 @@ class CustomSetIndicator extends StatelessWidget {
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: brPill,
               color: Theme.of(context).colorScheme.outlineVariant,
             ),
             height: 6,
             child: AnimatedFractionallySizedBox(
               alignment: Alignment.centerLeft,
               widthFactor: count > i ? 1 : 0,
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.ease,
+              duration: durMed,
+              curve: curveStandard,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: brPill,
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
@@ -35,7 +37,7 @@ class CustomSetIndicator extends StatelessWidget {
         ),
       );
       if (i < max - 1) {
-        items.add(const SizedBox(width: 6));
+        items.add(const SizedBox(width: space8));
       }
     }
     return Row(children: items);

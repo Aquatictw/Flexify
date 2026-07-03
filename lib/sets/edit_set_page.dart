@@ -17,6 +17,7 @@ import '../main.dart';
 import '../plan/plan_state.dart';
 import '../records/records_service.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../timer/timer_state.dart';
 import '../utils.dart';
 
@@ -145,7 +146,7 @@ class _EditSetPageState extends State<EditSetPage> {
 
   Widget buildBody() {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(space16),
       child: Form(
         key: key,
         child: Consumer<SettingsState>(
@@ -159,24 +160,24 @@ class _EditSetPageState extends State<EditSetPage> {
             return ListView(
               children: [
                 autocomplete(),
-                const SizedBox(height: 8),
+                const SizedBox(height: space8),
                 ...exerciseFields(),
-                const SizedBox(height: 8),
+                const SizedBox(height: space8),
                 if (showUnits) ...[
                   unitSelector(),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: space8),
                 ],
                 if (showCategories) ...[
                   categorySelector(),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: space8),
                 ],
                 if (showNotes) ...[
                   notesField(),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: space8),
                 ],
                 dateSelector(),
                 if (showImages) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: space8),
                   imageField(),
                 ],
               ],
@@ -198,9 +199,9 @@ class _EditSetPageState extends State<EditSetPage> {
   List<Widget> buildStrengthFields() {
     return [
       buildRepsField(),
-      const SizedBox(height: 8),
+      const SizedBox(height: space8),
       buildWeightField(),
-      const SizedBox(height: 8),
+      const SizedBox(height: space8),
       buildORMField(),
     ];
   }
@@ -254,9 +255,9 @@ class _EditSetPageState extends State<EditSetPage> {
   List<Widget> buildCardioFields() {
     return [
       buildDistanceField(),
-      const SizedBox(height: 8),
+      const SizedBox(height: space8),
       duration(),
-      const SizedBox(height: 8),
+      const SizedBox(height: space8),
       buildInclineField(),
     ];
   }
@@ -425,7 +426,7 @@ class _EditSetPageState extends State<EditSetPage> {
                   icon: const Icon(Icons.image),
                 ),
               if (image != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: space8),
                 Tooltip(
                   message: 'Long-press to delete',
                   child: GestureDetector(
@@ -471,7 +472,7 @@ class _EditSetPageState extends State<EditSetPage> {
             },
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: space8),
         Expanded(
           child: TextFormField(
             controller: seconds,

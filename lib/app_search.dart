@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'settings/settings_page.dart';
+import 'theme/tokens.dart';
 import 'widgets/timer_quick_access.dart';
 
 class AppSearch extends StatefulWidget {
@@ -85,23 +86,23 @@ class _AppSearchState extends State<AppSearch> {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
+      padding: const EdgeInsets.only(left: space16, right: space16, top: space8),
       child: SearchBar(
         constraints: const BoxConstraints(minHeight: 48, maxHeight: 48),
         hintText: 'Search...',
         controller: ctrl,
         padding: WidgetStateProperty.all(
-          const EdgeInsets.only(right: 8),
+          const EdgeInsets.only(right: space8),
         ),
         textCapitalization: TextCapitalization.sentences,
         onChanged: widget.onChange,
         leading: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 150),
+          duration: durFast,
           transitionBuilder: (child, animation) =>
               ScaleTransition(scale: animation, child: child),
           child: widget.selected.isEmpty && ctrl.text.isEmpty == true
               ? const Padding(
-                  padding: EdgeInsets.only(left: 16, right: 8),
+                  padding: EdgeInsets.only(left: space16, right: space8),
                   child: Icon(Icons.search),
                 )
               : IconButton(
@@ -112,14 +113,14 @@ class _AppSearchState extends State<AppSearch> {
                   },
                   icon: const Icon(Icons.arrow_back),
                   padding: const EdgeInsets.only(
-                    left: 16,
-                    right: 8,
+                    left: space16,
+                    right: space8,
                   ),
                 ),
         ),
         trailing: [
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 150),
+            duration: durFast,
             child: trailingMain,
             transitionBuilder: (child, animation) =>
                 ScaleTransition(scale: animation, child: child),

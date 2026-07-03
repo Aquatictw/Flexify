@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/set_data.dart';
 import '../../records/records_service.dart';
+import '../../theme/tokens.dart';
 import 'complete_button.dart';
 import 'reps_input.dart';
 import 'weight_input.dart';
@@ -33,21 +34,19 @@ class SetRow extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              margin: const EdgeInsets.only(top: space12, bottom: space8),
               width: 40,
               height: 4,
               decoration: BoxDecoration(
                 color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: brPill,
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: space16, vertical: space8),
               child: Text(
                 'Change Set Type',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
             const Divider(),
@@ -59,20 +58,20 @@ class SetRow extends StatelessWidget {
               onTap: () => Navigator.pop(context, 'working'),
             ),
             ListTile(
-              leading: Icon(Icons.whatshot, color: colorScheme.tertiary),
+              leading: Icon(Icons.whatshot, color: context.jl.warmup),
               title: const Text('Warmup Set'),
               subtitle: const Text('Lighter weight, prepare muscles'),
               selected: setData.isWarmup,
               onTap: () => Navigator.pop(context, 'warmup'),
             ),
             ListTile(
-              leading: Icon(Icons.trending_down, color: colorScheme.secondary),
+              leading: Icon(Icons.trending_down, color: context.jl.dropSet),
               title: const Text('Drop Set'),
               subtitle: const Text('Reduced weight, push to failure'),
               selected: setData.isDropSet,
               onTap: () => Navigator.pop(context, 'drop'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: space8),
           ],
         ),
       ),
@@ -96,6 +95,7 @@ class SetRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final jl = context.jl;
     final completed = setData.completed;
     final isWarmup = setData.isWarmup;
     final isDropSet = setData.isDropSet;
@@ -108,24 +108,24 @@ class SetRow extends StatelessWidget {
 
     if (isWarmup) {
       if (completed) {
-        bgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.4);
-        borderColor = colorScheme.tertiary.withValues(alpha: 0.5);
-        accentColor = colorScheme.tertiary;
+        bgColor = jl.warmup.withValues(alpha: 0.2);
+        borderColor = jl.warmup.withValues(alpha: 0.5);
+        accentColor = jl.warmup;
       } else {
-        bgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.2);
-        borderColor = colorScheme.tertiary.withValues(alpha: 0.3);
-        accentColor = colorScheme.tertiary;
+        bgColor = jl.warmup.withValues(alpha: 0.1);
+        borderColor = jl.warmup.withValues(alpha: 0.3);
+        accentColor = jl.warmup;
       }
       setTypeIcon = Icons.whatshot;
     } else if (isDropSet) {
       if (completed) {
-        bgColor = colorScheme.secondaryContainer.withValues(alpha: 0.4);
-        borderColor = colorScheme.secondary.withValues(alpha: 0.5);
-        accentColor = colorScheme.secondary;
+        bgColor = jl.dropSet.withValues(alpha: 0.2);
+        borderColor = jl.dropSet.withValues(alpha: 0.5);
+        accentColor = jl.dropSet;
       } else {
-        bgColor = colorScheme.secondaryContainer.withValues(alpha: 0.2);
-        borderColor = colorScheme.secondary.withValues(alpha: 0.3);
-        accentColor = colorScheme.secondary;
+        bgColor = jl.dropSet.withValues(alpha: 0.1);
+        borderColor = jl.dropSet.withValues(alpha: 0.3);
+        accentColor = jl.dropSet;
       }
       setTypeIcon = Icons.trending_down;
     } else {
@@ -149,24 +149,24 @@ class SetRow extends StatelessWidget {
         return false; // We handle deletion ourselves
       },
       background: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        margin: const EdgeInsets.symmetric(horizontal: space12, vertical: space4),
         decoration: BoxDecoration(
           color: colorScheme.errorContainer,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: brMd,
         ),
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
+        padding: const EdgeInsets.only(right: space24),
         child: Icon(
           Icons.delete_outline,
           color: colorScheme.error,
         ),
       ),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        margin: const EdgeInsets.symmetric(horizontal: space12, vertical: space4),
+        padding: const EdgeInsets.symmetric(horizontal: space12, vertical: 10),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: brMd,
           border: Border.all(
             color: borderColor,
           ),
@@ -180,12 +180,12 @@ class SetRow extends StatelessWidget {
                   : null,
               child: Container(
                 width: 44,
-                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: space8),
                 decoration: BoxDecoration(
                   color: completed
                       ? accentColor.withValues(alpha: 0.2)
                       : colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: brSm,
                   border: onTypeChanged != null
                       ? Border.all(
                           color: accentColor.withValues(alpha: 0.3),
@@ -208,13 +208,12 @@ class SetRow extends StatelessWidget {
                               ? 'D$index'
                               : '$index',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: completed
-                            ? accentColor
-                            : colorScheme.onSurfaceVariant,
-                        fontSize: (isWarmup || isDropSet) ? 11 : 14,
-                      ),
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: completed
+                                ? accentColor
+                                : colorScheme.onSurfaceVariant,
+                            fontSize: (isWarmup || isDropSet) ? 11 : 14,
+                          ),
                     ),
                   ],
                 ),
@@ -232,7 +231,7 @@ class SetRow extends StatelessWidget {
                 onChanged: onWeightChanged,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: space8),
             // Reps input with +/- buttons - always editable
             Expanded(
               flex: 4,
@@ -243,7 +242,7 @@ class SetRow extends StatelessWidget {
                 onChanged: onRepsChanged,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: space8),
             // Complete/Toggle button with integrated PR crown
             CompleteButton(
               completed: completed,

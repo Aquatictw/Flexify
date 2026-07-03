@@ -9,6 +9,7 @@ import '../database/database.dart';
 import '../filters.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../utils.dart';
 import '../workouts/workouts_list.dart';
 import 'edit_sets_page.dart';
@@ -338,7 +339,7 @@ class _HistoryPageWidgetState extends State<_HistoryPageWidget> {
 
   Widget _buildViewToggle() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: space16, vertical: space4),
       child: SegmentedButton<HistoryView>(
         segments: const [
           ButtonSegment<HistoryView>(

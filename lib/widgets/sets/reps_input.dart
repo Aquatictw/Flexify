@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../theme/tokens.dart';
 import 'reps_button.dart';
 
 class RepsInput extends StatefulWidget {
@@ -61,7 +62,7 @@ class _RepsInputState extends State<RepsInput> {
         color: widget.completed
             ? widget.accentColor.withValues(alpha: 0.1)
             : colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: brSm,
         border: widget.completed
             ? Border.all(
                 color: widget.accentColor.withValues(alpha: 0.3),
@@ -88,13 +89,13 @@ class _RepsInputState extends State<RepsInput> {
               enabled: widget.enabled,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: widget.completed
-                    ? widget.accentColor
-                    : colorScheme.onSurface,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: widget.completed
+                        ? widget.accentColor
+                        : colorScheme.onSurface,
+                  ),
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
@@ -103,10 +104,10 @@ class _RepsInputState extends State<RepsInput> {
                 ),
                 border: InputBorder.none,
                 hintText: 'reps',
-                hintStyle: TextStyle(
-                  fontSize: 10,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                ),
+                hintStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontSize: 10,
+                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    ),
               ),
               onChanged: (value) {
                 final parsed = int.tryParse(value);
