@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/tokens.dart';
+
 class StatCard extends StatelessWidget {
 
   const StatCard({
@@ -13,15 +15,13 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(space16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-        ),
+        color: colorScheme.surfaceContainer,
+        borderRadius: brMd,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -29,27 +29,24 @@ class StatCard extends StatelessWidget {
           Row(
             children: [
               Icon(icon, color: color, size: 20),
-              const SizedBox(width: 6),
+              const SizedBox(width: space8),
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: textTheme.labelMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: space8),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.25,
             ),
             overflow: TextOverflow.ellipsis,
           ),

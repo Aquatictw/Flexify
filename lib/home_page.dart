@@ -2,7 +2,6 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'bottom_nav.dart';
 import 'database/database.dart';
 import 'graph/graphs_page.dart';
 import 'main.dart';
@@ -17,9 +16,6 @@ import 'utils.dart';
 import 'widgets/segmented_pill_nav.dart';
 import 'workouts/active_workout_bar.dart';
 import 'workouts/workout_state.dart';
-
-// Feature flag to toggle between old and new navigation
-const bool _useSegmentedPill = true;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -137,23 +133,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ValueListenableBuilder(
                     valueListenable: controller.animation!,
                     builder: (context, value, child) {
-                      return _useSegmentedPill
-                          ? SegmentedPillNav(
-                              tabs: tabs,
-                              currentIndex: value.round(),
-                              onTap: (index) {
-                                controller.animateTo(index);
-                              },
-                              onLongPress: hideTab,
-                            )
-                          : BottomNav(
-                              tabs: tabs,
-                              currentIndex: value.round(),
-                              onTap: (index) {
-                                controller.animateTo(index);
-                              },
-                              onLongPress: hideTab,
-                            );
+                      return SegmentedPillNav(
+                        tabs: tabs,
+                        currentIndex: value.round(),
+                        onTap: (index) {
+                          controller.animateTo(index);
+                        },
+                        onLongPress: hideTab,
+                      );
                     },
                   ),
                 ],

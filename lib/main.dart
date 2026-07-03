@@ -13,6 +13,7 @@ import 'home_page.dart';
 import 'plan/plan_state.dart';
 import 'screens/splash_screen.dart';
 import 'settings/settings_state.dart';
+import 'theme/app_theme.dart';
 import 'spotify/spotify_state.dart';
 import 'timer/timer_state.dart';
 import 'workouts/workout_state.dart';
@@ -123,11 +124,8 @@ class _AppState extends State<App> with WidgetsBindingObserver {
       (settings) => settings.value.customColorSeed,
     );
 
-    final light = ColorScheme.fromSeed(seedColor: Color(customColor));
-    final dark = ColorScheme.fromSeed(
-      seedColor: Color(customColor),
-      brightness: Brightness.dark,
-    );
+    final light = jlScheme(customColor, Brightness.light);
+    final dark = jlScheme(customColor, Brightness.dark);
 
     return DynamicColorBuilder(
       builder: (lightDynamic, darkDynamic) {
@@ -157,22 +155,8 @@ class _AppState extends State<App> with WidgetsBindingObserver {
         return MaterialApp(
           scaffoldMessengerKey: rootScaffoldMessenger,
           title: 'JackedLog',
-          theme: ThemeData(
-            colorScheme: colors ? lightDynamic : light,
-            fontFamily: 'Manrope',
-            useMaterial3: true,
-            inputDecorationTheme: const InputDecorationTheme(
-              floatingLabelBehavior: FloatingLabelBehavior.always,
-            ),
-          ),
-          darkTheme: ThemeData(
-            colorScheme: colors ? darkDynamic : dark,
-            fontFamily: 'Manrope',
-            useMaterial3: true,
-            inputDecorationTheme: const InputDecorationTheme(
-              floatingLabelBehavior: FloatingLabelBehavior.always,
-            ),
-          ),
+          theme: jlTheme((colors ? lightDynamic : null) ?? light),
+          darkTheme: jlTheme((colors ? darkDynamic : null) ?? dark),
           themeMode: mode,
           home: const HomePage(),
         );
