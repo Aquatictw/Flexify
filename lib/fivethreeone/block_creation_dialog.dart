@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import 'fivethreeone_state.dart';
 
 /// Dialog for creating a new 5/3/1 training block
@@ -144,11 +145,11 @@ class _BlockCreationDialogState extends State<BlockCreationDialog> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(space16),
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer,
                 borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(28)),
+                    const BorderRadius.vertical(top: Radius.circular(radiusLg)),
               ),
               child: Row(
                 children: [
@@ -176,16 +177,16 @@ class _BlockCreationDialogState extends State<BlockCreationDialog> {
             // Content
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(space16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (hasActiveBlock) ...[
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(space12),
                         decoration: BoxDecoration(
                           color: colorScheme.errorContainer,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: brSm,
                         ),
                         child: Row(
                           children: [
@@ -246,11 +247,11 @@ class _BlockCreationDialogState extends State<BlockCreationDialog> {
 
             // Footer
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(space16),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHigh,
                 borderRadius:
-                    const BorderRadius.vertical(bottom: Radius.circular(28)),
+                    const BorderRadius.vertical(bottom: Radius.circular(radiusLg)),
               ),
               child: Column(
                 children: [

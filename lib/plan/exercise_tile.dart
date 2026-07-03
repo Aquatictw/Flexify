@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../database/database.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../utils.dart';
 
 class ExerciseTile extends StatefulWidget {
@@ -146,24 +147,25 @@ class _ExerciseTileState extends State<ExerciseTile> {
                 child: Text(widget.planExercise.exercise.value),
               ),
               if (brandName != null && brandName.isNotEmpty) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: space8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: space8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Theme.of(context)
                         .colorScheme
                         .secondaryContainer
                         .withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: brSm,
                   ),
                   child: Text(
                     brandName,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                    ),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color:
+                              Theme.of(context).colorScheme.onSecondaryContainer,
+                        ),
                   ),
                 ),
               ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'constants.dart';
+import 'theme/tokens.dart';
 
 class DaySelector extends StatefulWidget {
   const DaySelector({required this.daySwitches, super.key});
@@ -30,13 +31,13 @@ class _DaySelectorState extends State<DaySelector> {
 
         return Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
+            padding: const EdgeInsets.symmetric(horizontal: space4 / 2),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
+              duration: durMed,
+              curve: curveStandard,
               height: 48,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: brSm,
                 border: Border.all(
                   color: isSelected
                       ? colorScheme.primary.withAlpha(
@@ -51,17 +52,16 @@ class _DaySelectorState extends State<DaySelector> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: brSm,
                   onTap: () => _toggleDay(index),
                   child: Center(
                     child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 200),
-                      style: TextStyle(
-                        color: colorScheme.onSurface,
-                        fontSize: 14,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
+                      duration: durMed,
+                      style: (isSelected
+                              ? Theme.of(context).textTheme.labelLarge
+                              : Theme.of(context).textTheme.labelMedium)
+                          ?.copyWith(color: colorScheme.onSurface) ??
+                          const TextStyle(),
                       child: Text(dayLabel),
                     ),
                   ),

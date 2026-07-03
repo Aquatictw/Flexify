@@ -11,6 +11,7 @@ import '../database/database.dart';
 import '../day_selector.dart';
 import '../graph/add_exercise_page.dart';
 import '../main.dart';
+import '../theme/tokens.dart';
 import '../utils.dart';
 import 'exercise_tile.dart';
 import 'plan_state.dart';
@@ -105,7 +106,7 @@ class _EditPlanPageState extends State<EditPlanPage> {
         title: Text(title),
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: space16),
         child: ListView(
           children: [
             TextField(
@@ -116,15 +117,15 @@ class _EditPlanPageState extends State<EditPlanPage> {
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(
-              height: 16,
+              height: space16,
             ),
             DaySelector(daySwitches: days),
-            const SizedBox(height: 8),
+            const SizedBox(height: space8),
             material.Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(space8),
               child: SearchBar(
                 leading: const material.Padding(
-                  padding: EdgeInsets.all(8),
+                  padding: EdgeInsets.all(space8),
                   child: Icon(Icons.search),
                 ),
                 textCapitalization: TextCapitalization.sentences,
@@ -147,7 +148,7 @@ class _EditPlanPageState extends State<EditPlanPage> {
                 }),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: space8),
             ...List.generate(tiles.length, (index) => tiles.elementAt(index)),
             const SizedBox(height: 176),
           ],

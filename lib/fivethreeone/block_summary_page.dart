@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../database/database.dart';
+import '../theme/tokens.dart';
 
 /// Summary page shown after block completion or when viewing completed blocks
 class BlockSummaryPage extends StatelessWidget {
@@ -56,7 +57,7 @@ class BlockSummaryPage extends StatelessWidget {
         children: [
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(space16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -64,7 +65,7 @@ class BlockSummaryPage extends StatelessWidget {
                   Card(
                     color: colorScheme.primaryContainer,
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(space16),
                       child: Row(
                         children: [
                           Icon(Icons.calendar_today,
@@ -74,10 +75,13 @@ class BlockSummaryPage extends StatelessWidget {
                             child: Text(
                               '${dateFormat.format(block.created)}'
                               '${block.completed != null ? '  \u2192  ${dateFormat.format(block.completed!)}' : ''}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onPrimaryContainer,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: colorScheme.onPrimaryContainer,
+                                  ),
                             ),
                           ),
                         ],
@@ -105,7 +109,7 @@ class BlockSummaryPage extends StatelessWidget {
 
           // Done button at bottom
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(space16),
             child: FilledButton(
               onPressed: () => Navigator.of(context).pop(),
               style: FilledButton.styleFrom(
@@ -144,15 +148,15 @@ class _LiftCard extends StatelessWidget {
     final isPositive = delta > 0;
     final isNeutral = delta == 0;
     final badgeColor = isPositive
-        ? Colors.green
+        ? context.jl.success
         : isNeutral
             ? colorScheme.outline
-            : colorScheme.error;
+            : context.jl.danger;
 
     return Card(
       color: colorScheme.surfaceContainerHighest,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(space16),
         child: Row(
           children: [
             Expanded(
@@ -177,14 +181,13 @@ class _LiftCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: badgeColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: brMd,
               ),
               child: Text(
                 '${formatDelta(delta)} $unit',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: badgeColor,
-                ),
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: badgeColor,
+                    ),
               ),
             ),
           ],

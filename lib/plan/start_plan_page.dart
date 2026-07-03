@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../database/database.dart';
 import '../database/query_helpers.dart';
 import '../main.dart';
+import '../theme/tokens.dart';
 import '../widgets/plate_calculator.dart';
 import '../widgets/superset/superset_manager_dialog.dart';
 import '../widgets/workout/add_exercise_card.dart';
@@ -430,7 +431,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
                           child: Text(
                             title,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 18),
+                            style: Theme.of(context).textTheme.titleLarge,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -507,7 +508,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
                     crossFadeState: _showNotes
                         ? CrossFadeState.showSecond
                         : CrossFadeState.showFirst,
-                    duration: const Duration(milliseconds: 200),
+                    duration: durMed,
                   ),
                   // Exercises list
                   Expanded(
@@ -526,7 +527,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
   Widget _buildExerciseList(ColorScheme colorScheme) {
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 8, bottom: 200),
+      padding: const EdgeInsets.only(top: space8, bottom: 200),
       itemCount: _exerciseOrder.length + 1,
       itemBuilder: (context, index) {
         if (index >= _exerciseOrder.length) {
@@ -764,7 +765,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
   Widget _buildReorderableList(ColorScheme colorScheme) {
     return ReorderableListView.builder(
-      padding: const EdgeInsets.only(top: 8, bottom: 100),
+      padding: const EdgeInsets.only(top: space8, bottom: 100),
       onReorder: _onReorder,
       proxyDecorator: (child, index, animation) {
         return AnimatedBuilder(
@@ -772,7 +773,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
           builder: (context, child) => Material(
             elevation: 8,
             shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: brMd,
             child: child,
           ),
           child: child,
@@ -835,7 +836,7 @@ class _ReorderableExerciseTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: space12, vertical: space4),
       elevation: 1,
       child: ListTile(
         leading: Container(
@@ -843,38 +844,36 @@ class _ReorderableExerciseTile extends StatelessWidget {
           height: 36,
           decoration: BoxDecoration(
             color: colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: brSm,
           ),
           child: Center(
             child: Text(
               '${index + 1}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onPrimaryContainer,
-              ),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                  ),
             ),
           ),
         ),
         title: Text(
           exerciseName,
-          style: const TextStyle(fontWeight: FontWeight.w500),
+          style: Theme.of(context).textTheme.bodyLarge,
         ),
         subtitle: isAdHoc
             ? Text(
                 'Added exercise',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: colorScheme.tertiary,
-                ),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colorScheme.tertiary,
+                    ),
               )
             : null,
         trailing: ReorderableDragStartListener(
           index: index,
           child: Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(space8),
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: brSm,
             ),
             child: Icon(
               Icons.drag_handle,

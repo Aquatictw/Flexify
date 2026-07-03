@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../database/database.dart';
+import '../theme/tokens.dart';
 import 'block_creation_dialog.dart';
 import 'block_summary_page.dart';
 import 'fivethreeone_state.dart';
@@ -32,7 +33,7 @@ class BlockOverviewPage extends StatelessWidget {
 
   Widget _buildNoBlock(BuildContext context, FiveThreeOneState state) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(space16),
       child: Column(
         children: [
           const SizedBox(height: 32),
@@ -61,7 +62,7 @@ class BlockOverviewPage extends StatelessWidget {
   Widget _buildTimeline(
       BuildContext context, FiveThreeOneState state, FiveThreeOneBlock block) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(space16),
       child: Column(
         children: [
           _TmCard(block: block),
@@ -160,16 +161,16 @@ class _CycleEntry extends StatelessWidget {
                       ? colorScheme.surfaceContainerHighest
                       : colorScheme.surfaceContainerLow,
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(space12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       cycleNames[cycleIndex],
-                      style: TextStyle(
-                        fontWeight:
-                            isCurrent ? FontWeight.bold : FontWeight.normal,
-                      ),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight:
+                                isCurrent ? FontWeight.w700 : FontWeight.w500,
+                          ),
                     ),
                     Text(
                       getMainSchemeName(cycleIndex),
@@ -215,15 +216,16 @@ class _CycleEntry extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'Week $w',
-                style: TextStyle(
-                  fontWeight:
-                      isWeekCurrent ? FontWeight.bold : FontWeight.normal,
-                  color: isWeekCompleted
-                      ? colorScheme.primary
-                      : isWeekCurrent
-                          ? colorScheme.onPrimaryContainer
-                          : colorScheme.onPrimaryContainer.withValues(alpha: 0.5),
-                ),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight:
+                          isWeekCurrent ? FontWeight.w700 : FontWeight.w500,
+                      color: isWeekCompleted
+                          ? colorScheme.primary
+                          : isWeekCurrent
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.onPrimaryContainer
+                                  .withValues(alpha: 0.5),
+                    ),
               ),
             ],
           ),
@@ -339,7 +341,7 @@ class _TmCardState extends State<_TmCard> {
     return Card(
       elevation: 2,
       color: colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: const RoundedRectangleBorder(borderRadius: brMd),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         child: Column(
@@ -363,7 +365,7 @@ class _TmCardState extends State<_TmCard> {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: brSm,
                   ),
                   child: Text(
                     widget.block.unit,
@@ -614,7 +616,7 @@ class _CompletedBlockHistory extends StatelessWidget {
               Card(
                 color: colorScheme.surfaceContainerLow,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: brMd,
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -623,7 +625,7 @@ class _CompletedBlockHistory extends StatelessWidget {
                     );
                   },
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(space12),
                     child: Row(
                       children: [
                         Expanded(

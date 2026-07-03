@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../database/database.dart';
 import '../fivethreeone/fivethreeone_state.dart';
 import '../fivethreeone/schemes.dart';
+import '../theme/tokens.dart';
 
 /// 5/3/1 powerlifting calculator dialog
 /// Shows block-based layout from active FiveThreeOneBlock
@@ -122,7 +123,7 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
       return Dialog(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 500),
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(space24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -177,11 +178,11 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(space16),
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer,
                 borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(28)),
+                    const BorderRadius.vertical(top: Radius.circular(radiusLg)),
               ),
               child: Column(
                 children: [
@@ -244,7 +245,7 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
             // Content
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(space16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -290,10 +291,10 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(space16),
                           decoration: BoxDecoration(
                             color: colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: brMd,
                             border: set.amrap
                                 ? Border.all(
                                     color: colorScheme.primary,
@@ -310,7 +311,7 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                                   color: set.amrap
                                       ? colorScheme.primaryContainer
                                       : colorScheme.surfaceContainerHigh,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: brSm,
                                 ),
                                 child: Center(
                                   child: Text(
@@ -402,10 +403,10 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                       if (blockCycleType == cycleTmTest) ...[
                         const SizedBox(height: 16),
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(space12),
                           decoration: BoxDecoration(
                             color: colorScheme.tertiaryContainer,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: brSm,
                           ),
                           child: Row(
                             children: [
@@ -429,10 +430,10 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                       const SizedBox(height: 16),
                     ] else
                       Container(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(space16),
                         decoration: BoxDecoration(
                           color: colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: brMd,
                         ),
                         child: Row(
                           children: [
@@ -459,11 +460,11 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
 
             // Info Footer
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(space16),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHigh,
                 borderRadius:
-                    const BorderRadius.vertical(bottom: Radius.circular(28)),
+                    const BorderRadius.vertical(bottom: Radius.circular(radiusLg)),
               ),
               child: Row(
                 children: [

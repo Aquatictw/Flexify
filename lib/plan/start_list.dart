@@ -149,21 +149,21 @@ class _StartListState extends State<StartList> {
       case PlanTrailing.ratio:
         trail = Text(
           '$count / $max',
-          style: const TextStyle(fontSize: 16),
+          style: Theme.of(context).textTheme.bodyLarge,
         );
         break;
 
       case PlanTrailing.count:
         trail = Text(
           count.toString(),
-          style: const TextStyle(fontSize: 16),
+          style: Theme.of(context).textTheme.bodyLarge,
         );
         break;
 
       case PlanTrailing.percent:
         trail = Text(
           '${(count / max * 100).toStringAsFixed(2)}%',
-          style: const TextStyle(fontSize: 16),
+          style: Theme.of(context).textTheme.bodyLarge,
         );
         break;
 

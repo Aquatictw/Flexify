@@ -14,6 +14,7 @@ import '../models/set_data.dart';
 import '../records/record_notification.dart';
 import '../records/records_service.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../timer/timer_state.dart';
 import '../widgets/bodypart_tag.dart';
 import '../widgets/five_three_one_calculator.dart';
@@ -276,27 +277,20 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            // Note: bottomSheetTheme.showDragHandle already draws the grabber.
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: space16,
+                vertical: space8,
+              ),
               child: Row(
                 children: [
                   Icon(Icons.fitness_center, color: colorScheme.primary),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: space12),
                   Expanded(
                     child: Text(
                       widget.exercise.exercise,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
                 ],
@@ -340,11 +334,11 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               },
             ),
             ListTile(
-              leading:
-                  Icon(Icons.remove_circle_outline, color: colorScheme.error),
+              leading: Icon(Icons.remove_circle_outline,
+                  color: context.jl.danger,),
               title: Text(
                 'Remove Exercise',
-                style: TextStyle(color: colorScheme.error),
+                style: TextStyle(color: context.jl.danger),
               ),
               subtitle: const Text('Remove this exercise from workout'),
               onTap: () {
@@ -352,7 +346,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                 widget.onDeleteExercise?.call();
               },
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: space8),
           ],
         ),
       ),
@@ -839,7 +833,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     }
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: space12, vertical: space8 - 2),
       clipBehavior: Clip.antiAlias,
       elevation: 2,
       shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
@@ -847,7 +841,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           alpha: 0.08,), // Subtle background tint for superset exercises
       shape: supersetColor != null
           ? RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: brMd,
               side: BorderSide(
                 color: supersetColor.withValues(alpha: 0.3),
                 width: 2,
@@ -861,7 +855,10 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
             onTap: widget.onToggleExpand,
             onLongPress: () => _showExerciseMenu(context),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(
+                horizontal: space16,
+                vertical: space12 + 2,
+              ),
               decoration: BoxDecoration(
                 gradient: allCompleted
                     ? LinearGradient(
@@ -877,12 +874,12 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(space8),
                     decoration: BoxDecoration(
                       color: allCompleted
                           ? colorScheme.primary
                           : colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: brSm,
                     ),
                     child: Icon(
                       allCompleted ? Icons.check : Icons.fitness_center,
@@ -892,7 +889,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: space12 + 2),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -902,18 +899,13 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                             Flexible(
                               child: Text(
                                 widget.exercise.exercise,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                style: Theme.of(context).textTheme.titleMedium,
                               ),
                             ),
                             if (_supersetId != null &&
                                 _supersetPosition != null &&
                                 _supersetIndex != null) ...[
-                              const SizedBox(width: 8),
+                              const SizedBox(width: space8),
                               SupersetBadge(
                                 supersetIndex: _supersetIndex!,
                                 position: _supersetPosition!,
@@ -926,24 +918,25 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                             ],
                             if (_brandName != null &&
                                 _brandName!.isNotEmpty) ...[
-                              const SizedBox(width: 6),
+                              const SizedBox(width: space4),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
+                                  horizontal: space4,
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
                                   color: colorScheme.secondaryContainer
                                       .withValues(alpha: 0.7),
-                                  borderRadius: BorderRadius.circular(6),
+                                  borderRadius: brSm,
                                 ),
                                 child: Text(
                                   _brandName!,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w500,
-                                    color: colorScheme.onSecondaryContainer,
-                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        color: colorScheme.onSecondaryContainer,
+                                      ),
                                 ),
                               ),
                             ],
@@ -951,7 +944,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                         ),
                         // Exercise notes preview
                         if (widget.exerciseNotes?.isNotEmpty ?? false) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: space4),
                           Row(
                             children: [
                               Icon(
@@ -959,7 +952,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                 size: 12,
                                 color: colorScheme.tertiary,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: space4),
                               Expanded(
                                 child: Text(
                                   widget.exerciseNotes!,
@@ -998,18 +991,20 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                               ),
                               if (_brandName != null &&
                                   _brandName!.isNotEmpty) ...[
-                                const SizedBox(width: 8),
+                                const SizedBox(width: space8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
+                                    horizontal: space4,
                                     vertical: 1,
                                   ),
                                   decoration: BoxDecoration(
                                     color: colorScheme.secondaryContainer
                                         .withValues(alpha: 0.7),
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: brSm,
                                   ),
                                   child: Text(
+                                    // Explicit tiny size: no textTheme role
+                                    // this small for a dense inline badge.
                                     _brandName!,
                                     style: TextStyle(
                                       fontSize: 9,
@@ -1020,13 +1015,13 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                 ),
                               ],
                               if (completedCount > 0) ...[
-                                const SizedBox(width: 12),
+                                const SizedBox(width: space12),
                                 Icon(
                                   Icons.fitness_center,
                                   size: 14,
                                   color: colorScheme.onSurfaceVariant,
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: space4),
                                 Text(
                                   '${_getTotalVolume()} $unit',
                                   style: Theme.of(context)
@@ -1044,7 +1039,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                   ),
                   AnimatedRotation(
                     turns: widget.isExpanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 200),
+                    duration: durMed,
                     child: Icon(
                       Icons.keyboard_arrow_down,
                       color: colorScheme.onSurfaceVariant,
@@ -1061,7 +1056,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                 begin: 0,
                 end: sets.isEmpty ? 0 : completedCount / sets.length,
               ),
-              duration: const Duration(milliseconds: 300),
+              duration: durSlow,
               builder: (context, value, _) => LinearProgressIndicator(
                 value: value,
                 backgroundColor: colorScheme.surfaceContainerHighest,
@@ -1076,7 +1071,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
             firstChild: const SizedBox(width: double.infinity),
             secondChild: _initialized
                 ? Padding(
-                    padding: const EdgeInsets.only(top: 8, bottom: 8),
+                    padding: const EdgeInsets.symmetric(vertical: space8),
                     child: Column(
                       children: [
                         ReorderableListView.builder(
@@ -1088,7 +1083,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                             return Material(
                               elevation: 6,
                               shadowColor: colorScheme.shadow,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: brMd,
                               child: child,
                             );
                           },
@@ -1144,8 +1139,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                         // Add set buttons row
                         Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
+                            horizontal: space12,
+                            vertical: space4,
                           ),
                           child: Column(
                             children: [
@@ -1155,20 +1150,19 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                   Expanded(
                                     child: InkWell(
                                       onTap: () => _addSet(isWarmup: true),
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: brMd,
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
-                                          vertical: 10,
+                                          vertical: space8 + 2,
                                         ),
                                         decoration: BoxDecoration(
                                           border: Border.all(
-                                            color: colorScheme.tertiary
+                                            color: context.jl.warmup
                                                 .withValues(alpha: 0.5),
                                           ),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          color: colorScheme.tertiaryContainer
-                                              .withValues(alpha: 0.2),
+                                          borderRadius: brMd,
+                                          color: context.jl.warmup
+                                              .withValues(alpha: 0.15),
                                         ),
                                         child: Row(
                                           mainAxisAlignment:
@@ -1177,41 +1171,41 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                             Icon(
                                               Icons.whatshot_outlined,
                                               size: 16,
-                                              color: colorScheme.tertiary,
+                                              color: context.jl.warmup,
                                             ),
-                                            const SizedBox(width: 6),
+                                            const SizedBox(width: space4 + 2),
                                             Text(
                                               'Warmup',
-                                              style: TextStyle(
-                                                color: colorScheme.tertiary,
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 12,
-                                              ),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .labelMedium
+                                                  ?.copyWith(
+                                                    color: context.jl.warmup,
+                                                  ),
                                             ),
                                           ],
                                         ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: space4 + 2),
                                   // Add Drop Set button
                                   Expanded(
                                     child: InkWell(
                                       onTap: () => _addSet(isDropSet: true),
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: brMd,
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
-                                          vertical: 10,
+                                          vertical: space8 + 2,
                                         ),
                                         decoration: BoxDecoration(
                                           border: Border.all(
-                                            color: colorScheme.secondary
+                                            color: context.jl.dropSet
                                                 .withValues(alpha: 0.5),
                                           ),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          color: colorScheme.secondaryContainer
-                                              .withValues(alpha: 0.2),
+                                          borderRadius: brMd,
+                                          color: context.jl.dropSet
+                                              .withValues(alpha: 0.15),
                                         ),
                                         child: Row(
                                           mainAxisAlignment:
@@ -1220,41 +1214,41 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                             Icon(
                                               Icons.trending_down,
                                               size: 16,
-                                              color: colorScheme.secondary,
+                                              color: context.jl.dropSet,
                                             ),
-                                            const SizedBox(width: 6),
+                                            const SizedBox(width: space4 + 2),
                                             Text(
                                               'Drop',
-                                              style: TextStyle(
-                                                color: colorScheme.secondary,
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 12,
-                                              ),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .labelMedium
+                                                  ?.copyWith(
+                                                    color: context.jl.dropSet,
+                                                  ),
                                             ),
                                           ],
                                         ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: space4 + 2),
                                   // Add Working Set button
                                   Expanded(
                                     child: InkWell(
                                       onTap: _addSet,
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: brMd,
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
-                                          vertical: 10,
+                                          vertical: space8 + 2,
                                         ),
                                         decoration: BoxDecoration(
                                           border: Border.all(
-                                            color: colorScheme.primary
+                                            color: context.jl.working
                                                 .withValues(alpha: 0.5),
                                           ),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          color: colorScheme.primaryContainer
-                                              .withValues(alpha: 0.2),
+                                          borderRadius: brMd,
+                                          color: context.jl.working
+                                              .withValues(alpha: 0.15),
                                         ),
                                         child: Row(
                                           mainAxisAlignment:
@@ -1263,16 +1257,17 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                             Icon(
                                               Icons.add,
                                               size: 16,
-                                              color: colorScheme.primary,
+                                              color: context.jl.working,
                                             ),
-                                            const SizedBox(width: 6),
+                                            const SizedBox(width: space4 + 2),
                                             Text(
                                               'Working',
-                                              style: TextStyle(
-                                                color: colorScheme.primary,
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 12,
-                                              ),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .labelMedium
+                                                  ?.copyWith(
+                                                    color: context.jl.working,
+                                                  ),
                                             ),
                                           ],
                                         ),
@@ -1291,7 +1286,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
             crossFadeState: widget.isExpanded
                 ? CrossFadeState.showSecond
                 : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 200),
+            duration: durMed,
           ),
         ],
       ),

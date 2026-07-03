@@ -7,6 +7,7 @@ import '../database/database.dart';
 import '../main.dart';
 import '../settings/settings_page.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../utils.dart';
 import '../widgets/timer_quick_access.dart';
 import '../workouts/workout_state.dart';
@@ -180,21 +181,24 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Material(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: brMd,
       color: colorScheme.secondaryContainer,
       child: InkWell(
         onTap: _startFreeformWorkout,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: brMd,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          padding: const EdgeInsets.symmetric(
+            vertical: space16,
+            horizontal: space16,
+          ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(space8),
                 decoration: BoxDecoration(
                   color: colorScheme.secondary,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: brSm,
                 ),
                 child: Icon(
                   Icons.play_arrow_rounded,
@@ -202,27 +206,24 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
                   size: 24,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: space16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Freeform Workout',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSecondaryContainer,
-                      ),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: colorScheme.onSecondaryContainer,
+                          ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: space4 / 2),
                     Text(
                       'Start with an empty workout',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: colorScheme.onSecondaryContainer
-                            .withValues(alpha: 0.7),
-                      ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSecondaryContainer
+                                .withValues(alpha: 0.7),
+                          ),
                     ),
                   ],
                 ),

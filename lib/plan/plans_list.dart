@@ -6,6 +6,7 @@ import '../constants.dart';
 import '../database/database.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import 'edit_plan_page.dart';
 import 'plan_state.dart';
 import 'plan_tile.dart';
@@ -112,18 +113,25 @@ class _PlansListState extends State<PlansList> {
           if (widget.footer != null)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                padding: const EdgeInsets.fromLTRB(
+                  space16,
+                  space8,
+                  space16,
+                  space16,
+                ),
                 child: widget.footer,
               ),
             ),
-          const SliverPadding(padding: EdgeInsets.only(bottom: 140)),
+          SliverPadding(
+            padding: EdgeInsets.only(bottom: bottomBarClearance(context)),
+          ),
         ],
       );
 
     return CustomScrollView(
       controller: widget.scroll,
       slivers: [
-        const SliverPadding(padding: EdgeInsets.only(top: 8)),
+        const SliverPadding(padding: EdgeInsets.only(top: space8)),
         SliverList(
           delegate: SliverChildBuilderDelegate(
             (context, index) {
@@ -144,11 +152,18 @@ class _PlansListState extends State<PlansList> {
         if (widget.footer != null)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              padding: const EdgeInsets.fromLTRB(
+                space16,
+                space8,
+                space16,
+                space16,
+              ),
               child: widget.footer,
             ),
           ),
-        const SliverPadding(padding: EdgeInsets.only(bottom: 140)),
+        SliverPadding(
+          padding: EdgeInsets.only(bottom: bottomBarClearance(context)),
+        ),
       ],
     );
   }

@@ -7,6 +7,7 @@ import '../constants.dart';
 import '../database/database.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../utils.dart';
 import '../workouts/workout_state.dart';
 import 'edit_plan_page.dart';
@@ -83,27 +84,25 @@ class _PlanTileState extends State<PlanTile> {
           width: 24,
           height: 24,
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor,
-            borderRadius: BorderRadius.circular(12),
+            color: Theme.of(context).colorScheme.primary,
+            borderRadius: brSm,
           ),
           child: Center(
             child: Text(
               widget.plan.title?.isNotEmpty ?? false
                   ? widget.plan.title![0]
                   : widget.plan.days[0].toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'monospace',
-              ),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontFamily: 'monospace',
+                  ),
             ),
           ),
         ),
       );
 
     leading = AnimatedSwitcher(
-      duration: const Duration(milliseconds: 150),
+      duration: durFast,
       transitionBuilder: (child, animation) {
         return ScaleTransition(scale: animation, child: child);
       },
@@ -113,9 +112,9 @@ class _PlanTileState extends State<PlanTile> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: space8, vertical: space4),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: brMd,
         color: widget.selected.contains(widget.plan.id)
             ? colorScheme.primary.withValues(alpha: .08)
             : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
@@ -130,7 +129,7 @@ class _PlanTileState extends State<PlanTile> {
         children: [
           ListTile(
             contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                const EdgeInsets.symmetric(horizontal: space16, vertical: space4),
             title: title,
             subtitle: StreamBuilder(
               stream: _exercisesStream,
@@ -179,18 +178,18 @@ class _PlanTileState extends State<PlanTile> {
                 if (trailing == PlanTrailing.count)
                   return Text(
                     '${count.total}',
-                    style: const TextStyle(fontSize: 16),
+                    style: Theme.of(context).textTheme.bodyLarge,
                   );
 
                 if (trailing == PlanTrailing.percent)
                   return Text(
                     '${((count.total) / count.maxSets * 100).toStringAsFixed(2)}%',
-                    style: const TextStyle(fontSize: 16),
+                    style: Theme.of(context).textTheme.bodyLarge,
                   );
                 else
                   return Text(
                     '${count.total} / ${count.maxSets}',
-                    style: const TextStyle(fontSize: 16),
+                    style: Theme.of(context).textTheme.bodyLarge,
                   );
               },
             ),
@@ -247,7 +246,12 @@ class _PlanTileState extends State<PlanTile> {
           // Quick action buttons row
           if (widget.selected.isEmpty)
             Container(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+              padding: const EdgeInsets.fromLTRB(
+                space12,
+                0,
+                space12,
+                space8 + 2,
+              ),
               child: Row(
                 children: [
                   // Start Workout button
@@ -299,16 +303,16 @@ class _PlanTileState extends State<PlanTile> {
                       label: const Text('Start'),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                          horizontal: space16,
+                          vertical: space8 + 2,
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: brPill,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: space8 + 2),
                   // Edit button
                   FilledButton.tonalIcon(
                     onPressed: () async {
@@ -329,11 +333,11 @@ class _PlanTileState extends State<PlanTile> {
                     label: const Text('Edit'),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+                        horizontal: space16,
+                        vertical: space8 + 2,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: brPill,
                       ),
                     ),
                   ),
