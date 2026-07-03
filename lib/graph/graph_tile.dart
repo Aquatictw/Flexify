@@ -7,6 +7,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../constants.dart';
 import '../database/gym_sets.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../widgets/bodypart_tag.dart';
 import 'cardio_page.dart';
 import 'strength_page.dart';
@@ -45,7 +46,7 @@ class GraphTile extends StatelessWidget {
       leading = GestureDetector(
         onTap: () => onSelect(exercise.name),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: brSm,
           child: Image.file(
             File(exercise.image!),
             width: 40,
@@ -56,7 +57,7 @@ class GraphTile extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: brSm,
               ),
               child: Icon(
                 Icons.fitness_center,
@@ -72,7 +73,7 @@ class GraphTile extends StatelessWidget {
     // Only wrap in AnimatedSwitcher if leading is not null
     if (leading != null) {
       leading = AnimatedSwitcher(
-        duration: const Duration(milliseconds: 150),
+        duration: durFast,
         transitionBuilder: (child, animation) {
           return ScaleTransition(scale: animation, child: child);
         },
@@ -81,11 +82,11 @@ class GraphTile extends StatelessWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      margin: const EdgeInsets.symmetric(horizontal: space8, vertical: 2),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: brMd,
         color: selected.contains(exercise.name)
-            ? colorScheme.primary.withValues(alpha: .08)
+            ? colorScheme.primaryContainer.withValues(alpha: .5)
             : Colors.transparent,
         border: Border.all(
           color: selected.contains(exercise.name)
@@ -115,7 +116,7 @@ class GraphTile extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: brSm,
                 ),
                 child: Text(
                   exercise.brandName!,
@@ -145,7 +146,7 @@ class GraphTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: colorScheme.primaryContainer.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: brMd,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

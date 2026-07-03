@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import '../database/database.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
+import '../theme/components.dart';
+import '../theme/tokens.dart';
 import '../utils/bodyweight_calculations.dart';
 import '../widgets/bodyweight_entry_dialog.dart';
 import '../widgets/bodyweight_entry_tile.dart';
@@ -163,30 +165,35 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+              padding: const EdgeInsets.fromLTRB(
+                space16,
+                space16,
+                space16,
+                space32 * 3,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Period selector
                   _buildPeriodSelector(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: space24),
 
                   // Stats cards grid
                   _buildStatsGrid(colorScheme),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: space24),
 
                   // Main chart with bodyweight + moving averages
                   _buildBodyweightChart(colorScheme),
 
                   // Chart legend (directly under chart)
-                  if (periodEntries.isNotEmpty) const SizedBox(height: 12),
+                  if (periodEntries.isNotEmpty) const SizedBox(height: space12),
                   if (periodEntries.isNotEmpty) _buildChartLegend(colorScheme),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: space16),
 
                   // Moving average toggles (compact)
                   if (periodEntries.isNotEmpty)
                     _buildMovingAverageToggles(colorScheme),
-                  if (periodEntries.isNotEmpty) const SizedBox(height: 24),
+                  if (periodEntries.isNotEmpty) const SizedBox(height: space24),
 
                   // Entry history list (period-filtered)
                   _buildEntryHistorySection(colorScheme),
@@ -203,15 +210,13 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
         children: BodyweightPeriod.values.map((p) {
           final isSelected = period == p;
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(_getPeriodLabel(p)),
+            padding: const EdgeInsets.only(right: space8),
+            child: FilterPill(
+              label: _getPeriodLabel(p),
               selected: isSelected,
-              onSelected: (selected) {
-                if (selected) {
-                  setState(() => period = p);
-                  _loadData();
-                }
+              onTap: () {
+                setState(() => period = p);
+                _loadData();
               },
             ),
           );
@@ -230,18 +235,14 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
         Row(
           children: [
             Icon(Icons.analytics, color: colorScheme.primary, size: 20),
-            const SizedBox(width: 8),
+            const SizedBox(width: space8),
             Text(
               'Statistics',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: space12),
 
         // Row 1: Current + Average
         Row(
@@ -257,7 +258,7 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
                 color: colorScheme.primary,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: space12),
             Expanded(
               child: _buildStatCard(
                 colorScheme: colorScheme,
@@ -271,7 +272,7 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: space12),
 
         // Row 2: Change + Entry Count
         Row(
@@ -285,14 +286,14 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
                 color: _getChangeColor(periodChange, colorScheme),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: space12),
             Expanded(
               child: _buildStatCard(
                 colorScheme: colorScheme,
                 icon: Icons.format_list_numbered,
                 label: 'Entries',
                 value: '$entryCount',
-                color: Colors.teal,
+                color: colorScheme.tertiary,
               ),
             ),
           ],
@@ -309,10 +310,10 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(space16),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: brMd,
         border: Border.all(
           color: color.withValues(alpha: 0.3),
         ),
@@ -323,28 +324,22 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
           Row(
             children: [
               Icon(icon, color: color, size: 20),
-              const SizedBox(width: 6),
+              const SizedBox(width: space8),
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: space8),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
+            style: Theme.of(context).textTheme.titleLarge,
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -361,8 +356,8 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
 
   Color _getChangeColor(double? change, ColorScheme colorScheme) {
     if (change == null) return colorScheme.onSurfaceVariant;
-    if (change > 0.1) return Colors.green;
-    if (change < -0.1) return Colors.red;
+    if (change > 0.1) return context.jl.success;
+    if (change < -0.1) return context.jl.danger;
     return colorScheme.onSurfaceVariant;
   }
 
@@ -382,7 +377,7 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
         height: 250,
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerLow.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: brMd,
           border: Border.all(
             color: colorScheme.outline.withValues(alpha: 0.2),
           ),
@@ -395,15 +390,14 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
               size: 64,
               color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: space16),
             Text(
               'No bodyweight data for this period',
-              style: TextStyle(
-                color: colorScheme.onSurfaceVariant,
-                fontSize: 14,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: space8),
             FilledButton.tonalIcon(
               icon: const Icon(Icons.add),
               label: const Text('Log Your First Entry'),
@@ -493,7 +487,7 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
           LineChartBarData(
             spots: ma3,
             isCurved: true,
-            color: Colors.amber,
+            color: context.jl.pr,
             dashArray: [5, 5],
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(),
@@ -508,23 +502,19 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
         Row(
           children: [
             Icon(Icons.show_chart, color: colorScheme.primary, size: 20),
-            const SizedBox(width: 8),
+            const SizedBox(width: space8),
             Text(
               'Bodyweight Progress',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: space16),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(space16),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: brMd,
             border: Border.all(
               color: colorScheme.outlineVariant.withValues(alpha: 0.5),
             ),
@@ -643,7 +633,7 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
                   ),
                 ),
               ),
-              duration: const Duration(milliseconds: 300),
+              duration: durMed,
             ),
           ),
         ),
@@ -697,7 +687,7 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
         _buildToggleTile(
           colorScheme: colorScheme,
           label: '3-Day',
-          color: Colors.amber,
+          color: context.jl.pr,
           value: show3DayMA,
           onChanged: (val) => setState(() => show3DayMA = val),
           enabled: periodEntries.isNotEmpty,
@@ -725,7 +715,7 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
             height: 3,
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: brPill,
             ),
           ),
           const SizedBox(width: 8),
@@ -764,7 +754,7 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
         _buildLegendItem('Bodyweight', colorScheme.primary, solid: true),
         if (show14DayMA) _buildLegendItem('14-Day MA', colorScheme.secondary),
         if (show7DayMA) _buildLegendItem('7-Day MA', colorScheme.tertiary),
-        if (show3DayMA) _buildLegendItem('3-Day MA', Colors.amber),
+        if (show3DayMA) _buildLegendItem('3-Day MA', context.jl.pr),
       ],
     );
   }
@@ -778,7 +768,7 @@ class _BodyweightOverviewPageState extends State<BodyweightOverviewPage> {
           height: 3,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: brPill,
           ),
           child: solid
               ? null

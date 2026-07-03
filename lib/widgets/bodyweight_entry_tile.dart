@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../database/database.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 
 /// A timeline-style tile widget for displaying individual bodyweight entries.
 ///
@@ -29,10 +30,10 @@ class BodyweightEntryTile extends StatelessWidget {
     return Dismissible(
       key: Key('entry-${entry.id}'),
       background: Container(
-        color: Colors.red.withValues(alpha: 0.2),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        color: context.jl.danger.withValues(alpha: 0.2),
+        padding: const EdgeInsets.symmetric(horizontal: space16),
         alignment: Alignment.centerRight,
-        child: const Icon(Icons.delete, color: Colors.red),
+        child: Icon(Icons.delete, color: context.jl.danger),
       ),
       direction: DismissDirection.endToStart,
       confirmDismiss: (direction) async {
@@ -61,9 +62,9 @@ class BodyweightEntryTile extends StatelessWidget {
       onDismissed: (_) => onDelete(),
       child: InkWell(
         onTap: onEdit,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: brSm,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(vertical: space4),
           child: IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -106,14 +107,10 @@ class BodyweightEntryTile extends StatelessWidget {
                 // Entry content
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(space8),
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: colorScheme.outline.withValues(alpha: 0.2),
-                      ),
+                      color: colorScheme.surfaceContainerHigh,
+                      borderRadius: brSm,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,13 +118,10 @@ class BodyweightEntryTile extends StatelessWidget {
                         // Date
                         Text(
                           DateFormat('MMM d, yyyy').format(entry.date),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: space4),
                         // Weight
                         Row(
                           children: [
@@ -136,27 +130,23 @@ class BodyweightEntryTile extends StatelessWidget {
                               size: 16,
                               color: colorScheme.primary,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: space4),
                             Text(
                               '${entry.weight.toStringAsFixed(1)} $unit',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onSurface,
-                              ),
+                              style: Theme.of(context).textTheme.titleMedium,
                             ),
                           ],
                         ),
                         // Notes (if present)
                         if (entry.notes != null && entry.notes!.isNotEmpty) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: space4),
                           Text(
                             entry.notes!,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontStyle: FontStyle.italic,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  fontStyle: FontStyle.italic,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../database/database.dart';
 import '../main.dart';
+import '../theme/tokens.dart';
 import '../widgets/stats/period_selector.dart';
 import '../widgets/stats/stat_card.dart';
 import '../workouts/workout_detail_page.dart';
@@ -343,10 +344,12 @@ class _OverviewPageState extends State<OverviewPage> {
         ),
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(radiusLg),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: colorScheme.shadow.withValues(alpha: 0.2),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -362,7 +365,7 @@ class _OverviewPageState extends State<OverviewPage> {
               height: 4,
               decoration: BoxDecoration(
                 color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: brPill,
               ),
             ),
             // Header
@@ -371,7 +374,7 @@ class _OverviewPageState extends State<OverviewPage> {
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(space12),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -379,7 +382,7 @@ class _OverviewPageState extends State<OverviewPage> {
                           colorScheme.primary.withValues(alpha: 0.7),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: brMd,
                     ),
                     child: Icon(
                       Icons.fitness_center,
@@ -387,7 +390,7 @@ class _OverviewPageState extends State<OverviewPage> {
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: space16),
                   Expanded(
                     child: InkWell(
                       onTap: () {
@@ -411,11 +414,7 @@ class _OverviewPageState extends State<OverviewPage> {
                         children: [
                           Text(
                             workoutName ?? 'Workout',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
-                            ),
+                            style: Theme.of(context).textTheme.titleMedium,
                           ),
                           Text(
                             DateFormat('EEEE, MMMM d, yyyy').format(date),
@@ -433,7 +432,7 @@ class _OverviewPageState extends State<OverviewPage> {
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: brMd,
                     ),
                     child: Text(
                       '${dayData.length} exercises',
@@ -452,7 +451,7 @@ class _OverviewPageState extends State<OverviewPage> {
             // Exercise list
             Flexible(
               child: ListView.builder(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(space16),
                 shrinkWrap: true,
                 itemCount: dayData.length,
                 itemBuilder: (context, index) {
@@ -464,11 +463,11 @@ class _OverviewPageState extends State<OverviewPage> {
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(space16),
                     decoration: BoxDecoration(
                       color: colorScheme.surfaceContainerHighest
                           .withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: brMd,
                       border: Border.all(
                         color: colorScheme.outline.withValues(alpha: 0.2),
                       ),
@@ -479,7 +478,7 @@ class _OverviewPageState extends State<OverviewPage> {
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: colorScheme.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: brSm,
                           ),
                           child: Icon(
                             Icons.fitness_center,
@@ -487,7 +486,7 @@ class _OverviewPageState extends State<OverviewPage> {
                             size: 20,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: space12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -571,7 +570,7 @@ class _OverviewPageState extends State<OverviewPage> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(space16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -584,17 +583,17 @@ class _OverviewPageState extends State<OverviewPage> {
                     },
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: space24),
 
                   // Stats cards
                   _buildStatsCards(colorScheme),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: space24),
 
                   // Heatmap calendar
                   _buildHeatmapSection(colorScheme),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: space24),
 
                   // Muscle volume chart
                   if (muscleVolumes.isNotEmpty)
@@ -602,7 +601,7 @@ class _OverviewPageState extends State<OverviewPage> {
 
                   // Muscle set count chart
                   if (muscleSetCounts.isNotEmpty) ...[
-                    const SizedBox(height: 24),
+                    const SizedBox(height: space24),
                     _buildMuscleSetCountChart(colorScheme),
                   ],
                 ],
@@ -620,18 +619,14 @@ class _OverviewPageState extends State<OverviewPage> {
         Row(
           children: [
             Icon(Icons.analytics, color: colorScheme.primary, size: 20),
-            const SizedBox(width: 8),
+            const SizedBox(width: space8),
             Text(
               'Statistics',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: space12),
         Row(
           children: [
             Expanded(
@@ -642,7 +637,7 @@ class _OverviewPageState extends State<OverviewPage> {
                 color: colorScheme.primary,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: space12),
             Expanded(
               child: StatCard(
                 icon: Icons.trending_up,
@@ -653,7 +648,7 @@ class _OverviewPageState extends State<OverviewPage> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: space12),
         Row(
           children: [
             Expanded(
@@ -661,10 +656,10 @@ class _OverviewPageState extends State<OverviewPage> {
                 icon: Icons.local_fire_department,
                 label: 'Streak',
                 value: '$currentStreak days',
-                color: Colors.orange,
+                color: context.jl.warmup,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: space12),
             Expanded(
               child: StatCard(
                 icon: Icons.schedule,
@@ -686,20 +681,16 @@ class _OverviewPageState extends State<OverviewPage> {
         Row(
           children: [
             Icon(Icons.calendar_month, color: colorScheme.primary, size: 20),
-            const SizedBox(width: 8),
+            const SizedBox(width: space8),
             Text(
               'Training Heatmap',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: space12),
         _buildHeatmap(colorScheme),
-        const SizedBox(height: 8),
+        const SizedBox(height: space8),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -710,7 +701,7 @@ class _OverviewPageState extends State<OverviewPage> {
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: space4),
             ...List.generate(
               5,
               (index) => Padding(
@@ -723,12 +714,12 @@ class _OverviewPageState extends State<OverviewPage> {
                       colorScheme,
                       index == 0 ? 0 : index * 5,
                     ),
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: brPill,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: space4),
             Text(
               'More',
               style: TextStyle(
@@ -776,7 +767,7 @@ class _OverviewPageState extends State<OverviewPage> {
 
     // Build grid of days
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(space12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -786,7 +777,7 @@ class _OverviewPageState extends State<OverviewPage> {
             colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
           ],
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: brMd,
         border: Border.all(
           color: colorScheme.outline.withValues(alpha: 0.1),
         ),
@@ -945,18 +936,14 @@ class _OverviewPageState extends State<OverviewPage> {
         Row(
           children: [
             Icon(Icons.bar_chart, color: colorScheme.primary, size: 20),
-            const SizedBox(width: 8),
+            const SizedBox(width: space8),
             Text(
               'Muscle Group Volume',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: space16),
         SizedBox(
           height: 300,
           child: BarChart(
@@ -1079,18 +1066,14 @@ class _OverviewPageState extends State<OverviewPage> {
           children: [
             Icon(Icons.format_list_numbered,
                 color: colorScheme.secondary, size: 20,),
-            const SizedBox(width: 8),
+            const SizedBox(width: space8),
             Text(
               'Muscle Group Set Count',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: space16),
         SizedBox(
           height: 300,
           child: BarChart(

@@ -7,6 +7,8 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../database/database.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
+import '../theme/components.dart';
+import '../theme/tokens.dart';
 import '../workouts/workout_detail_page.dart';
 
 class GraphHistoryPage extends StatefulWidget {
@@ -40,7 +42,7 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
           if (workouts.isEmpty)
             return Center(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(space24),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -50,12 +52,12 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
                       color:
                           colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: space16),
                     Text(
                       'No workouts yet',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: space8),
                     Text(
                       'Start tracking ${widget.name} to see your workout history here',
                       textAlign: TextAlign.center,
@@ -68,7 +70,7 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
 
           return ListView.builder(
             controller: scroll,
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(space8),
             itemCount: workouts.length + 1,
             itemBuilder: (context, index) {
               if (index == workouts.length) {
@@ -100,126 +102,103 @@ class _GraphHistoryPageState extends State<GraphHistoryPage> {
     final settings = context.watch<SettingsState>().value;
     final unit = widget.gymSets.firstOrNull?.unit ?? 'kg';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () async {
-            final workoutData = await (db.workouts.select()
-                  ..where((w) => w.id.equals(workout.workoutId)))
-                .getSingleOrNull();
+    return AppCard(
+      margin: const EdgeInsets.symmetric(horizontal: space8, vertical: space4),
+      onTap: () async {
+        final workoutData = await (db.workouts.select()
+              ..where((w) => w.id.equals(workout.workoutId)))
+            .getSingleOrNull();
 
-            if (workoutData != null && mounted) {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => WorkoutDetailPage(workout: workoutData),
+        if (workoutData != null && mounted) {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WorkoutDetailPage(workout: workoutData),
+            ),
+          );
+          loadWorkouts();
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(space8),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+                  borderRadius: brSm,
                 ),
-              );
-              loadWorkouts();
-            }
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: colorScheme.outline.withValues(alpha: 0.2),
+                child: Icon(
+                  Icons.calendar_today,
+                  size: 16,
+                  color: colorScheme.onPrimaryContainer,
+                ),
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+              const SizedBox(width: space12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color:
-                            colorScheme.primaryContainer.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: colorScheme.onPrimaryContainer,
-                      ),
+                    Text(
+                      workout.workoutName ?? 'Workout',
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            workout.workoutName ?? 'Workout',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
+                    const SizedBox(height: 2),
+                    Text(
+                      settings.longDateFormat == 'timeago'
+                          ? timeago.format(workout.created)
+                          : DateFormat(settings.longDateFormat)
+                              .format(workout.created),
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            settings.longDateFormat == 'timeago'
-                                ? timeago.format(workout.created)
-                                : DateFormat(settings.longDateFormat)
-                                    .format(workout.created),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right,
-                      color: colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Divider(
-                    height: 1,
-                    color: colorScheme.outline.withValues(alpha: 0.2),),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _buildStatChip(
-                      colorScheme,
-                      Icons.fitness_center,
-                      '${workout.sets} sets',
-                    ),
-                    const SizedBox(width: 8),
-                    _buildStatChip(
-                      colorScheme,
-                      Icons.repeat,
-                      'Best: ${_formatWeight(workout.bestWeight)} $unit x ${workout.bestReps.toInt()}',
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
           ),
-        ),
+          const SizedBox(height: space12),
+          Divider(height: 1, color: colorScheme.outlineVariant),
+          const SizedBox(height: space12),
+          Row(
+            children: [
+              _buildStatChip(
+                colorScheme,
+                Icons.fitness_center,
+                '${workout.sets} sets',
+              ),
+              const SizedBox(width: space8),
+              _buildStatChip(
+                colorScheme,
+                Icons.repeat,
+                'Best: ${_formatWeight(workout.bestWeight)} $unit x ${workout.bestReps.toInt()}',
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildStatChip(ColorScheme colorScheme, IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: space8, vertical: space4),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        color: colorScheme.surfaceContainerHigh,
+        borderRadius: brSm,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
-          const SizedBox(width: 4),
+          const SizedBox(width: space4),
           Text(
             label,
             style: TextStyle(

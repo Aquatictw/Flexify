@@ -11,6 +11,7 @@ import '../database/database.dart';
 import '../main.dart';
 import '../plan/plan_state.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../utils.dart';
 
 class EditGraphPage extends StatefulWidget {
@@ -77,7 +78,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(space24),
           child: Form(
             key: key,
             child: ListView(
@@ -86,12 +87,12 @@ class _EditGraphPageState extends State<EditGraphPage> {
                 Card(
                   elevation: 2,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: brMd,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                      horizontal: space16,
+                      vertical: space8,
                     ),
                     child: TextField(
                       controller: name,
@@ -108,32 +109,30 @@ class _EditGraphPageState extends State<EditGraphPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: space24),
 
                 // Rest Timer
                 Text(
                   'Rest Timer',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: space12),
                 Card(
                   elevation: 2,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: brMd,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                      horizontal: space16,
+                      vertical: space8,
                     ),
                     child: Row(
                       children: [
                         Icon(Icons.timer_outlined, color: colorScheme.primary),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: space16),
                         Expanded(
                           child: TextFormField(
                             controller: minutes,
@@ -152,7 +151,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                             },
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: space16),
                         Expanded(
                           child: TextFormField(
                             controller: seconds,
@@ -177,18 +176,16 @@ class _EditGraphPageState extends State<EditGraphPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: space24),
 
                 // Exercise Type Section
                 Text(
                   'Exercise Type',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: space12),
 
                 // Compact Exercise Type Selection
                 Row(
@@ -197,14 +194,14 @@ class _EditGraphPageState extends State<EditGraphPage> {
                         (type) => Expanded(
                           child: Padding(
                             padding:
-                                const EdgeInsets.symmetric(horizontal: 4),
+                                const EdgeInsets.symmetric(horizontal: space4),
                             child: InkWell(
                               onTap: () {
                                 setState(() {
                                   exerciseType = type.value;
                                 });
                               },
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: brMd,
                               child: Container(
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 16),
@@ -222,7 +219,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                                       ? colorScheme.surfaceContainerHighest
                                           .withValues(alpha: 0.5)
                                       : null,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: brMd,
                                   border: Border.all(
                                     color: exerciseType == type.value
                                         ? colorScheme.primary
@@ -240,7 +237,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                                           : colorScheme.onSurfaceVariant,
                                       size: 32,
                                     ),
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: space8),
                                     Text(
                                       type.label,
                                       textAlign: TextAlign.center,
@@ -266,16 +263,16 @@ class _EditGraphPageState extends State<EditGraphPage> {
 
                 // Brand Name (only for machines)
                 if (exerciseType == 'machine') ...[
-                  const SizedBox(height: 20),
+                  const SizedBox(height: space24),
                   Card(
                     elevation: 2,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: brMd,
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                        horizontal: space16,
+                        vertical: space8,
                       ),
                       child: TextField(
                         controller: brandNameCtrl,
@@ -292,7 +289,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                   ),
                 ],
 
-                const SizedBox(height: 20),
+                const SizedBox(height: space24),
 
                 // Bodypart
                 Selector<SettingsState, bool>(
@@ -304,22 +301,20 @@ class _EditGraphPageState extends State<EditGraphPage> {
                       children: [
                         Text(
                           'Bodypart',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface.withValues(alpha: 0.7),
-                          ),
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: space12),
                         Card(
                           elevation: 2,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: brMd,
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
+                              horizontal: space16,
+                              vertical: space4,
                             ),
                             child: DropdownButtonFormField<String>(
                               decoration: InputDecoration(
@@ -350,7 +345,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: space24),
                       ],
                     );
                   },
@@ -360,12 +355,12 @@ class _EditGraphPageState extends State<EditGraphPage> {
                 Card(
                   elevation: 2,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: brMd,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                      horizontal: space16,
+                      vertical: space8,
                     ),
                     child: TextField(
                       controller: notesCtrl,
@@ -383,7 +378,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: space24),
 
                 // Image Section
                 Selector<SettingsState, bool>(
@@ -394,13 +389,11 @@ class _EditGraphPageState extends State<EditGraphPage> {
                       children: [
                         Text(
                           'Exercise Image',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface.withValues(alpha: 0.7),
-                          ),
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: space12),
                         if (image == null)
                           InkWell(
                             onTap: pick,
@@ -409,7 +402,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                               decoration: BoxDecoration(
                                 color: colorScheme.surfaceContainerHighest
                                     .withValues(alpha: 0.5),
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: brMd,
                                 border: Border.all(
                                   color: colorScheme.outline
                                       .withValues(alpha: 0.3),
@@ -425,13 +418,12 @@ class _EditGraphPageState extends State<EditGraphPage> {
                                       size: 48,
                                       color: colorScheme.primary,
                                     ),
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: space8),
                                     Text(
                                       'Add Image',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
+                                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                                     ),
                                   ],
                                 ),
@@ -442,7 +434,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                           Stack(
                             children: [
                               ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: brMd,
                                 child: Image.file(
                                   File(image!),
                                   height: 200,
@@ -453,7 +445,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                                     height: 200,
                                     decoration: BoxDecoration(
                                       color: colorScheme.errorContainer,
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius: brMd,
                                     ),
                                     child: Center(
                                       child: Icon(
@@ -502,7 +494,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
                   selector: (context, settings) => settings.value.showImages,
                 ),
 
-                const SizedBox(height: 100), // Space for FAB
+                const SizedBox(height: space32 * 3), // Space for FAB
               ],
             ),
           ),

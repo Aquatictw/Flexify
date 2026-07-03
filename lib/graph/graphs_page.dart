@@ -12,6 +12,7 @@ import '../main.dart';
 import '../plan/plan_state.dart';
 import '../settings/settings_page.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../widgets/timer_quick_access.dart';
 import 'add_exercise_page.dart';
 import 'bodyweight_overview_page.dart';
@@ -273,7 +274,12 @@ class GraphsPageState extends State<GraphsPage>
           return material.Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                padding: const EdgeInsets.fromLTRB(
+                  space16,
+                  space8,
+                  space16,
+                  space8,
+                ),
                 child: TextField(
                   controller: searchController,
                   decoration: InputDecoration(
@@ -300,12 +306,12 @@ class GraphsPageState extends State<GraphsPage>
                         ),
                       ],
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    border: const OutlineInputBorder(
+                      borderRadius: brMd,
                     ),
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                      horizontal: space16,
+                      vertical: space12,
                     ),
                   ),
                   onChanged: (value) => setState(() => search = value),
@@ -506,9 +512,11 @@ class GraphsPageState extends State<GraphsPage>
     return ListView.builder(
       itemCount: itemCount,
       controller: scroll,
-      padding: const EdgeInsets.only(bottom: 50, top: 8),
+      padding: const EdgeInsets.only(bottom: space12, top: space8),
       itemBuilder: (context, index) {
-        if (index == itemCount - 1) return const SizedBox(height: 96);
+        if (index == itemCount - 1) {
+          return SizedBox(height: bottomBarClearance(context));
+        }
 
         final set = gymSets.elementAtOrNull(index);
         if (set == null) return const SizedBox();

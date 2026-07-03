@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../database/database.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 
 /// Dialog for adding or editing a bodyweight entry
 class BodyweightEntryDialog extends StatefulWidget { // Null for new entry
@@ -123,12 +124,12 @@ class _BodyweightEntryDialogState extends State<BodyweightEntryDialog> {
     final dateFormat = DateFormat('MMM dd, yyyy');
 
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
+      shape: const RoundedRectangleBorder(
+        borderRadius: brLg,
       ),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 400),
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(space24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,10 +138,10 @@ class _BodyweightEntryDialogState extends State<BodyweightEntryDialog> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(space12),
                   decoration: BoxDecoration(
                     color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: brMd,
                   ),
                   child: Icon(
                     Icons.monitor_weight_outlined,
@@ -148,18 +149,16 @@ class _BodyweightEntryDialogState extends State<BodyweightEntryDialog> {
                     size: 28,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: space16),
                 Expanded(
                   child: Text(
                     widget.entry != null ? 'Edit Bodyweight' : 'Log Bodyweight',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: space24),
 
             // Weight input
             TextField(
@@ -167,8 +166,8 @@ class _BodyweightEntryDialogState extends State<BodyweightEntryDialog> {
               decoration: InputDecoration(
                 labelText: 'Weight',
                 suffixText: _unit,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                border: const OutlineInputBorder(
+                  borderRadius: brMd,
                 ),
                 filled: true,
                 prefixIcon: const Icon(Icons.fitness_center),
@@ -180,22 +179,21 @@ class _BodyweightEntryDialogState extends State<BodyweightEntryDialog> {
               ],
               autofocus: widget.entry == null,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: space16),
 
             // Date selector
             InkWell(
               onTap: _selectDate,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: brMd,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: space16,
+                  vertical: space16,
+                ),
                 decoration: BoxDecoration(
-                  border: Border.all(
-                    color: colorScheme.outline.withValues(alpha: 0.5),
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  color: colorScheme.surfaceContainerHighest
-                      .withValues(alpha: 0.3),
+                  border: Border.all(color: colorScheme.outline),
+                  borderRadius: brMd,
+                  color: colorScheme.surfaceContainerHigh,
                 ),
                 child: Row(
                   children: [
@@ -218,7 +216,7 @@ class _BodyweightEntryDialogState extends State<BodyweightEntryDialog> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: space24),
 
             // Action buttons
             Row(

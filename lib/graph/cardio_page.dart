@@ -12,6 +12,8 @@ import '../database/gym_sets.dart';
 import '../utils/duration_format.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
+import '../theme/components.dart';
+import '../theme/tokens.dart';
 import '../widgets/bodypart_tag.dart';
 import '../workouts/workout_detail_page.dart';
 import 'cardio_data.dart';
@@ -152,7 +154,7 @@ class _CardioPageState extends State<CardioPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: brSm,
                 ),
                 child: Text(
                   brandName!,
@@ -210,7 +212,7 @@ class _CardioPageState extends State<CardioPage> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+        padding: const EdgeInsets.fromLTRB(space16, space16, space16, 80),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -221,25 +223,23 @@ class _CardioPageState extends State<CardioPage> {
                 children: Period.values.map((p) {
                   final isSelected = period == p;
                   return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(_getPeriodLabel(p)),
+                    padding: const EdgeInsets.only(right: space8),
+                    child: FilterPill(
+                      label: _getPeriodLabel(p),
                       selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            period = p;
-                            selectedIndex = null;
-                          });
-                          setData();
-                        }
+                      onTap: () {
+                        setState(() {
+                          period = p;
+                          selectedIndex = null;
+                        });
+                        setData();
                       },
                     ),
                   );
                 }).toList(),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: space12),
 
             // Metric selector chips
             SingleChildScrollView(
@@ -248,18 +248,16 @@ class _CardioPageState extends State<CardioPage> {
                 children: CardioMetric.values.map((m) {
                   final isSelected = metric == m;
                   return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(_getMetricLabel(m)),
+                    padding: const EdgeInsets.only(right: space8),
+                    child: FilterPill(
+                      label: _getMetricLabel(m),
                       selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            metric = m;
-                            selectedIndex = null;
-                          });
-                          setData();
-                        }
+                      onTap: () {
+                        setState(() {
+                          metric = m;
+                          selectedIndex = null;
+                        });
+                        setData();
                       },
                     ),
                   );
@@ -267,7 +265,7 @@ class _CardioPageState extends State<CardioPage> {
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: space16),
 
             // Chart with overlay label
             SizedBox(
@@ -291,15 +289,17 @@ class _CardioPageState extends State<CardioPage> {
                             child: IgnorePointer(
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6,),
+                                  horizontal: space8,
+                                  vertical: space4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: colorScheme.primaryContainer
                                       .withValues(alpha: 0.95),
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: brSm,
                                   boxShadow: [
                                     BoxShadow(
-                                      color:
-                                          Colors.black.withValues(alpha: 0.1),
+                                      color: colorScheme.shadow
+                                          .withValues(alpha: 0.1),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -311,20 +311,25 @@ class _CardioPageState extends State<CardioPage> {
                                   children: [
                                     Text(
                                       _formatValue(data[selectedIndex!]),
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: colorScheme.onPrimaryContainer,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelLarge
+                                          ?.copyWith(
+                                            color:
+                                                colorScheme.onPrimaryContainer,
+                                          ),
                                     ),
                                     Text(
                                       DateFormat(settings.shortDateFormat)
                                           .format(data[selectedIndex!].created),
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: colorScheme.onPrimaryContainer
-                                            .withValues(alpha: 0.7),
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                            color: colorScheme
+                                                .onPrimaryContainer
+                                                .withValues(alpha: 0.7),
+                                          ),
                                     ),
                                   ],
                                 ),

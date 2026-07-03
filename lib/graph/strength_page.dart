@@ -11,6 +11,8 @@ import '../database/database.dart';
 import '../database/gym_sets.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
+import '../theme/components.dart';
+import '../theme/tokens.dart';
 import '../widgets/bodypart_tag.dart';
 import '../workouts/workout_detail_page.dart';
 import 'edit_graph_page.dart';
@@ -172,7 +174,7 @@ class _StrengthPageState extends State<StrengthPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: brSm,
                 ),
                 child: Text(
                   brandName!,
@@ -236,7 +238,7 @@ class _StrengthPageState extends State<StrengthPage> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 150),
+        padding: const EdgeInsets.fromLTRB(space16, space16, space16, 150),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -247,30 +249,23 @@ class _StrengthPageState extends State<StrengthPage> {
                 children: Period.values.map((p) {
                   final isSelected = period == p;
                   return Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: ChoiceChip(
-                      label: Text(
-                        _getPeriodLabel(p),
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-                      visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.only(right: space8),
+                    child: FilterPill(
+                      label: _getPeriodLabel(p),
                       selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            period = p;
-                            selectedIndex = null;
-                          });
-                          setData();
-                        }
+                      onTap: () {
+                        setState(() {
+                          period = p;
+                          selectedIndex = null;
+                        });
+                        setData();
                       },
                     ),
                   );
                 }).toList(),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: space8),
 
             // Metric selector chips
             SingleChildScrollView(
@@ -283,23 +278,16 @@ class _StrengthPageState extends State<StrengthPage> {
                 ].map((m) {
                   final isSelected = metric == m;
                   return Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: ChoiceChip(
-                      label: Text(
-                        _getMetricLabel(m),
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-                      visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.only(right: space8),
+                    child: FilterPill(
+                      label: _getMetricLabel(m),
                       selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            metric = m;
-                            selectedIndex = null;
-                          });
-                          setData();
-                        }
+                      onTap: () {
+                        setState(() {
+                          metric = m;
+                          selectedIndex = null;
+                        });
+                        setData();
                       },
                     ),
                   );
@@ -307,7 +295,7 @@ class _StrengthPageState extends State<StrengthPage> {
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: space12),
 
             // Chart with overlay label
             SizedBox(
@@ -332,17 +320,17 @@ class _StrengthPageState extends State<StrengthPage> {
                               onTap: () => _editSet(selectedIndex!),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
+                                  horizontal: space8,
+                                  vertical: space4,
                                 ),
                                 decoration: BoxDecoration(
                                   color: colorScheme.primaryContainer
                                       .withValues(alpha: 0.95),
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: brSm,
                                   boxShadow: [
                                     BoxShadow(
-                                      color:
-                                          Colors.black.withValues(alpha: 0.1),
+                                      color: colorScheme.shadow
+                                          .withValues(alpha: 0.1),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -354,30 +342,38 @@ class _StrengthPageState extends State<StrengthPage> {
                                   children: [
                                     Text(
                                       _formatValue(data[selectedIndex!]),
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: colorScheme.onPrimaryContainer,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelLarge
+                                          ?.copyWith(
+                                            color:
+                                                colorScheme.onPrimaryContainer,
+                                          ),
                                     ),
                                     if (metric == StrengthMetric.oneRepMax ||
                                         metric == StrengthMetric.bestVolume)
                                       Text(
                                         _formatSetInfo(data[selectedIndex!]),
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: colorScheme.onPrimaryContainer
-                                              .withValues(alpha: 0.8),
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelSmall
+                                            ?.copyWith(
+                                              color: colorScheme
+                                                  .onPrimaryContainer
+                                                  .withValues(alpha: 0.8),
+                                            ),
                                       ),
                                     Text(
                                       DateFormat(settings.shortDateFormat)
                                           .format(data[selectedIndex!].created),
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: colorScheme.onPrimaryContainer
-                                            .withValues(alpha: 0.7),
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                            color: colorScheme
+                                                .onPrimaryContainer
+                                                .withValues(alpha: 0.7),
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -413,19 +409,15 @@ class _StrengthPageState extends State<StrengthPage> {
       children: [
         Row(
           children: [
-            Icon(Icons.emoji_events, color: colorScheme.primary, size: 20),
-            const SizedBox(width: 8),
+            Icon(Icons.emoji_events, color: context.jl.pr, size: 20),
+            const SizedBox(width: space8),
             Text(
               'Personal Records',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+              style: Theme.of(context).textTheme.titleSmall,
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: space12),
         Row(
           children: [
             Expanded(
@@ -442,7 +434,7 @@ class _StrengthPageState extends State<StrengthPage> {
                     : null,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: space8),
             Expanded(
               child: _buildRecordCard(
                 colorScheme: colorScheme,
@@ -458,7 +450,7 @@ class _StrengthPageState extends State<StrengthPage> {
                     : null,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: space8),
             Expanded(
               child: _buildRecordCard(
                 colorScheme: colorScheme,
@@ -511,12 +503,12 @@ class _StrengthPageState extends State<StrengthPage> {
               }
             }
           : null,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: brMd,
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(space12),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: brMd,
           border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
@@ -525,48 +517,45 @@ class _StrengthPageState extends State<StrengthPage> {
             Row(
               children: [
                 Icon(icon, size: 16, color: color),
-                const SizedBox(width: 4),
+                const SizedBox(width: space4),
                 Flexible(
                   child: Text(
                     label,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: space8),
             Text(
               value,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+              style: Theme.of(context).textTheme.titleSmall,
               overflow: TextOverflow.ellipsis,
             ),
             if (subtitle != null) ...[
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                ),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.8,
+                      ),
+                    ),
               ),
             ],
             if (date != null) ...[
               const SizedBox(height: 2),
               Text(
                 DateFormat('MMM d, yyyy').format(date),
-                style: TextStyle(
-                  fontSize: 9,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                ),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.7,
+                      ),
+                      fontSize: 9,
+                    ),
               ),
             ],
           ],
@@ -588,34 +577,32 @@ class _StrengthPageState extends State<StrengthPage> {
               color: colorScheme.primary,
               size: 20,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: space8),
             Text(
               'Rep Records',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+              style: Theme.of(context).textTheme.titleSmall,
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: space12),
         DecoratedBox(
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
+            color: colorScheme.surfaceContainerHigh,
+            borderRadius: brMd,
           ),
           child: Column(
             children: [
               // Header row
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: space16,
+                  vertical: space12,
+                ),
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
+                    topLeft: Radius.circular(radiusMd),
+                    topRight: Radius.circular(radiusMd),
                   ),
                 ),
                 child: Row(
@@ -624,22 +611,16 @@ class _StrengthPageState extends State<StrengthPage> {
                       width: 60,
                       child: Text(
                         'Reps',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
+                        style: Theme.of(context).textTheme.labelLarge
+                            ?.copyWith(color: colorScheme.primary),
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: space16),
                     Expanded(
                       child: Text(
                         'Weight',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
+                        style: Theme.of(context).textTheme.labelLarge
+                            ?.copyWith(color: colorScheme.primary),
                       ),
                     ),
                   ],
@@ -674,14 +655,14 @@ class _StrengthPageState extends State<StrengthPage> {
                       : null,
                   borderRadius: index == 14
                       ? const BorderRadius.only(
-                          bottomLeft: Radius.circular(16),
-                          bottomRight: Radius.circular(16),
+                          bottomLeft: Radius.circular(radiusMd),
+                          bottomRight: Radius.circular(radiusMd),
                         )
                       : null,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
+                      horizontal: space16,
+                      vertical: space12,
                     ),
                     decoration: BoxDecoration(
                       color: isEven
@@ -690,8 +671,8 @@ class _StrengthPageState extends State<StrengthPage> {
                               .withValues(alpha: 0.3),
                       borderRadius: index == 14
                           ? const BorderRadius.only(
-                              bottomLeft: Radius.circular(16),
-                              bottomRight: Radius.circular(16),
+                              bottomLeft: Radius.circular(radiusMd),
+                              bottomRight: Radius.circular(radiusMd),
                             )
                           : null,
                     ),
@@ -701,14 +682,14 @@ class _StrengthPageState extends State<StrengthPage> {
                           width: 60,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
+                              horizontal: space8,
+                              vertical: space4,
                             ),
                             decoration: BoxDecoration(
                               color: hasRecord
                                   ? colorScheme.primary.withValues(alpha: 0.15)
                                   : colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: brSm,
                             ),
                             child: Text(
                               '$repCount',
@@ -724,7 +705,7 @@ class _StrengthPageState extends State<StrengthPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: space16),
                         Expanded(
                           child: Text(
                             hasRecord

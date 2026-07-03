@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../graph/overview_page.dart';
+import '../../theme/components.dart';
+import '../../theme/tokens.dart';
 
 class PeriodSelector extends StatelessWidget {
 
@@ -34,15 +36,11 @@ class PeriodSelector extends StatelessWidget {
         children: OverviewPeriod.values.map((p) {
           final isSelected = selectedPeriod == p;
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(_getPeriodLabel(p)),
+            padding: const EdgeInsets.only(right: space8),
+            child: FilterPill(
+              label: _getPeriodLabel(p),
               selected: isSelected,
-              onSelected: (selected) {
-                if (selected) {
-                  onPeriodChanged(p);
-                }
-              },
+              onTap: () => onPeriodChanged(p),
             ),
           );
         }).toList(),
