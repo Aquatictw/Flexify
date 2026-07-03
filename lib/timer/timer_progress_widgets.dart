@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../utils.dart';
 import 'timer_state.dart';
 
@@ -37,7 +38,7 @@ class _TimerCircularProgressIndicatorState
               begin: 0,
               end: 1 - (elapsed.inMilliseconds / duration.inMilliseconds),
             ),
-            duration: const Duration(milliseconds: 300),
+            duration: durMed,
             onEnd: () {
               timerState.setStarting(false);
             },
@@ -74,7 +75,7 @@ class _TimerCircularProgressIndicatorState
               begin: lastValue,
               end: 0,
             ),
-            duration: const Duration(milliseconds: 300),
+            duration: durMed,
             onEnd: () {
               setState(() {
                 stopping = false;
@@ -270,7 +271,10 @@ class _TimerCircularProgressIndicatorTile extends StatelessWidget {
                 color: lighten(Theme.of(context).colorScheme.primary),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .shadow
+                        .withValues(alpha: 0.2),
                     blurRadius: 4,
                     offset: const Offset(0, 3),
                   ),
@@ -286,13 +290,11 @@ class _TimerCircularProgressIndicatorTile extends StatelessWidget {
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const SizedBox(height: 20),
+            const SizedBox(height: space16),
             Text(
               generateTitleText(timerState.timer.getRemaining()),
-              style: TextStyle(
+              style: Theme.of(context).textTheme.displaySmall?.copyWith(
                 fontSize: 50,
-                color: Theme.of(context).textTheme.bodyLarge!.color,
-                fontWeight: FontWeight.bold,
               ),
             ),
             TextButton(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart';
 
+import '../theme/tokens.dart';
+
 /// Wrapper widget for Rive-animated navigation icons with fallback to Material Icons
 class MorphingNavIcon extends StatefulWidget {
 
@@ -74,8 +76,8 @@ class _MorphingNavIconState extends State<MorphingNavIcon> {
       // Fallback to Material Icon with scale animation
       return AnimatedScale(
         scale: widget.isSelected ? 1.1 : 1.0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: durMed,
+        curve: curveStandard,
         child: Icon(
           widget.fallbackIcon,
           color: widget.color,

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import 'timer_state.dart';
 
 class RestTimerBar extends StatefulWidget {
@@ -128,18 +129,18 @@ class _RestTimerBarState extends State<RestTimerBar>
                 setState(() => _isExpanded = !_isExpanded);
               },
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-                margin: const EdgeInsets.only(left: 16, top: 2),
+                duration: durMed,
+                curve: curveStandard,
+                margin: const EdgeInsets.only(left: space16, top: space4),
                 padding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: _isExpanded ? 12 : 10,
+                  horizontal: space12,
+                  vertical: _isExpanded ? space12 : space8,
                 ),
                 decoration: BoxDecoration(
                   color: isUrgent
                       ? colorScheme.errorContainer
                       : colorScheme.tertiaryContainer,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: brMd,
                   boxShadow: [
                     BoxShadow(
                       color:
@@ -161,27 +162,26 @@ class _RestTimerBarState extends State<RestTimerBar>
                           progress: progress,
                           isUrgent: isUrgent,
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: space8),
                         // Timer display
                         Text(
                           _formatDuration(remaining),
-                          style: TextStyle(
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontSize: 22,
                             color: isUrgent
                                 ? colorScheme.onErrorContainer
                                 : colorScheme.onTertiaryContainer,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: space8),
                         // Time adjustment buttons
                         _TimeAdjustButton(
                           label: '-15',
                           onPressed: () => _adjustTime(-15),
                           isUrgent: isUrgent,
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: space4),
                         _TimeAdjustButton(
                           label: '+15',
                           onPressed: () => _adjustTime(15),
@@ -194,7 +194,7 @@ class _RestTimerBarState extends State<RestTimerBar>
                     AnimatedCrossFade(
                       firstChild: const SizedBox.shrink(),
                       secondChild: Padding(
-                        padding: const EdgeInsets.only(top: 10),
+                        padding: const EdgeInsets.only(top: space8),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -204,14 +204,14 @@ class _RestTimerBarState extends State<RestTimerBar>
                               onPressed: () => _adjustTime(-30),
                               isUrgent: isUrgent,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: space4),
                             _CompactActionButton(
                               icon: Icons.add,
                               label: '1m',
                               onPressed: () => _adjustTime(60),
                               isUrgent: isUrgent,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: space4),
                             _CompactActionButton(
                               icon: Icons.close,
                               label: 'Skip',
@@ -228,7 +228,7 @@ class _RestTimerBarState extends State<RestTimerBar>
                       crossFadeState: _isExpanded
                           ? CrossFadeState.showSecond
                           : CrossFadeState.showFirst,
-                      duration: const Duration(milliseconds: 200),
+                      duration: durFast,
                     ),
                   ],
                 ),
@@ -329,13 +329,14 @@ class _TimeAdjustButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: brSm,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(
+              horizontal: space8, vertical: space4,),
           decoration: BoxDecoration(
             color: (isUrgent ? colorScheme.error : colorScheme.tertiary)
                 .withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: brSm,
             border: Border.all(
               color: (isUrgent ? colorScheme.error : colorScheme.tertiary)
                   .withValues(alpha: 0.3),
@@ -343,12 +344,11 @@ class _TimeAdjustButton extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: TextStyle(
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontSize: 13,
               color: isUrgent
                   ? colorScheme.onErrorContainer
                   : colorScheme.onTertiaryContainer,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
             ),
           ),
         ),
@@ -391,25 +391,25 @@ class _CompactActionButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: brSm,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: const EdgeInsets.symmetric(
+              horizontal: space8, vertical: space4,),
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: brSm,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 14, color: fgColor),
-              const SizedBox(width: 3),
+              const SizedBox(width: space4),
               Text(
                 label,
-                style: TextStyle(
-                  color: fgColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
+                style: Theme.of(context)
+                    .textTheme
+                    .labelSmall
+                    ?.copyWith(color: fgColor),
               ),
             ],
           ),

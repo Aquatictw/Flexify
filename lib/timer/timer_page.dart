@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../animated_fab.dart';
 import '../settings/settings_page.dart';
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import 'timer_progress_widgets.dart';
 import 'timer_state.dart';
 
@@ -90,7 +91,7 @@ class _TimerPageWidget extends StatelessWidget {
         child: TimerCircularProgressIndicator(),
       ),
       floatingActionButton: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 150),
+        duration: durFast,
         transitionBuilder: (child, animation) {
           return ScaleTransition(scale: animation, child: child);
         },

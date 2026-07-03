@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../settings/settings_state.dart';
+import '../theme/tokens.dart';
 import '../timer/timer_state.dart';
 
 /// Quick access timer dialog that can be opened from anywhere
@@ -77,12 +78,12 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
     final showRunningState = _wasTimerRunningOnOpen && isTimerRunning;
 
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
+      shape: const RoundedRectangleBorder(
+        borderRadius: brLg,
       ),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 400),
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(space24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -90,10 +91,10 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(space12),
                   decoration: BoxDecoration(
                     color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: brSm,
                   ),
                   child: Icon(
                     Icons.timer,
@@ -101,18 +102,16 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
                     size: 28,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: space16),
                 Expanded(
                   child: Text(
                     showRunningState ? 'Timer Running' : 'Start Timer',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: space24),
 
             if (showRunningState) ...[
               // Controls
@@ -151,8 +150,8 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
               // Duration presets
               Wrap(
                 alignment: WrapAlignment.center,
-                spacing: 8,
-                runSpacing: 8,
+                spacing: space8,
+                runSpacing: space8,
                 children: presets.map((duration) {
                   final isSelected = _selectedDuration == duration;
                   return ChoiceChip(
@@ -168,7 +167,7 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: space24),
 
               // Start button
               FilledButton.icon(
@@ -177,13 +176,13 @@ class _TimerQuickAccessDialogState extends State<TimerQuickAccessDialog> {
                 label:
                     Text('Start ${_formatDuration(_selectedDuration)} Timer'),
                 style: FilledButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: space24, vertical: space16,),
                 ),
               ),
             ],
 
-            const SizedBox(height: 16),
+            const SizedBox(height: space16),
 
             // Close button
             TextButton(

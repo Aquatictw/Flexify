@@ -77,7 +77,7 @@ padding, `brMd`, weight/reps in `titleMedium` (w700), unit in `labelSmall`.
 - [x] **P5** Graphs & stats: `lib/graph/**`, `lib/widgets/stats/period_selector.dart`, `lib/graphs_filters.dart`, `lib/widgets/bodyweight_entry_tile.dart`, `lib/widgets/bodyweight_entry_dialog.dart` — `feat: restyle graphs & stats`
 - [x] **P6** Settings & server: `lib/settings/**`, `lib/server/**`, `lib/permissions_page.dart`, `lib/delete_records_button.dart` (consistent dropdowns/dividers) — `feat: restyle settings`
 - [x] **P7** Notes, music, records: `lib/notes/**`, `lib/music/**`, `lib/records/record_notification.dart`, `lib/widgets/artistic_color_picker.dart` (chrome only), `lib/widgets/bodypart_tag.dart` — `feat: restyle notes & music`
-- [ ] **P8** Shared chrome: `lib/widgets/segmented_pill_nav.dart`, `lib/widgets/morphing_nav_icon.dart`, `lib/timer/**` (bars/page, not `timer_state.dart` logic), `lib/widgets/timer_quick_access.dart`, `lib/screens/splash_screen.dart` — `feat: restyle shared chrome`
+- [x] **P8** Shared chrome: `lib/widgets/segmented_pill_nav.dart`, `lib/widgets/morphing_nav_icon.dart`, `lib/timer/**` (bars/page, not `timer_state.dart` logic), `lib/widgets/timer_quick_access.dart`, `lib/screens/splash_screen.dart` — `feat: restyle shared chrome`
 
 P2–P7 may run in parallel (disjoint). P8 after P3 (timer/active-bar adjacency).
 Known light-mode breakage to fix in-cluster: notes pages (P7),
@@ -92,3 +92,9 @@ Known light-mode breakage to fix in-cluster: notes pages (P7),
   deleted (pill nav kept); `stat_card.dart` on tokens. `bottomBarClearance(context)`
   in tokens.dart is the bar-overlap fix — subagents use it for rule 5.
   Note for P6: appearance-settings seed swatch should show `effectiveSeed(...)`.
+- 2026-07-03: P2–P8 complete; all clusters migrated and committed. Splash screen
+  intentionally left literal (renders in a bare MaterialApp before theme init;
+  its long entrance choreography is outside the motion-token range). Celebration
+  timings in record_notification and equalizer/debounce timings kept literal
+  (behavioral, not decorative). Human verification pending: flutter analyze +
+  visual pass in both brightnesses.
