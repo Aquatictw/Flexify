@@ -11,13 +11,15 @@ import 'package:flutter/material.dart';
 ///
 /// Port of `.prototypes/10-depth-ember-reveal.html`.
 
-// cubic-bezier(0.22, 1, 0.36, 1) — the entrance/reveal ease.
-const _curveIn = Cubic(0.22, 1, 0.36, 1);
+// Entrance/reveal ease. Milder than the prototype's quint-like curve so the
+// scan line's sweep spends real time on screen and the per-block cascade
+// reads as a sequence instead of one burst.
+const _curveIn = Cubic(0.33, 1, 0.68, 1);
 // cubic-bezier(0.4, 0, 1, 1) — the exit ease.
 const _curveOut = Cubic(0.4, 0, 1, 1);
 
-const _inDuration = Duration(milliseconds: 440);
-const _outDuration = Duration(milliseconds: 260);
+const _inDuration = Duration(milliseconds: 520);
+const _outDuration = Duration(milliseconds: 215);
 
 /// Hosts the tab pages and plays the depth+ember reveal when [controller]'s
 /// index changes. All pages stay built (state preserved) like an IndexedStack;
@@ -50,6 +52,10 @@ class _DepthEmberTabViewState extends State<DepthEmberTabView>
   void initState() {
     super.initState();
     _index = widget.controller.index;
+    // Start revealed: the first tab is active but never gets a _onTab forward,
+    // so at value 0 its RevealBlocks would hold everything at opacity 0 until
+    // the first tab switch. Later switches re-run forward(from: 0) as normal.
+    _in.value = 1;
     widget.controller.addListener(_onTab);
     _in.addStatusListener(_onInStatus);
   }
@@ -131,8 +137,10 @@ class _DepthEmberTabViewState extends State<DepthEmberTabView>
       // gaussian + saveLayer every frame dropped frames on-device. Scale +
       // clip + opacity read the same. Re-add a blur only if profiling says it's
       // worth the raster cost.
+      // Page-level zoom kept subtle so the per-block cascade carries the
+      // depth effect instead of being swallowed by a whole-page scale.
       opacity = (_in.value / 0.55).clamp(0.0, 1.0);
-      scale = 0.88 + 0.12 * pageP;
+      scale = 0.96 + 0.04 * pageP;
       clip = pageP;
     } else if (animating && leaving) {
       // Grow slightly and recede/fade into the background.
@@ -252,12 +260,12 @@ class DepthRevealScope extends InheritedWidget {
 }
 
 /// Wrap a top-level block (card, row, section) so it cascades in when its page
-/// becomes active: a staggered zoom + rise. [index] sets the stagger order
-/// (0 = first). Outside a [DepthRevealScope], or under reduced motion, it just
-/// renders the child unchanged.
+/// becomes active: a zoom + rise timed to the bottom-up scan line passing the
+/// block's on-screen position. Outside a [DepthRevealScope], or under reduced
+/// motion, it just renders the child unchanged.
 ///
-/// For lists, pass the item index; the stagger delay is capped so off-screen
-/// items don't lag.
+/// [index] is unused (the cascade is position-synced now); kept so existing
+/// call sites don't churn.
 class RevealBlock extends StatelessWidget {
   const RevealBlock({required this.child, this.index = 0, super.key});
 
@@ -276,14 +284,30 @@ class RevealBlock extends StatelessWidget {
         // No early-return at v >= 1: swapping the tree shape re-inflates the
         // child (state loss/flicker). At v = 1 the values below are neutral.
         final v = scope.entrance.value;
-        final delay = (index.clamp(0, 8)) * 0.06;
-        final w = ((v - delay) / (1 - delay)).clamp(0.0, 1.0);
+        var w = 1.0;
+        if (v < 1) {
+          // Sync each block's pop to the bottom-up scan line: start when the
+          // reveal front (same eased progress the ember rides) crosses the
+          // block's on-screen position, then play out over a short window.
+          final eased = _curveIn.transform(v);
+          final box = context.findRenderObject() as RenderBox?;
+          if (box != null && box.attached && box.hasSize) {
+            final h = MediaQuery.sizeOf(context).height;
+            final y = box.localToGlobal(Offset.zero).dy + box.size.height / 2;
+            // Progress value at which the line reaches this block; clamped so
+            // every block still finishes by the end of the entrance.
+            final hit = (1 - y / h).clamp(0.0, 0.72);
+            w = ((eased - hit) / 0.28).clamp(0.0, 1.0);
+          } else {
+            w = eased;
+          }
+        }
         final eased = _curveIn.transform(w);
         return Opacity(
-          opacity: (w / 0.55).clamp(0.0, 1.0),
+          opacity: (w / 0.45).clamp(0.0, 1.0),
           child: Transform.translate(
-            offset: Offset(0, 6 * (1 - eased)),
-            child: Transform.scale(scale: 0.92 + 0.08 * eased, child: child),
+            offset: Offset(0, 32 * (1 - eased)),
+            child: Transform.scale(scale: 0.78 + 0.22 * eased, child: child),
           ),
         );
       },
