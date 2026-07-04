@@ -17,10 +17,11 @@ import '../widgets/timer_quick_access.dart';
 import 'add_exercise_page.dart';
 import 'bodyweight_overview_page.dart';
 import 'graph_tile.dart';
+import 'graphs_bento_header.dart';
 import 'overview_page.dart';
+import 'pr_ticker.dart';
 
 class GraphsPage extends StatefulWidget {
-
   const GraphsPage({required this.tabController, super.key});
   final TabController tabController;
 
@@ -103,19 +104,24 @@ class GraphsPageState extends State<GraphsPage>
             : Text('${selected.length} selected'),
         leading: selected.isEmpty
             ? null
-            : IconButton(
-                icon: const Icon(Icons.close),
+            : _circleAppBarButton(
+                context,
+                icon: Icons.close,
+                tooltip: 'Close selection',
                 onPressed: () => setState(selected.clear),
               ),
         actions: [
           if (selected.isEmpty) ...[
-            IconButton(
-              icon: const Icon(Icons.timer),
+            _circleAppBarButton(
+              context,
+              icon: Icons.timer,
               tooltip: 'Timer',
               onPressed: () => showTimerQuickAccess(context),
             ),
-            IconButton(
-              icon: const Icon(Icons.monitor_weight),
+            const SizedBox(width: space8),
+            _circleAppBarButton(
+              context,
+              icon: Icons.monitor_weight,
               tooltip: 'Bodyweight Tracking',
               onPressed: () {
                 Navigator.push(
@@ -126,8 +132,10 @@ class GraphsPageState extends State<GraphsPage>
                 );
               },
             ),
-            IconButton(
-              icon: const Icon(Icons.dashboard),
+            const SizedBox(width: space8),
+            _circleAppBarButton(
+              context,
+              icon: Icons.dashboard,
               tooltip: 'Overview',
               onPressed: () {
                 Navigator.push(
@@ -138,10 +146,12 @@ class GraphsPageState extends State<GraphsPage>
                 );
               },
             ),
+            const SizedBox(width: space8),
           ],
           if (selected.isNotEmpty) ...[
-            IconButton(
-              icon: const Icon(Icons.delete),
+            _circleAppBarButton(
+              context,
+              icon: Icons.delete,
               tooltip: 'Delete selected',
               onPressed: () {
                 showDialog(
@@ -172,75 +182,85 @@ class GraphsPageState extends State<GraphsPage>
                 );
               },
             ),
+            const SizedBox(width: space8),
           ],
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            tooltip: 'More options',
-            onSelected: (value) async {
-              switch (value) {
-                case 'select_all':
-                  final gymSets = await stream.first;
-                  setState(() {
-                    selected.addAll(gymSets.map((g) => g.name));
-                  });
-                  break;
-                case 'toggle_empty':
-                  setState(() {
-                    showEmptyExercises = !showEmptyExercises;
-                  });
-                  break;
-                case 'settings':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SettingsPage(),
+          _circleAppBarPopupMenu(
+            context,
+            child: PopupMenuButton<String>(
+              padding: EdgeInsets.zero,
+              icon: Icon(
+                Icons.more_vert,
+                size: 20,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              tooltip: 'More options',
+              onSelected: (value) async {
+                switch (value) {
+                  case 'select_all':
+                    final gymSets = await stream.first;
+                    setState(() {
+                      selected.addAll(gymSets.map((g) => g.name));
+                    });
+                    break;
+                  case 'toggle_empty':
+                    setState(() {
+                      showEmptyExercises = !showEmptyExercises;
+                    });
+                    break;
+                  case 'settings':
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsPage(),
+                      ),
+                    );
+                    break;
+                  case 'debug':
+                    await _addDebugWorkouts();
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'select_all',
+                  child: ListTile(
+                    leading: Icon(Icons.done_all),
+                    title: Text('Select all'),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'toggle_empty',
+                  child: ListTile(
+                    leading: Icon(
+                      showEmptyExercises
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                     ),
-                  );
-                  break;
-                case 'debug':
-                  await _addDebugWorkouts();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'select_all',
-                child: ListTile(
-                  leading: Icon(Icons.done_all),
-                  title: Text('Select all'),
-                ),
-              ),
-              PopupMenuItem(
-                value: 'toggle_empty',
-                child: ListTile(
-                  leading: Icon(
-                    showEmptyExercises
-                        ? Icons.visibility_off
-                        : Icons.visibility,
-                  ),
-                  title: Text(
-                    showEmptyExercises
-                        ? 'Hide empty exercises'
-                        : 'Show empty exercises',
+                    title: Text(
+                      showEmptyExercises
+                          ? 'Hide empty exercises'
+                          : 'Show empty exercises',
+                    ),
                   ),
                 ),
-              ),
-              const PopupMenuItem(
-                value: 'settings',
-                child: ListTile(
-                  leading: Icon(Icons.settings),
-                  title: Text('Settings'),
+                const PopupMenuItem(
+                  value: 'settings',
+                  child: ListTile(
+                    leading: Icon(Icons.settings),
+                    title: Text('Settings'),
+                  ),
                 ),
-              ),
-              const PopupMenuItem(
-                value: 'debug',
-                child: ListTile(
-                  leading: Icon(Icons.bug_report),
-                  title: Text('Add test data'),
+                const PopupMenuItem(
+                  value: 'debug',
+                  child: ListTile(
+                    leading: Icon(Icons.bug_report),
+                    title: Text('Add test data'),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          const SizedBox(width: space8),
         ],
       ),
       body: StreamBuilder(
@@ -507,7 +527,11 @@ class GraphsPageState extends State<GraphsPage>
   }
 
   material.ListView graphList(List<GraphExercise> gymSets) {
-    final itemCount = gymSets.length + 1;
+    final showHeaders = search.isEmpty && category == null && selected.isEmpty;
+    // Headers occupy items 0-2 (bento header, PR ticker, section label) when
+    // shown; the trailing bottom-clearance item always comes last.
+    final headerCount = showHeaders ? 3 : 0;
+    final itemCount = headerCount + gymSets.length + 1;
 
     return ListView.builder(
       itemCount: itemCount,
@@ -518,7 +542,28 @@ class GraphsPageState extends State<GraphsPage>
           return SizedBox(height: bottomBarClearance(context));
         }
 
-        final set = gymSets.elementAtOrNull(index);
+        if (showHeaders) {
+          if (index == 0) {
+            return GraphsBentoHeader(tabCtrl: widget.tabController);
+          }
+          if (index == 1) return RecentPrTicker(tabCtrl: widget.tabController);
+          if (index == 2) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: space16,
+                vertical: space8,
+              ),
+              child: Text(
+                'All exercises',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            );
+          }
+        }
+
+        final set = gymSets.elementAtOrNull(index - headerCount);
         if (set == null) return const SizedBox();
 
         return GraphTile(
@@ -546,4 +591,42 @@ class GraphsPageState extends State<GraphsPage>
       },
     );
   }
+}
+
+/// Circular surfaceContainer icon button used in the Graphs app bar.
+Widget _circleAppBarButton(
+  BuildContext context, {
+  required IconData icon,
+  required String tooltip,
+  required VoidCallback onPressed,
+}) {
+  final colorScheme = Theme.of(context).colorScheme;
+  return IconButton(
+    icon: Icon(icon),
+    tooltip: tooltip,
+    onPressed: onPressed,
+    iconSize: 20,
+    color: colorScheme.onSurfaceVariant,
+    style: IconButton.styleFrom(
+      backgroundColor: colorScheme.surfaceContainer,
+      shape: const CircleBorder(),
+      fixedSize: const Size(40, 40),
+      padding: EdgeInsets.zero,
+    ),
+  );
+}
+
+/// Wraps a [PopupMenuButton] in the same circular surfaceContainer chrome as
+/// [_circleAppBarButton], without disturbing its menu behavior.
+Widget _circleAppBarPopupMenu(BuildContext context, {required Widget child}) {
+  return Container(
+    width: 40,
+    height: 40,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainer,
+      shape: BoxShape.circle,
+    ),
+    child: child,
+  );
 }
