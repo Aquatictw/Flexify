@@ -37,6 +37,7 @@ class ExerciseSetsCard extends StatefulWidget {
     this.exerciseNotes,
     this.sequence = 0,
     this.onNotesChanged,
+    this.refreshToken = 0,
   });
   final PlanExercise exercise;
   final int planId;
@@ -48,6 +49,7 @@ class ExerciseSetsCard extends StatefulWidget {
   final String? exerciseNotes;
   final ValueChanged<String>? onNotesChanged;
   final int sequence;
+  final int refreshToken;
 
   @override
   State<ExerciseSetsCard> createState() => _ExerciseSetsCardState();
@@ -83,7 +85,9 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
   @override
   void didUpdateWidget(ExerciseSetsCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.workoutId != widget.workoutId) {
+    if (oldWidget.workoutId != widget.workoutId ||
+        oldWidget.sequence != widget.sequence ||
+        oldWidget.refreshToken != widget.refreshToken) {
       _loadSetsData();
     }
   }
@@ -185,55 +189,59 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         final startingSetOrder =
             existingSetCount?.read(db.gymSets.id.count()) ?? 0;
 
-        // Create working sets based on previous working sets
-        for (int i = 0; i < maxSets; i++) {
-          double weight;
-          int reps;
+        // Create working sets based on previous working sets.
+        // One transaction for all inserts: N separate commits (one fsync each)
+        // was the stutter when a freshly-added exercise first expands.
+        await db.transaction(() async {
+          for (int i = 0; i < maxSets; i++) {
+            double weight;
+            int reps;
 
-          if (i < _previousWorkingSets.length) {
-            // Use the value from the corresponding previous working set
-            weight = _previousWorkingSets[i].weight;
-            reps = _previousWorkingSets[i].reps.toInt();
-          } else if (_previousWorkingSets.isNotEmpty) {
-            // Use the last previous working set value
-            weight = _previousWorkingSets.last.weight;
-            reps = _previousWorkingSets.last.reps.toInt();
-          } else {
-            // Fallback to defaults
-            weight = _defaultWeight;
-            reps = _defaultReps;
+            if (i < _previousWorkingSets.length) {
+              // Use the value from the corresponding previous working set
+              weight = _previousWorkingSets[i].weight;
+              reps = _previousWorkingSets[i].reps.toInt();
+            } else if (_previousWorkingSets.isNotEmpty) {
+              // Use the last previous working set value
+              weight = _previousWorkingSets.last.weight;
+              reps = _previousWorkingSets.last.reps.toInt();
+            } else {
+              // Fallback to defaults
+              weight = _defaultWeight;
+              reps = _defaultReps;
+            }
+
+            final gymSet = await db.into(db.gymSets).insertReturning(
+                  GymSetsCompanion.insert(
+                    name: widget.exercise.exercise,
+                    reps: reps.toDouble(),
+                    weight: weight,
+                    unit: defaultUnit,
+                    created: DateTime.now().toLocal(),
+                    planId: Value(widget.planId),
+                    workoutId: Value(widget.workoutId),
+                    sequence: Value(widget.sequence),
+                    setOrder: Value(
+                      startingSetOrder + i,
+                    ), // Set position within exercise
+                    hidden: const Value(true), // Uncompleted
+                    brandName: Value(_brandName),
+                    exerciseType: Value(_exerciseType),
+                    category: Value(_category),
+                    supersetId: Value(_supersetId),
+                    supersetPosition: Value(_supersetPosition),
+                  ),
+                );
+
+            newSets.add(
+              SetData(
+                weight: weight,
+                reps: reps,
+                savedSetId: gymSet.id,
+              ),
+            );
           }
-
-          final gymSet = await db.into(db.gymSets).insertReturning(
-                GymSetsCompanion.insert(
-                  name: widget.exercise.exercise,
-                  reps: reps.toDouble(),
-                  weight: weight,
-                  unit: defaultUnit,
-                  created: DateTime.now().toLocal(),
-                  planId: Value(widget.planId),
-                  workoutId: Value(widget.workoutId),
-                  sequence: Value(widget.sequence),
-                  setOrder: Value(
-                    startingSetOrder + i,
-                  ), // Set position within exercise
-                  hidden: const Value(true), // Uncompleted
-                  brandName: Value(_brandName),
-                  exerciseType: Value(_exerciseType),
-                  category: Value(_category),
-                  supersetId: Value(_supersetId),
-                  supersetPosition: Value(_supersetPosition),
-                ),
-              );
-
-          newSets.add(
-            SetData(
-              weight: weight,
-              reps: reps,
-              savedSetId: gymSet.id,
-            ),
-          );
-        }
+        });
         if (mounted) {
           setState(() {
             unit = defaultUnit;
@@ -712,18 +720,21 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         );
       });
 
-      // Update setOrder for all sets to match their new array positions
-      for (int i = 0; i < sets.length; i++) {
-        if (sets[i].savedSetId != null) {
-          await (db.gymSets.update()
-                ..where((tbl) => tbl.id.equals(sets[i].savedSetId!)))
-              .write(
-            GymSetsCompanion(
-              setOrder: Value(i),
-            ),
-          );
+      // Update setOrder for all sets to match their new array positions.
+      // Batched into one transaction to avoid N separate commits.
+      await db.transaction(() async {
+        for (int i = 0; i < sets.length; i++) {
+          if (sets[i].savedSetId != null) {
+            await (db.gymSets.update()
+                  ..where((tbl) => tbl.id.equals(sets[i].savedSetId!)))
+                .write(
+              GymSetsCompanion(
+                setOrder: Value(i),
+              ),
+            );
+          }
         }
-      }
+      });
     } else {
       setState(() {
         sets.insert(
@@ -928,10 +939,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                 isCompact: true,
                               ),
                             ],
-                            if (_category != null && _category!.isNotEmpty) ...[
-                              const SizedBox(width: 6),
-                              BodypartTag(bodypart: _category),
-                            ],
                             if (_brandName != null &&
                                 _brandName!.isNotEmpty) ...[
                               const SizedBox(width: space4),
@@ -1005,6 +1012,10 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                               ),
+                              if (_category != null && _category!.isNotEmpty) ...[
+                                const SizedBox(width: space8),
+                                BodypartTag(bodypart: _category),
+                              ],
                               if (_brandName != null &&
                                   _brandName!.isNotEmpty) ...[
                                 const SizedBox(width: space8),

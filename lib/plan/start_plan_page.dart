@@ -546,7 +546,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
           if (exercise == null) return const SizedBox.shrink();
 
           return ExerciseSetsCard(
-            key: ValueKey('${item.key}_$_refreshCounter'),
+            key: ValueKey(item.key),
+            refreshToken: _refreshCounter,
             exercise: exercise,
             planId: widget.plan.id,
             workoutId: workoutId,
@@ -642,8 +643,9 @@ class _StartPlanPageState extends State<StartPlanPage> {
                   _exerciseOrder[i].sequence = i;
                 }
 
-                // Force UI refresh to show unlinked superset badge
-                _refreshCounter++;
+                // Only force sibling cards to reload when a superset was
+                // affected (badge needs refresh). A plain delete doesn't.
+                if (supersetId != null) _refreshCounter++;
               });
             },
           );
@@ -659,7 +661,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
           );
 
           return ExerciseSetsCard(
-            key: ValueKey('${item.key}_$_refreshCounter'),
+            key: ValueKey(item.key),
+            refreshToken: _refreshCounter,
             exercise: tempExercise,
             planId: -1, // Ad-hoc exercises don't have a real plan
             workoutId: workoutId,
@@ -755,8 +758,9 @@ class _StartPlanPageState extends State<StartPlanPage> {
                   _exerciseOrder[i].sequence = i;
                 }
 
-                // Force UI refresh to show unlinked superset badge
-                _refreshCounter++;
+                // Only force sibling cards to reload when a superset was
+                // affected (badge needs refresh). A plain delete doesn't.
+                if (supersetId != null) _refreshCounter++;
               });
             },
           );
