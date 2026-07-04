@@ -17,7 +17,6 @@ import 'exercise_sets_card.dart';
 import 'plan_state.dart';
 
 class StartPlanPage extends StatefulWidget {
-
   const StartPlanPage({required this.plan, super.key});
   final Plan plan;
 
@@ -26,7 +25,8 @@ class StartPlanPage extends StatefulWidget {
 }
 
 // Represents an exercise item in the workout (either from plan or ad-hoc)
-class _ExerciseItem { // Preserve sequence number, mutable for reordering
+class _ExerciseItem {
+  // Preserve sequence number, mutable for reordering
 
   _ExerciseItem.plan(PlanExercise exercise, {required this.sequence})
       : isPlanExercise = true,
@@ -127,6 +127,7 @@ class _StartPlanPageState extends State<StartPlanPage> {
     }
 
     // Update gym counts with workoutId to show only this workout's progress
+    if (!context.mounted) return;
     final planState = context.read<PlanState>();
     await planState.updateGymCounts(widget.plan.id, workoutId);
 
@@ -210,7 +211,8 @@ class _StartPlanPageState extends State<StartPlanPage> {
                 .firstOrNull;
             if (planExercise != null) {
               _exerciseOrder.add(
-                  _ExerciseItem.plan(planExercise, sequence: group.minSeq),);
+                _ExerciseItem.plan(planExercise, sequence: group.minSeq),
+              );
             } else {
               _exerciseOrder
                   .add(_ExerciseItem.adHoc(group.name, sequence: group.minSeq));
@@ -824,9 +826,12 @@ class _StartPlanPageState extends State<StartPlanPage> {
 
 // Clean reorderable tile for exercise reorder mode
 class _ReorderableExerciseTile extends StatelessWidget {
-
   const _ReorderableExerciseTile({
-    required this.index, required this.exerciseName, required this.isAdHoc, required this.colorScheme, super.key,
+    required this.index,
+    required this.exerciseName,
+    required this.isAdHoc,
+    required this.colorScheme,
+    super.key,
   });
   final int index;
   final String exerciseName;

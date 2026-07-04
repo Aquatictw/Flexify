@@ -549,6 +549,7 @@ class _CompleteWeekButton extends StatelessWidget {
           ),
         );
         if (proceed != true) return;
+        if (!context.mounted) return;
 
         final state = context.read<FiveThreeOneState>();
         if (state.needsTmBump) {

@@ -9,6 +9,7 @@ import '../fivethreeone/block_overview_page.dart';
 import '../fivethreeone/fivethreeone_state.dart';
 import '../main.dart';
 import '../theme/tokens.dart';
+import '../widgets/depth_ember_reveal.dart';
 import 'note_editor_page.dart';
 
 /// Notes can have an arbitrary background color (preset or user-picked), so
@@ -31,16 +32,17 @@ class _NotesPageState extends State<NotesPage> {
   List<Note>? _localNotes;
   bool _isReorderMode = false;
 
-  // Artistic color palette for notes (darker shades)
+  // Muted, desaturated palette that sits with the dark app theme rather than
+  // fighting it. Dark enough that _inkOn picks white text automatically.
   final List<Color> _noteColors = [
-    const Color(0xFFFFB366), // Peach
-    const Color(0xFF7DD3D3), // Mint
-    const Color(0xFF6FA8FF), // Sky Blue
-    const Color(0xFFFF99FF), // Pink
-    const Color(0xFFFF7A7A), // Coral
-    const Color(0xFFF9FF66), // Light Yellow
-    const Color(0xFF7FD98A), // Mint Green
-    const Color(0xFF9D8FFF), // Lavender
+    const Color(0xFF9E6B4A), // Terracotta
+    const Color(0xFF3F6E6C), // Teal
+    const Color(0xFF44607F), // Slate Blue
+    const Color(0xFF7E5470), // Mauve
+    const Color(0xFF8F5151), // Rust
+    const Color(0xFF7C7A45), // Olive
+    const Color(0xFF54764F), // Sage
+    const Color(0xFF625A82), // Muted Lavender
   ];
 
   @override
@@ -76,7 +78,9 @@ class _NotesPageState extends State<NotesPage> {
     );
 
     if (!mounted) return;
-    setState(() { _localNotes = null; });
+    setState(() {
+      _localNotes = null;
+    });
 
     if (result != null) {
       try {
@@ -101,7 +105,9 @@ class _NotesPageState extends State<NotesPage> {
     );
 
     if (!mounted) return;
-    setState(() { _localNotes = null; });
+    setState(() {
+      _localNotes = null;
+    });
 
     if (result != null) {
       try {
@@ -203,8 +209,8 @@ class _NotesPageState extends State<NotesPage> {
       body: StreamBuilder<List<Note>>(
         stream: (db.notes.select()
               ..orderBy([
-                (n) =>
-                    OrderingTerm(expression: n.sequence, mode: OrderingMode.desc),
+                (n) => OrderingTerm(
+                    expression: n.sequence, mode: OrderingMode.desc),
               ]))
             .watch(),
         builder: (context, snapshot) {
@@ -313,7 +319,7 @@ class _NotesPageState extends State<NotesPage> {
 
           return Column(
             children: [
-              const _TrainingMaxBanner(),
+              const RevealBlock(index: 0, child: _TrainingMaxBanner()),
               Expanded(
                 child: _isReorderMode && _searchQuery.isEmpty
                     // ReorderableListView when in reorder mode (list layout)
@@ -358,13 +364,16 @@ class _NotesPageState extends State<NotesPage> {
                         itemBuilder: (context, index) {
                           final note = _localNotes![index];
                           final color = _getColorFromValue(note.color);
-                          return _NoteCard(
+                          return RevealBlock(
                             key: ValueKey(note.id),
-                            note: note,
-                            color: color,
-                            onTap: () => _editNote(note),
-                            onDelete: () => _deleteNote(note),
-                            isGridMode: false,
+                            index: index,
+                            child: _NoteCard(
+                              note: note,
+                              color: color,
+                              onTap: () => _editNote(note),
+                              onDelete: () => _deleteNote(note),
+                              isGridMode: false,
+                            ),
                           );
                         },
                       )
@@ -415,12 +424,10 @@ class _TrainingMaxBanner extends StatelessWidget {
     final backgroundColor = hasBlock
         ? colorScheme.primaryContainer
         : colorScheme.surfaceContainerHigh;
-    final textColor = hasBlock
-        ? colorScheme.onPrimaryContainer
-        : colorScheme.onSurface;
-    final iconColor = hasBlock
-        ? colorScheme.primary
-        : colorScheme.onSurfaceVariant;
+    final textColor =
+        hasBlock ? colorScheme.onPrimaryContainer : colorScheme.onSurface;
+    final iconColor =
+        hasBlock ? colorScheme.primary : colorScheme.onSurfaceVariant;
     final label = hasBlock
         ? fiveThreeOneState.positionLabel
         : 'Start a 5/3/1 block \u2192';
@@ -558,44 +565,58 @@ class _ReorderableGridViewState extends State<_ReorderableGridView> {
         final isDragging = _draggedIndex == index;
         final isTarget = _targetIndex == index && _draggedIndex != index;
 
-        return DragTarget<int>(
-          onWillAcceptWithDetails: (details) {
-            if (details.data != index) {
-              setState(() => _targetIndex = index);
-              return true;
-            }
-            return false;
-          },
-          onLeave: (_) {
-            setState(() => _targetIndex = null);
-          },
-          onAcceptWithDetails: (details) {
-            widget.onReorder(details.data, index);
-            setState(() {
-              _draggedIndex = null;
-              _targetIndex = null;
-            });
-          },
-          builder: (context, candidateData, rejectedData) {
-            return LongPressDraggable<int>(
-              data: index,
-              delay: durFast,
-              onDragStarted: () {
-                setState(() => _draggedIndex = index);
-              },
-              onDragEnd: (_) {
-                setState(() {
-                  _draggedIndex = null;
-                  _targetIndex = null;
-                });
-              },
-              feedback: Material(
-                elevation: 8,
-                shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
-                borderRadius: brMd,
-                child: SizedBox(
-                  width: (MediaQuery.of(context).size.width - 36) / 2,
-                  height: ((MediaQuery.of(context).size.width - 36) / 2) / 0.85,
+        return RevealBlock(
+          index: index,
+          child: DragTarget<int>(
+            onWillAcceptWithDetails: (details) {
+              if (details.data != index) {
+                setState(() => _targetIndex = index);
+                return true;
+              }
+              return false;
+            },
+            onLeave: (_) {
+              setState(() => _targetIndex = null);
+            },
+            onAcceptWithDetails: (details) {
+              widget.onReorder(details.data, index);
+              setState(() {
+                _draggedIndex = null;
+                _targetIndex = null;
+              });
+            },
+            builder: (context, candidateData, rejectedData) {
+              return LongPressDraggable<int>(
+                data: index,
+                delay: durFast,
+                onDragStarted: () {
+                  setState(() => _draggedIndex = index);
+                },
+                onDragEnd: (_) {
+                  setState(() {
+                    _draggedIndex = null;
+                    _targetIndex = null;
+                  });
+                },
+                feedback: Material(
+                  elevation: 8,
+                  shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
+                  borderRadius: brMd,
+                  child: SizedBox(
+                    width: (MediaQuery.of(context).size.width - 36) / 2,
+                    height:
+                        ((MediaQuery.of(context).size.width - 36) / 2) / 0.85,
+                    child: _NoteCard(
+                      note: note,
+                      color: color,
+                      onTap: () {},
+                      onDelete: () {},
+                      isGridMode: true,
+                    ),
+                  ),
+                ),
+                childWhenDragging: Opacity(
+                  opacity: 0.3,
                   child: _NoteCard(
                     note: note,
                     color: color,
@@ -604,42 +625,32 @@ class _ReorderableGridViewState extends State<_ReorderableGridView> {
                     isGridMode: true,
                   ),
                 ),
-              ),
-              childWhenDragging: Opacity(
-                opacity: 0.3,
-                child: _NoteCard(
-                  note: note,
-                  color: color,
-                  onTap: () {},
-                  onDelete: () {},
-                  isGridMode: true,
-                ),
-              ),
-              child: AnimatedContainer(
-                duration: durMed,
-                curve: curveStandard,
-                decoration: isTarget
-                    ? BoxDecoration(
-                        borderRadius: brMd,
-                        border: Border.all(
-                          color: colorScheme.primary,
-                          width: 2,
-                        ),
-                      )
-                    : null,
-                child: Opacity(
-                  opacity: isDragging ? 0.3 : 1.0,
-                  child: _NoteCard(
-                    note: note,
-                    color: color,
-                    onTap: () => widget.onEditNote(note),
-                    onDelete: () => widget.onDeleteNote(note),
-                    isGridMode: true,
+                child: AnimatedContainer(
+                  duration: durMed,
+                  curve: curveStandard,
+                  decoration: isTarget
+                      ? BoxDecoration(
+                          borderRadius: brMd,
+                          border: Border.all(
+                            color: colorScheme.primary,
+                            width: 2,
+                          ),
+                        )
+                      : null,
+                  child: Opacity(
+                    opacity: isDragging ? 0.3 : 1.0,
+                    child: _NoteCard(
+                      note: note,
+                      color: color,
+                      onTap: () => widget.onEditNote(note),
+                      onDelete: () => widget.onDeleteNote(note),
+                      isGridMode: true,
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );
@@ -648,7 +659,6 @@ class _ReorderableGridViewState extends State<_ReorderableGridView> {
 
 class _NoteCard extends StatelessWidget {
   const _NoteCard({
-    super.key,
     required this.note,
     required this.color,
     required this.onTap,
@@ -672,8 +682,9 @@ class _NoteCard extends StatelessWidget {
     return Card(
       elevation: 2,
       color: color,
-      margin:
-          isGridMode ? EdgeInsets.zero : const EdgeInsets.symmetric(vertical: 6),
+      margin: isGridMode
+          ? EdgeInsets.zero
+          : const EdgeInsets.symmetric(vertical: 6),
       shape: const RoundedRectangleBorder(
         borderRadius: brMd,
       ),

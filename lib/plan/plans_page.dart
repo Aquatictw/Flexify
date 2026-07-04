@@ -9,6 +9,7 @@ import '../settings/settings_page.dart';
 import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
 import '../utils.dart';
+import '../widgets/depth_ember_reveal.dart';
 import '../widgets/timer_quick_access.dart';
 import '../workouts/workout_state.dart';
 import 'edit_plan_page.dart';
@@ -17,7 +18,6 @@ import 'plans_list.dart';
 import 'start_plan_page.dart';
 
 class PlansPage extends StatefulWidget {
-
   const PlansPage({required this.tabController, super.key});
   final TabController tabController;
 
@@ -65,7 +65,6 @@ class PlansPageState extends State<PlansPage>
 }
 
 class _PlansPageWidget extends StatefulWidget {
-
   const _PlansPageWidget({required this.navKey});
   final GlobalKey<NavigatorState> navKey;
 
@@ -180,60 +179,64 @@ class _PlansPageWidgetState extends State<_PlansPageWidget> {
   Widget _buildFreeformButton(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Material(
-      borderRadius: brMd,
-      color: colorScheme.secondaryContainer,
-      child: InkWell(
-        onTap: _startFreeformWorkout,
+    return RevealBlock(
+      index: 8,
+      child: Material(
         borderRadius: brMd,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            vertical: space16,
-            horizontal: space16,
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(space8),
-                decoration: BoxDecoration(
-                  color: colorScheme.secondary,
-                  borderRadius: brSm,
+        color: colorScheme.secondaryContainer,
+        child: InkWell(
+          onTap: _startFreeformWorkout,
+          borderRadius: brMd,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              vertical: space16,
+              horizontal: space16,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(space8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondary,
+                    borderRadius: brSm,
+                  ),
+                  child: Icon(
+                    Icons.play_arrow_rounded,
+                    color: colorScheme.onSecondary,
+                    size: 24,
+                  ),
                 ),
-                child: Icon(
-                  Icons.play_arrow_rounded,
-                  color: colorScheme.onSecondary,
-                  size: 24,
+                const SizedBox(width: space16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Freeform Workout',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: colorScheme.onSecondaryContainer,
+                            ),
+                      ),
+                      const SizedBox(height: space4 / 2),
+                      Text(
+                        'Start with an empty workout',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSecondaryContainer
+                                  .withValues(alpha: 0.7),
+                            ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: space16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Freeform Workout',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: colorScheme.onSecondaryContainer,
-                          ),
-                    ),
-                    const SizedBox(height: space4 / 2),
-                    Text(
-                      'Start with an empty workout',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSecondaryContainer
-                                .withValues(alpha: 0.7),
-                          ),
-                    ),
-                  ],
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color:
+                      colorScheme.onSecondaryContainer.withValues(alpha: 0.5),
                 ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: colorScheme.onSecondaryContainer.withValues(alpha: 0.5),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

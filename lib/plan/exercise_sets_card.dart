@@ -22,10 +22,17 @@ import '../widgets/sets/set_row.dart';
 import '../widgets/superset/superset_badge.dart';
 import 'plan_state.dart';
 
-class ExerciseSetsCard extends StatefulWidget { // Exercise order within workout
+class ExerciseSetsCard extends StatefulWidget {
+  // Exercise order within workout
 
   const ExerciseSetsCard({
-    required this.exercise, required this.planId, required this.workoutId, required this.isExpanded, required this.onToggleExpand, required this.onSetCompleted, super.key,
+    required this.exercise,
+    required this.planId,
+    required this.workoutId,
+    required this.isExpanded,
+    required this.onToggleExpand,
+    required this.onSetCompleted,
+    super.key,
     this.onDeleteExercise,
     this.exerciseNotes,
     this.sequence = 0,
@@ -142,15 +149,17 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       // Load existing sets from database (resuming workout)
       final loadedSets = <SetData>[];
       for (final set in existingSets) {
-        loadedSets.add(SetData(
-          weight: set.weight,
-          reps: set.reps.toInt(),
-          completed: !set.hidden, // hidden=false means completed
-          savedSetId: set.id,
-          isWarmup: set.warmup,
-          isDropSet: set.dropSet,
-          records: allRecords[set.id] ?? {},
-        ),);
+        loadedSets.add(
+          SetData(
+            weight: set.weight,
+            reps: set.reps.toInt(),
+            completed: !set.hidden, // hidden=false means completed
+            savedSetId: set.id,
+            isWarmup: set.warmup,
+            isDropSet: set.dropSet,
+            records: allRecords[set.id] ?? {},
+          ),
+        );
       }
 
       setState(() {
@@ -166,9 +175,11 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         // Count existing sets for this exercise instance to calculate starting setOrder
         final existingSetCount = await (db.gymSets.selectOnly()
               ..addColumns([db.gymSets.id.count()])
-              ..where(db.gymSets.workoutId.equals(widget.workoutId!) &
-                  db.gymSets.name.equals(widget.exercise.exercise) &
-                  db.gymSets.sequence.equals(widget.sequence),))
+              ..where(
+                db.gymSets.workoutId.equals(widget.workoutId!) &
+                    db.gymSets.name.equals(widget.exercise.exercise) &
+                    db.gymSets.sequence.equals(widget.sequence),
+              ))
             .getSingleOrNull();
 
         final startingSetOrder =
@@ -204,7 +215,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                   workoutId: Value(widget.workoutId),
                   sequence: Value(widget.sequence),
                   setOrder: Value(
-                      startingSetOrder + i,), // Set position within exercise
+                    startingSetOrder + i,
+                  ), // Set position within exercise
                   hidden: const Value(true), // Uncompleted
                   brandName: Value(_brandName),
                   exerciseType: Value(_exerciseType),
@@ -334,8 +346,10 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.remove_circle_outline,
-                  color: context.jl.danger,),
+              leading: Icon(
+                Icons.remove_circle_outline,
+                color: context.jl.danger,
+              ),
               title: Text(
                 'Remove Exercise',
                 style: TextStyle(color: context.jl.danger),
@@ -544,7 +558,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     }
 
     // Start rest timer
-    if (settings.restTimers) {
+    if (settings.restTimers && context.mounted) {
       final timerState = context.read<TimerState>();
       // Use custom rest time if set, otherwise use global default
       final restMs = _restMs ?? settings.timerDuration;
@@ -833,12 +847,14 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     }
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: space12, vertical: space8 - 2),
+      margin:
+          const EdgeInsets.symmetric(horizontal: space12, vertical: space8 - 2),
       clipBehavior: Clip.antiAlias,
       elevation: 2,
       shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
       color: supersetColor?.withValues(
-          alpha: 0.08,), // Subtle background tint for superset exercises
+        alpha: 0.08,
+      ), // Subtle background tint for superset exercises
       shape: supersetColor != null
           ? RoundedRectangleBorder(
               borderRadius: brMd,

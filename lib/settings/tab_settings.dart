@@ -55,7 +55,6 @@ class _TabSettingsState extends State<TabSettings> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsState>();
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(title: const Text('Tabs')),
@@ -63,30 +62,6 @@ class _TabSettingsState extends State<TabSettings> {
         padding: const EdgeInsets.all(space8),
         child: material.Column(
           children: [
-            ListTile(
-              title: const material.Row(
-                children: [
-                  Icon(Icons.swipe),
-                  SizedBox(width: space8),
-                  Text('Swipe between tabs'),
-                ],
-              ),
-              onTap: () => db.settings.update().write(
-                    SettingsCompanion(
-                      scrollableTabs: Value(!settings.value.scrollableTabs),
-                    ),
-                  ),
-              leading: Switch(
-                value: settings.value.scrollableTabs,
-                onChanged: (value) {
-                  db.settings.update().write(
-                        SettingsCompanion(
-                          scrollableTabs: Value(value),
-                        ),
-                      );
-                },
-              ),
-            ),
             Expanded(
               child: ReorderableListView.builder(
                 onReorder: (oldIndex, newIndex) {

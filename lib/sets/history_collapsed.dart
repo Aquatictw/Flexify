@@ -9,12 +9,18 @@ import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
 import '../utils.dart';
 import '../utils/duration_format.dart';
+import '../widgets/depth_ember_reveal.dart';
 import 'edit_set_page.dart';
 import 'history_page.dart';
 
 class HistoryCollapsed extends StatefulWidget {
   const HistoryCollapsed({
-    required this.days, required this.onSelect, required this.selected, required this.onNext, required this.scroll, super.key,
+    required this.days,
+    required this.onSelect,
+    required this.selected,
+    required this.onNext,
+    required this.scroll,
+    super.key,
   });
   final List<HistoryDay> days;
   final ScrollController scroll;
@@ -36,7 +42,8 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
 
     return ListView.builder(
       itemCount: widget.days.length,
-      padding: EdgeInsets.only(bottom: bottomBarClearance(context), top: space8),
+      padding:
+          EdgeInsets.only(bottom: bottomBarClearance(context), top: space8),
       controller: widget.scroll,
       itemBuilder: (context, index) {
         final history = widget.days[index];
@@ -45,13 +52,16 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
         final bool showDivider =
             prev != null && !isSameDay(history.day, prev.day);
 
-        return Column(
-          children: historyChildren(
-            showDivider,
-            prev,
-            history,
-            context,
-            showImages,
+        return RevealBlock(
+          index: index,
+          child: Column(
+            children: historyChildren(
+              showDivider,
+              prev,
+              history,
+              context,
+              showImages,
+            ),
           ),
         );
       },

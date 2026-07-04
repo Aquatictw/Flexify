@@ -12,6 +12,7 @@ import 'format_settings.dart';
 import 'plan_settings.dart';
 import 'settings_state.dart';
 import '../server/server_settings_page.dart';
+import '../widgets/depth_ember_reveal.dart';
 import 'spotify_settings.dart';
 import 'tab_settings.dart';
 import 'timer_settings.dart';
@@ -121,79 +122,103 @@ class _SettingsPageState extends State<SettingsPage>
                 children: searchCtrl.text.isNotEmpty
                     ? filtered
                     : [
-                        ListTile(
-                          leading: const Icon(Icons.color_lens),
-                          title: const Text('Appearance'),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const AppearanceSettings(),
+                        RevealBlock(
+                          child: ListTile(
+                            leading: const Icon(Icons.color_lens),
+                            title: const Text('Appearance'),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AppearanceSettings(),
+                              ),
                             ),
                           ),
                         ),
-                        ListTile(
-                          leading: const Icon(Icons.storage),
-                          title: const Text('Data management'),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const DataSettings(),
+                        RevealBlock(
+                          index: 1,
+                          child: ListTile(
+                            leading: const Icon(Icons.storage),
+                            title: const Text('Data management'),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const DataSettings(),
+                              ),
                             ),
                           ),
                         ),
-                        ListTile(
-                          leading: const Icon(Icons.cloud_upload),
-                          title: const Text('Backup Server'),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const ServerSettingsPage(),
+                        RevealBlock(
+                          index: 2,
+                          child: ListTile(
+                            leading: const Icon(Icons.cloud_upload),
+                            title: const Text('Backup Server'),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const ServerSettingsPage(),
+                              ),
                             ),
                           ),
                         ),
-                        ListTile(
-                          leading: const Icon(Icons.format_bold),
-                          title: const Text('Plans & Formats'),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const PlansAndFormatsSettings(),
+                        RevealBlock(
+                          index: 3,
+                          child: ListTile(
+                            leading: const Icon(Icons.format_bold),
+                            title: const Text('Plans & Formats'),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const PlansAndFormatsSettings(),
+                              ),
                             ),
                           ),
                         ),
-                        ListTile(
-                          leading: const Icon(Icons.tab_sharp),
-                          title: const Text('Tabs'),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const TabSettings(),
+                        RevealBlock(
+                          index: 4,
+                          child: ListTile(
+                            leading: const Icon(Icons.tab_sharp),
+                            title: const Text('Tabs'),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const TabSettings(),
+                              ),
                             ),
                           ),
                         ),
-                        ListTile(
-                          leading: const Icon(Icons.timer),
-                          title: const Text('Timers'),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const TimerSettings(),
+                        RevealBlock(
+                          index: 5,
+                          child: ListTile(
+                            leading: const Icon(Icons.timer),
+                            title: const Text('Timers'),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const TimerSettings(),
+                              ),
                             ),
                           ),
                         ),
-                        ListTile(
-                          leading: const Icon(Icons.fitness_center),
-                          title: const Text('5/3/1 Block'),
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) =>
-                                  const BlockCreationDialog(),
-                            );
-                          },
+                        RevealBlock(
+                          index: 6,
+                          child: ListTile(
+                            leading: const Icon(Icons.fitness_center),
+                            title: const Text('5/3/1 Block'),
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) =>
+                                    const BlockCreationDialog(),
+                              );
+                            },
+                          ),
                         ),
-                        ListTile(
-                          leading: const Icon(Icons.music_note),
-                          title: const Text('Spotify'),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const SpotifySettings(),
+                        RevealBlock(
+                          index: 7,
+                          child: ListTile(
+                            leading: const Icon(Icons.music_note),
+                            title: const Text('Spotify'),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const SpotifySettings(),
+                              ),
                             ),
                           ),
                         ),

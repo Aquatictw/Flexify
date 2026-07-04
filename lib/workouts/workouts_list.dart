@@ -6,6 +6,7 @@ import '../database/database.dart';
 import '../main.dart';
 import '../records/records_service.dart';
 import '../theme/tokens.dart';
+import '../widgets/depth_ember_reveal.dart';
 import '../widgets/history_heatmap_header.dart';
 import 'workout_detail_page.dart';
 
@@ -66,10 +67,27 @@ class WorkoutsList extends StatefulWidget {
 class _WorkoutsListState extends State<WorkoutsList> {
   bool goingNext = false;
 
+  // Built once and only rebuilt when the query inputs change, so unrelated
+  // setState/pagination rebuilds don't reset StreamBuilder to a spinner and
+  // re-run the whole pipeline.
+  late Stream<List<WorkoutWithSets>> _stream;
+
   @override
   void initState() {
     super.initState();
     widget.scroll.addListener(scrollListener);
+    _stream = _getWorkoutsStream();
+  }
+
+  @override
+  void didUpdateWidget(WorkoutsList old) {
+    super.didUpdateWidget(old);
+    if (old.limit != widget.limit ||
+        old.search != widget.search ||
+        old.startDate != widget.startDate ||
+        old.endDate != widget.endDate) {
+      _stream = _getWorkoutsStream();
+    }
   }
 
   @override
@@ -112,43 +130,42 @@ class _WorkoutsListState extends State<WorkoutsList> {
 
     return query.watch().asyncMap((workouts) async {
       final List<WorkoutWithSets> result = [];
-
-      // Get all workout IDs first
       final workoutIds = workouts.map((w) => w.id).toList();
 
-      // Batch query for record counts
-      final recordCounts = await getBatchWorkoutRecordCounts(workoutIds);
+      // One query for every visible workout's sets, grouped in memory — was an
+      // N+1 loop (a sets query per workout) that stalled first paint for
+      // seconds on large histories.
+      final allSets = await (db.gymSets.select()
+            ..where(
+              (s) =>
+                  s.workoutId.isIn(workoutIds) &
+                  s.hidden.equals(false) &
+                  s.sequence.isBiggerOrEqualValue(0),
+            ))
+          .get();
+      final setsByWorkout = <int, List<GymSet>>{};
+      for (final s in allSets) {
+        if (s.workoutId == null) continue;
+        (setsByWorkout[s.workoutId!] ??= <GymSet>[]).add(s);
+      }
+
+      // Batch PR computation: workoutId -> (setId -> record types). Replaces
+      // the per-workout getWorkoutRecords() call inside the loop.
+      final batchRecords = await getBatchWorkoutRecords(workoutIds);
 
       for (final workout in workouts) {
+        final sets = setsByWorkout[workout.id] ?? const [];
+
         // Filter by search term if provided
         if (widget.search.isNotEmpty) {
           final searchLower = widget.search.toLowerCase();
           final nameMatches =
               workout.name?.toLowerCase().contains(searchLower) ?? false;
-
-          // Check if any exercise in this workout matches
-          final exercises = await (db.gymSets.selectOnly()
-                ..addColumns([db.gymSets.name])
-                ..where(db.gymSets.workoutId.equals(workout.id))
-                ..groupBy([db.gymSets.name]))
-              .map((row) => row.read(db.gymSets.name)!)
-              .get();
-
-          final exerciseMatches = exercises.any(
-            (name) => name.toLowerCase().contains(searchLower),
+          final exerciseMatches = sets.any(
+            (s) => s.name.toLowerCase().contains(searchLower),
           );
-
           if (!nameMatches && !exerciseMatches) continue;
         }
-
-        final sets = await (db.gymSets.select()
-              ..where(
-                (s) =>
-                    s.workoutId.equals(workout.id) &
-                    s.hidden.equals(false) &
-                    s.sequence.isBiggerOrEqualValue(0),
-              ))
-            .get();
 
         final exerciseNames = sets.map((s) => s.name).toSet().toList();
         final totalVolume = sets.fold<double>(
@@ -180,11 +197,13 @@ class _WorkoutsListState extends State<WorkoutsList> {
               );
 
         // Which exercises hit a PR, and of what type(s): map record set-ids
-        // back to names, unioning record types per exercise.
-        final recordCount = recordCounts[workout.id] ?? 0;
+        // back to names, unioning record types per exercise. Sourced from the
+        // single batched call above — no per-workout query here.
+        final records = batchRecords[workout.id] ?? const {};
+        final recordCount =
+            records.values.fold<int>(0, (sum, t) => sum + t.length);
         final prTypes = <String, Set<RecordType>>{};
-        if (recordCount > 0) {
-          final records = await getWorkoutRecords(workout.id);
+        if (records.isNotEmpty) {
           final byId = {for (final s in sets) s.id: s.name};
           for (final entry in records.entries) {
             final name = byId[entry.key];
@@ -215,7 +234,7 @@ class _WorkoutsListState extends State<WorkoutsList> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<WorkoutWithSets>>(
-      stream: _getWorkoutsStream(),
+      stream: _stream,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -265,7 +284,8 @@ class _WorkoutsListState extends State<WorkoutsList> {
             top: space8,
           ),
           itemCount: rows.length,
-          itemBuilder: (context, index) => rows[index],
+          itemBuilder: (context, index) =>
+              RevealBlock(index: index, child: rows[index]),
         );
       },
     );
@@ -750,9 +770,8 @@ class _StatStrip extends StatelessWidget {
               child: Text(
                 label.toUpperCase(),
                 style: textTheme.labelSmall?.copyWith(
-                  color: highlight
-                      ? context.jl.pr
-                      : colorScheme.onSurfaceVariant,
+                  color:
+                      highlight ? context.jl.pr : colorScheme.onSurfaceVariant,
                   fontWeight: highlight ? FontWeight.w800 : FontWeight.w700,
                   fontSize: highlight ? 12 : null,
                   letterSpacing: 0.6,

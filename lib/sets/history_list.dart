@@ -10,12 +10,17 @@ import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
 import '../utils.dart';
 import '../utils/duration_format.dart';
+import '../widgets/depth_ember_reveal.dart';
 import 'edit_set_page.dart';
 
 class HistoryList extends StatefulWidget {
-
   const HistoryList({
-    required this.sets, required this.onSelect, required this.selected, required this.onNext, required this.scroll, super.key,
+    required this.sets,
+    required this.onSelect,
+    required this.selected,
+    required this.onNext,
+    required this.scroll,
+    super.key,
   });
   final List<GymSet> sets;
   final ScrollController scroll;
@@ -184,155 +189,173 @@ class _HistoryListState extends State<HistoryList> {
         (gymSet.unit == 'km' || gymSet.unit == 'mi' || gymSet.unit == 'kcal'))
       trailing = '$distance ${gymSet.unit} / $duration $incline';
 
-    return Column(
-      children: [
-        if (showDivider)
-          Row(
-            children: [
-              const Expanded(child: Divider()),
-              const Icon(Icons.today),
-              const SizedBox(width: space4),
-              Selector<SettingsState, String>(
-                selector: (context, settings) => settings.value.shortDateFormat,
-                builder: (context, value, child) => Text(
-                  DateFormat(value).format(previousGymSet.created),
-                ),
-              ),
-              const SizedBox(width: space4),
-              const Expanded(child: Divider()),
-            ],
-          ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: space8, vertical: 2),
-          decoration: BoxDecoration(
-            borderRadius: brSm,
-            color: widget.selected.contains(gymSet.id)
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: .08)
-                : Colors.transparent,
-            border: Border.all(
-              color: widget.selected.contains(gymSet.id)
-                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
-                  : Colors.transparent,
-            ),
-          ),
-          child: ListTile(
-            leading: leading,
-            title: Row(
+    return RevealBlock(
+      index: index,
+      child: Column(
+        children: [
+          if (showDivider)
+            Row(
               children: [
-                Text(gymSet.name),
-                if (gymSet.warmup) ...[
-                  const SizedBox(width: space8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: space8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.jl.warmup.withValues(alpha: 0.16),
-                      borderRadius: brSm,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.whatshot_outlined,
-                          size: 10,
-                          color: context.jl.warmup,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          'Warmup',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: context.jl.warmup,
-                              ),
-                        ),
-                      ],
-                    ),
+                const Expanded(child: Divider()),
+                const Icon(Icons.today),
+                const SizedBox(width: space4),
+                Selector<SettingsState, String>(
+                  selector: (context, settings) =>
+                      settings.value.shortDateFormat,
+                  builder: (context, value, child) => Text(
+                    DateFormat(value).format(previousGymSet.created),
                   ),
-                ],
-                if (gymSet.dropSet) ...[
-                  const SizedBox(width: space8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: space8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.jl.dropSet.withValues(alpha: 0.16),
-                      borderRadius: brSm,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.trending_down,
-                          size: 10,
-                          color: context.jl.dropSet,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          'Drop',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: context.jl.dropSet,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                if (gymSet.brandName != null &&
-                    gymSet.brandName!.isNotEmpty) ...[
-                  const SizedBox(width: space8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: space8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest
-                          .withValues(alpha: 0.7),
-                      borderRadius: brSm,
-                    ),
-                    child: Text(
-                      gymSet.brandName!,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                  ),
-                ],
+                ),
+                const SizedBox(width: space4),
+                const Expanded(child: Divider()),
               ],
             ),
-            subtitle: Selector<SettingsState, String>(
-              selector: (context, settings) => settings.value.longDateFormat,
-              builder: (context, dateFormat, child) => Text(
-                dateFormat == 'timeago'
-                    ? timeago.format(gymSet.created)
-                    : DateFormat(dateFormat).format(gymSet.created),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: space8, vertical: 2),
+            decoration: BoxDecoration(
+              borderRadius: brSm,
+              color: widget.selected.contains(gymSet.id)
+                  ? Theme.of(context).colorScheme.primary.withValues(alpha: .08)
+                  : Colors.transparent,
+              border: Border.all(
+                color: widget.selected.contains(gymSet.id)
+                    ? Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.3)
+                    : Colors.transparent,
               ),
             ),
-            trailing: Text(
-              trailing,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 16),
+            child: ListTile(
+              leading: leading,
+              title: Row(
+                children: [
+                  Text(gymSet.name),
+                  if (gymSet.warmup) ...[
+                    const SizedBox(width: space8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: space8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.jl.warmup.withValues(alpha: 0.16),
+                        borderRadius: brSm,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.whatshot_outlined,
+                            size: 10,
+                            color: context.jl.warmup,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            'Warmup',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: context.jl.warmup,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (gymSet.dropSet) ...[
+                    const SizedBox(width: space8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: space8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.jl.dropSet.withValues(alpha: 0.16),
+                        borderRadius: brSm,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.trending_down,
+                            size: 10,
+                            color: context.jl.dropSet,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            'Drop',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: context.jl.dropSet,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (gymSet.brandName != null &&
+                      gymSet.brandName!.isNotEmpty) ...[
+                    const SizedBox(width: space8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: space8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withValues(alpha: 0.7),
+                        borderRadius: brSm,
+                      ),
+                      child: Text(
+                        gymSet.brandName!,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              subtitle: Selector<SettingsState, String>(
+                selector: (context, settings) => settings.value.longDateFormat,
+                builder: (context, dateFormat, child) => Text(
+                  dateFormat == 'timeago'
+                      ? timeago.format(gymSet.created)
+                      : DateFormat(dateFormat).format(gymSet.created),
+                ),
+              ),
+              trailing: Text(
+                trailing,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyLarge
+                    ?.copyWith(fontSize: 16),
+              ),
+              onLongPress: () => widget.onSelect(gymSet.id),
+              onTap: () {
+                if (widget.selected.isNotEmpty) {
+                  widget.onSelect(gymSet.id);
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditSetPage(gymSet: gymSet),
+                    ),
+                  );
+                }
+              },
             ),
-            onLongPress: () => widget.onSelect(gymSet.id),
-            onTap: () {
-              if (widget.selected.isNotEmpty) {
-                widget.onSelect(gymSet.id);
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EditSetPage(gymSet: gymSet),
-                  ),
-                );
-              }
-            },
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -344,7 +367,8 @@ class _HistoryListState extends State<HistoryList> {
     return AnimatedList(
       key: _key,
       initialItemCount: _current.length,
-      padding: EdgeInsets.only(bottom: bottomBarClearance(context), top: space8),
+      padding:
+          EdgeInsets.only(bottom: bottomBarClearance(context), top: space8),
       controller: widget.scroll,
       itemBuilder: (context, index, animation) {
         return _buildItem(_current[index], animation, index, showImages);

@@ -13,6 +13,7 @@ import 'settings/settings_page.dart';
 import 'settings/settings_state.dart';
 import 'timer/rest_timer_bar.dart';
 import 'utils.dart';
+import 'widgets/depth_ember_reveal.dart';
 import 'widgets/segmented_pill_nav.dart';
 import 'workouts/active_workout_bar.dart';
 import 'workouts/workout_state.dart';
@@ -80,9 +81,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final setting = context
         .select<SettingsState, String>((settings) => settings.value.tabs);
     final tabs = setting.split(',');
-    final scrollableTabs = context.select<SettingsState, bool>(
-      (settings) => settings.value.scrollableTabs,
-    );
 
     if (tabs.length != controller.length) {
       controller.dispose();
@@ -97,11 +95,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       body: SafeArea(
         child: Stack(
           children: [
-            TabBarView(
+            DepthEmberTabView(
               controller: controller,
-              physics: scrollableTabs
-                  ? const AlwaysScrollableScrollPhysics()
-                  : const NeverScrollableScrollPhysics(),
               children: tabs.map((tab) {
                 if (tab == 'HistoryPage')
                   return HistoryPage(tabController: controller);

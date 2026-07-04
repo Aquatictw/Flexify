@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../spotify/spotify_state.dart';
 import '../theme/tokens.dart';
+import '../widgets/depth_ember_reveal.dart';
 import 'widgets/animated_equalizer.dart';
 import 'widgets/auth_prompt.dart';
 import 'widgets/no_playback_state.dart';
@@ -89,54 +90,73 @@ class _MusicPageState extends State<MusicPage> {
                       const SizedBox(height: 40),
 
                       // Large album art
-                      _buildAlbumArt(context, spotifyState),
+                      RevealBlock(
+                        child: _buildAlbumArt(context, spotifyState),
+                      ),
                       const SizedBox(height: space32),
 
-                      // Track name (bold, large text)
-                      _buildTrackTitle(theme, spotifyState),
-                      const SizedBox(height: 4),
+                      // Track metadata group (title, artist, album, context)
+                      RevealBlock(
+                        index: 1,
+                        child: Column(
+                          children: [
+                            // Track name (bold, large text)
+                            _buildTrackTitle(theme, spotifyState),
+                            const SizedBox(height: 4),
 
-                      // Artist name (medium gray text)
-                      _buildArtistName(theme, spotifyState),
-                      const SizedBox(height: 6),
+                            // Artist name (medium gray text)
+                            _buildArtistName(theme, spotifyState),
+                            const SizedBox(height: 6),
 
-                      // Album name with music note icon
-                      _buildAlbumName(theme, spotifyState),
-                      const SizedBox(height: 4),
+                            // Album name with music note icon
+                            _buildAlbumName(theme, spotifyState),
+                            const SizedBox(height: 4),
 
-                      // Playing from context
-                      _buildPlayingFromContext(theme, spotifyState),
+                            // Playing from context
+                            _buildPlayingFromContext(theme, spotifyState),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: space24),
 
                       // Seek bar with position/duration
-                      const SeekBar(),
+                      const RevealBlock(
+                        index: 2,
+                        child: SeekBar(),
+                      ),
                       const SizedBox(height: 4),
 
                       // Player controls (shuffle, previous, play/pause, next, repeat)
-                      const PlayerControls(),
+                      const RevealBlock(
+                        index: 3,
+                        child: PlayerControls(),
+                      ),
                       const SizedBox(height: space8),
 
                       // Action buttons row (Queue and Recently Played)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // View Queue button
-                          Expanded(
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4),
-                              child: _buildViewQueueButton(context),
+                      RevealBlock(
+                        index: 4,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // View Queue button
+                            Expanded(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                child: _buildViewQueueButton(context),
+                              ),
                             ),
-                          ),
-                          // View Recently Played button
-                          Expanded(
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4),
-                              child: _buildRecentlyPlayedButton(context),
+                            // View Recently Played button
+                            Expanded(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                child: _buildRecentlyPlayedButton(context),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
 
                       // Clear the floating nav/timer/active-workout bars.
@@ -333,7 +353,8 @@ class _MusicPageState extends State<MusicPage> {
       icon: const Icon(Icons.queue_music),
       label: const Text('Queue'),
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: space16, vertical: space12),
+        padding:
+            const EdgeInsets.symmetric(horizontal: space16, vertical: space12),
       ),
     );
   }
@@ -352,7 +373,8 @@ class _MusicPageState extends State<MusicPage> {
       icon: const Icon(Icons.history),
       label: const Text('Recent'),
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: space16, vertical: space12),
+        padding:
+            const EdgeInsets.symmetric(horizontal: space16, vertical: space12),
       ),
     );
   }

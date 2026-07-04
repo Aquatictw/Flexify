@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:spotify_sdk/models/player_options.dart' as player_options;
 import 'package:spotify_sdk/models/player_state.dart';
 import 'package:spotify_sdk/spotify_sdk.dart';
@@ -54,28 +55,18 @@ class SpotifyService {
     _accessToken = accessToken;
     _tokenExpiry = tokenExpiry;
 
-    // Log token restoration for debugging
-    if (accessToken != null) {
-      final tokenPreview = accessToken.length > 20
-          ? '${accessToken.substring(0, 20)}...'
-          : accessToken;
-      print('🎵 Token restored: $tokenPreview');
-      print('🎵 Token expires at: $tokenExpiry');
-
-      // Check if token is already expired
-      if (tokenExpiry != null && DateTime.now().isAfter(tokenExpiry)) {
-        print('🎵 Warning: Restored token is already expired');
-      }
+    // ponytail: don't log the token itself (even a preview lands in logcat).
+    if (accessToken != null &&
+        tokenExpiry != null &&
+        DateTime.now().isAfter(tokenExpiry)) {
+      debugPrint('🎵 Warning: Restored token is already expired');
     }
   }
 
   Future<bool> connect() async {
     try {
-      print('🎵 Starting Spotify connection...');
-      print('🎵 Client ID: $clientId');
-      print('🎵 Redirect URL: $redirectUrl');
-
-      print('🎵 Step 1: Getting access token...');
+      // ponytail: never log clientId — it's a secret in a public repo's logs.
+      debugPrint('🎵 Starting Spotify connection...');
       try {
         _accessToken = await SpotifySdk.getAccessToken(
           clientId: clientId,
@@ -90,12 +81,7 @@ class SpotifyService {
         );
         // Token expires in 1 hour
         _tokenExpiry = DateTime.now().add(const Duration(hours: 1));
-        // Safe token logging (handle tokens shorter than 20 chars)
-        final tokenPreview = _accessToken!.length > 20
-            ? '${_accessToken!.substring(0, 20)}...'
-            : _accessToken!;
-        print('🎵 Access token received: $tokenPreview');
-        print('🎵 Token expires at: $_tokenExpiry');
+        debugPrint('🎵 Access token received');
       } catch (e) {
         print('🎵 Access token error: $e');
         _accessToken = null;

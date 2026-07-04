@@ -7,14 +7,20 @@ import '../database/database.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
+import '../widgets/depth_ember_reveal.dart';
 import 'edit_plan_page.dart';
 import 'plan_state.dart';
 import 'plan_tile.dart';
 
 class PlansList extends StatefulWidget {
-
   const PlansList({
-    required this.plans, required this.navKey, required this.selected, required this.onSelect, required this.search, required this.scroll, super.key,
+    required this.plans,
+    required this.navKey,
+    required this.selected,
+    required this.onSelect,
+    required this.search,
+    required this.scroll,
+    super.key,
     this.footer,
   });
   final List<Plan>? plans;
@@ -78,14 +84,17 @@ class _PlansListState extends State<PlansList> {
             itemBuilder: (context, index) {
               final plan = filteredPlans[index];
 
-              return PlanTile(
+              return RevealBlock(
                 key: Key(plan.id.toString()),
-                plan: plan,
-                weekday: weekday,
                 index: index,
-                navigatorKey: widget.navKey,
-                selected: widget.selected,
-                onSelect: (id) => widget.onSelect(id),
+                child: PlanTile(
+                  plan: plan,
+                  weekday: weekday,
+                  index: index,
+                  navigatorKey: widget.navKey,
+                  selected: widget.selected,
+                  onSelect: (id) => widget.onSelect(id),
+                ),
               );
             },
             onReorder: (int old, int idx) async {
@@ -137,13 +146,16 @@ class _PlansListState extends State<PlansList> {
             (context, index) {
               final plan = filteredPlans[index];
 
-              return PlanTile(
-                plan: plan,
-                weekday: weekday,
+              return RevealBlock(
                 index: index,
-                navigatorKey: widget.navKey,
-                selected: widget.selected,
-                onSelect: (id) => widget.onSelect(id),
+                child: PlanTile(
+                  plan: plan,
+                  weekday: weekday,
+                  index: index,
+                  navigatorKey: widget.navKey,
+                  selected: widget.selected,
+                  onSelect: (id) => widget.onSelect(id),
+                ),
               );
             },
             childCount: filteredPlans.length,

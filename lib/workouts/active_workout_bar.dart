@@ -40,8 +40,8 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
       final workoutState = context.read<WorkoutState>();
       if (workoutState.activeWorkout != null) {
         setState(() {
-          _elapsed = DateTime.now()
-              .difference(workoutState.activeWorkout!.startTime);
+          _elapsed =
+              DateTime.now().difference(workoutState.activeWorkout!.startTime);
         });
       }
     });
@@ -61,7 +61,9 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
   }
 
   Future<void> _navigateToWorkout(
-      GlobalKey<NavigatorState>? navKey, Plan plan,) async {
+    GlobalKey<NavigatorState>? navKey,
+    Plan plan,
+  ) async {
     // Wait for navigator to be ready (up to 2 seconds)
     int attempts = 0;
     while (navKey?.currentState == null && attempts < 20) {
@@ -132,7 +134,11 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
       },
       child: Container(
         margin: const EdgeInsets.only(
-            left: space12, right: space12, top: space8, bottom: space4,),
+          left: space12,
+          right: space12,
+          top: space8,
+          bottom: space4,
+        ),
         decoration: BoxDecoration(
           color: colorScheme.primaryContainer,
           borderRadius: brSm,
@@ -146,7 +152,9 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(
-              horizontal: space12, vertical: space8,),
+            horizontal: space12,
+            vertical: space8,
+          ),
           child: Row(
             children: [
               Container(
@@ -178,10 +186,7 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                     const SizedBox(height: space4),
                     Text(
                       _formatDuration(_elapsed),
-                      style: Theme.of(context)
-                          .textTheme
-                          .labelMedium
-                          ?.copyWith(
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
                             color: colorScheme.onPrimaryContainer
                                 .withValues(alpha: 0.7),
                           ),
@@ -214,7 +219,7 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                       ],
                     ),
                   );
-                  if (confirmed ?? false) {
+                  if ((confirmed ?? false) && context.mounted) {
                     final timerState = context.read<TimerState>();
                     await timerState.stopTimer();
                     await workoutState.discardWorkout();
@@ -264,7 +269,8 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
                     // Stop workout with optional selfie
                     if (context.mounted) {
                       await workoutState.stopWorkout(
-                          selfieImagePath: selfiePath,);
+                        selfieImagePath: selfiePath,
+                      );
                     }
                   }
                 },

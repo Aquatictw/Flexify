@@ -13,6 +13,7 @@ import '../plan/plan_state.dart';
 import '../settings/settings_page.dart';
 import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
+import '../widgets/depth_ember_reveal.dart';
 import '../widgets/timer_quick_access.dart';
 import 'add_exercise_page.dart';
 import 'bodyweight_overview_page.dart';
@@ -544,20 +545,30 @@ class GraphsPageState extends State<GraphsPage>
 
         if (showHeaders) {
           if (index == 0) {
-            return GraphsBentoHeader(tabCtrl: widget.tabController);
+            return RevealBlock(
+              index: index,
+              child: GraphsBentoHeader(tabCtrl: widget.tabController),
+            );
           }
-          if (index == 1) return RecentPrTicker(tabCtrl: widget.tabController);
+          if (index == 1)
+            return RevealBlock(
+              index: index,
+              child: RecentPrTicker(tabCtrl: widget.tabController),
+            );
           if (index == 2) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: space16,
-                vertical: space8,
-              ),
-              child: Text(
-                'All exercises',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+            return RevealBlock(
+              index: index,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: space16,
+                  vertical: space8,
+                ),
+                child: Text(
+                  'All exercises',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
               ),
             );
           }
@@ -566,27 +577,30 @@ class GraphsPageState extends State<GraphsPage>
         final set = gymSets.elementAtOrNull(index - headerCount);
         if (set == null) return const SizedBox();
 
-        return GraphTile(
-          selected: selected,
-          exercise: set,
-          onSelect: (name) async {
-            if (selected.contains(name))
+        return RevealBlock(
+          index: index,
+          child: GraphTile(
+            selected: selected,
+            exercise: set,
+            onSelect: (name) async {
+              if (selected.contains(name))
+                setState(() {
+                  selected.remove(name);
+                });
+              else
+                setState(() {
+                  selected.add(name);
+                });
+              final result = await (db.gymSets.selectOnly()
+                    ..addColumns([db.gymSets.name.count()])
+                    ..where(db.gymSets.name.isIn(selected)))
+                  .getSingle();
               setState(() {
-                selected.remove(name);
+                total = result.read(db.gymSets.name.count()) ?? 0;
               });
-            else
-              setState(() {
-                selected.add(name);
-              });
-            final result = await (db.gymSets.selectOnly()
-                  ..addColumns([db.gymSets.name.count()])
-                  ..where(db.gymSets.name.isIn(selected)))
-                .getSingle();
-            setState(() {
-              total = result.read(db.gymSets.name.count()) ?? 0;
-            });
-          },
-          tabCtrl: widget.tabController,
+            },
+            tabCtrl: widget.tabController,
+          ),
         );
       },
     );

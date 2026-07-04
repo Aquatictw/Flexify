@@ -2,8 +2,9 @@ import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../main.dart';
 
-// Cache for batch workout record counts
-final _prCache = <String, ({Map<int, int> counts, DateTime cachedAt})>{};
+// Cache for batch workout records: workoutId -> (setId -> record types).
+final _prCache = <String,
+    ({Map<int, Map<int, Set<RecordType>>> records, DateTime cachedAt})>{};
 const _cacheDuration = Duration(seconds: 30);
 
 /// Clears the PR cache (call when new sets are added/modified)
@@ -32,11 +33,11 @@ String recordShortLabel(RecordType t) => switch (t) {
 
 /// Represents a personal record achievement
 class RecordAchievement {
-
   const RecordAchievement({
     required this.type,
     required this.newValue,
-    required this.unit, this.previousValue,
+    required this.unit,
+    this.previousValue,
   });
   final RecordType type;
   final double newValue;
@@ -127,21 +128,27 @@ Future<List<RecordAchievement>> checkForRecords({
 
   if (result == null) {
     // First set for this exercise - all records!
-    achievements.add(RecordAchievement(
-      type: RecordType.bestWeight,
-      newValue: weight,
-      unit: unit,
-    ),);
-    achievements.add(RecordAchievement(
-      type: RecordType.best1RM,
-      newValue: calculate1RM(weight, reps),
-      unit: unit,
-    ),);
-    achievements.add(RecordAchievement(
-      type: RecordType.bestVolume,
-      newValue: calculateVolume(weight, reps),
-      unit: unit,
-    ),);
+    achievements.add(
+      RecordAchievement(
+        type: RecordType.bestWeight,
+        newValue: weight,
+        unit: unit,
+      ),
+    );
+    achievements.add(
+      RecordAchievement(
+        type: RecordType.best1RM,
+        newValue: calculate1RM(weight, reps),
+        unit: unit,
+      ),
+    );
+    achievements.add(
+      RecordAchievement(
+        type: RecordType.bestVolume,
+        newValue: calculateVolume(weight, reps),
+        unit: unit,
+      ),
+    );
     return achievements;
   }
 
@@ -151,32 +158,38 @@ Future<List<RecordAchievement>> checkForRecords({
 
   // Check each record type
   if (weight > previousBestWeight) {
-    achievements.add(RecordAchievement(
-      type: RecordType.bestWeight,
-      newValue: weight,
-      previousValue: previousBestWeight,
-      unit: unit,
-    ),);
+    achievements.add(
+      RecordAchievement(
+        type: RecordType.bestWeight,
+        newValue: weight,
+        previousValue: previousBestWeight,
+        unit: unit,
+      ),
+    );
   }
 
   final current1RM = calculate1RM(weight, reps);
   if (current1RM > previousBest1RM) {
-    achievements.add(RecordAchievement(
-      type: RecordType.best1RM,
-      newValue: current1RM,
-      previousValue: previousBest1RM,
-      unit: unit,
-    ),);
+    achievements.add(
+      RecordAchievement(
+        type: RecordType.best1RM,
+        newValue: current1RM,
+        previousValue: previousBest1RM,
+        unit: unit,
+      ),
+    );
   }
 
   final currentVolume = calculateVolume(weight, reps);
   if (currentVolume > previousBestVolume) {
-    achievements.add(RecordAchievement(
-      type: RecordType.bestVolume,
-      newValue: currentVolume,
-      previousValue: previousBestVolume,
-      unit: unit,
-    ),);
+    achievements.add(
+      RecordAchievement(
+        type: RecordType.bestVolume,
+        newValue: currentVolume,
+        previousValue: previousBestVolume,
+        unit: unit,
+      ),
+    );
   }
 
   return achievements;
@@ -250,11 +263,13 @@ Future<Map<int, Set<RecordType>>> getWorkoutRecords(int workoutId) async {
 
   // Get all completed sets in this workout
   final sets = await (db.gymSets.select()
-        ..where((s) =>
-            s.workoutId.equals(workoutId) &
-            s.hidden.equals(false) &
-            s.warmup.equals(false) &
-            s.cardio.equals(false),))
+        ..where(
+          (s) =>
+              s.workoutId.equals(workoutId) &
+              s.hidden.equals(false) &
+              s.warmup.equals(false) &
+              s.cardio.equals(false),
+        ))
       .get();
 
   // Group sets by exercise name
@@ -299,11 +314,13 @@ Future<Map<int, Set<RecordType>>> getWorkoutRecords(int workoutId) async {
 
     // Get all sets for this exercise to find earliest record holders
     final allExerciseSets = await (db.gymSets.select()
-          ..where((s) =>
-              s.name.equals(exerciseName) &
-              s.hidden.equals(false) &
-              s.warmup.equals(false) &
-              s.cardio.equals(false),))
+          ..where(
+            (s) =>
+                s.name.equals(exerciseName) &
+                s.hidden.equals(false) &
+                s.warmup.equals(false) &
+                s.cardio.equals(false),
+          ))
         .get();
 
     for (final set in allExerciseSets) {
@@ -369,6 +386,21 @@ Future<int> getWorkoutRecordCount(int workoutId) async {
 /// Get record counts for multiple workouts efficiently
 /// Returns a map of workoutId -> number of record-breaking sets
 Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
+  final records = await getBatchWorkoutRecords(workoutIds);
+  return {
+    for (final e in records.entries)
+      e.key: e.value.values.fold<int>(0, (sum, types) => sum + types.length),
+  };
+}
+
+/// Get record-holding sets for multiple workouts in one batch.
+///
+/// Returns workoutId -> (setId -> record types). This is the single-pass
+/// engine behind the history feed: computing it once for the whole page
+/// replaces the old per-workout [getWorkoutRecords] N+1 loop.
+Future<Map<int, Map<int, Set<RecordType>>>> getBatchWorkoutRecords(
+  List<int> workoutIds,
+) async {
   if (workoutIds.isEmpty) return {};
 
   // Create cache key from sorted workout IDs
@@ -380,7 +412,7 @@ Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
   if (cached != null) {
     final age = DateTime.now().difference(cached.cachedAt);
     if (age < _cacheDuration) {
-      return cached.counts;
+      return cached.records;
     }
   }
 
@@ -390,15 +422,17 @@ Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
     return age >= _cacheDuration;
   });
 
-  final recordCounts = <int, int>{};
+  final workoutRecords = <int, Map<int, Set<RecordType>>>{};
 
   // Get all sets from these workouts
   final workoutSets = await (db.gymSets.select()
-        ..where((s) =>
-            s.workoutId.isIn(workoutIds) &
-            s.hidden.equals(false) &
-            s.warmup.equals(false) &
-            s.cardio.equals(false),))
+        ..where(
+          (s) =>
+              s.workoutId.isIn(workoutIds) &
+              s.hidden.equals(false) &
+              s.warmup.equals(false) &
+              s.cardio.equals(false),
+        ))
       .get();
 
   // Group by exercise name to get all-time bests
@@ -444,11 +478,13 @@ Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
 
     // Get all sets for this exercise to find earliest record holders
     final allSets = await (db.gymSets.select()
-          ..where((s) =>
-              s.name.equals(exerciseName) &
-              s.hidden.equals(false) &
-              s.warmup.equals(false) &
-              s.cardio.equals(false),))
+          ..where(
+            (s) =>
+                s.name.equals(exerciseName) &
+                s.hidden.equals(false) &
+                s.warmup.equals(false) &
+                s.cardio.equals(false),
+          ))
         .get();
 
     int? minIdForWeight;
@@ -482,35 +518,36 @@ Future<Map<int, int>> getBatchWorkoutRecordCounts(List<int> workoutIds) async {
     );
   }
 
-  // Check each set - only count if it's the earliest with that record value
+  // Check each set - only mark if it's the earliest with that record value
   for (final set in workoutSets) {
     final bests = exerciseBests[set.name];
     final holders = recordHolders[set.name];
-    if (bests == null || holders == null) continue;
+    if (bests == null || holders == null || set.workoutId == null) continue;
 
-    var hasRecord = false;
+    final types = <RecordType>{};
 
     if (set.weight == bests.weight && set.id == holders.weightId) {
-      hasRecord = true;
+      types.add(RecordType.bestWeight);
     }
 
     final set1RM = calculate1RM(set.weight, set.reps);
     if (set1RM == bests.rm1 && set.id == holders.rm1Id) {
-      hasRecord = true;
+      types.add(RecordType.best1RM);
     }
 
     final setVolume = calculateVolume(set.weight, set.reps);
     if (setVolume == bests.volume && set.id == holders.volumeId) {
-      hasRecord = true;
+      types.add(RecordType.bestVolume);
     }
 
-    if (hasRecord && set.workoutId != null) {
-      recordCounts[set.workoutId!] = (recordCounts[set.workoutId!] ?? 0) + 1;
+    if (types.isNotEmpty) {
+      (workoutRecords[set.workoutId!] ??= <int, Set<RecordType>>{})[set.id] =
+          types;
     }
   }
 
   // Store in cache before returning
-  _prCache[cacheKey] = (counts: recordCounts, cachedAt: DateTime.now());
+  _prCache[cacheKey] = (records: workoutRecords, cachedAt: DateTime.now());
 
-  return recordCounts;
+  return workoutRecords;
 }

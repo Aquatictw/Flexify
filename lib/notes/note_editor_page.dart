@@ -17,9 +17,9 @@ Color _inkBorderOn(Color bg) =>
     bg.computeLuminance() > 0.5 ? Colors.black26 : Colors.white24;
 
 class NoteEditorPage extends StatefulWidget {
-
   const NoteEditorPage({
-    required this.colorIndex, super.key,
+    required this.colorIndex,
+    super.key,
     this.note,
   });
   final Note? note;
@@ -35,15 +35,17 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
   late int _selectedColorIndex;
   Color? _customColor;
 
+  // Muted, desaturated palette that sits with the dark app theme rather than
+  // fighting it. Dark enough that _inkOn picks white text automatically.
   final List<Color> _noteColors = [
-    const Color(0xFFFFB366), // Peach
-    const Color(0xFF7DD3D3), // Mint
-    const Color(0xFF6FA8FF), // Sky Blue
-    const Color(0xFFFF99FF), // Pink
-    const Color(0xFFFF7A7A), // Coral
-    const Color(0xFFF9FF66), // Light Yellow
-    const Color(0xFF7FD98A), // Mint Green
-    const Color(0xFF9D8FFF), // Lavender
+    const Color(0xFF9E6B4A), // Terracotta
+    const Color(0xFF3F6E6C), // Teal
+    const Color(0xFF44607F), // Slate Blue
+    const Color(0xFF7E5470), // Mauve
+    const Color(0xFF8F5151), // Rust
+    const Color(0xFF7C7A45), // Olive
+    const Color(0xFF54764F), // Sage
+    const Color(0xFF625A82), // Muted Lavender
   ];
 
   bool _isModified = false;
@@ -119,7 +121,9 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
       final note =
           await (db.notes.select()..where((n) => n.id.equals(id))).getSingle();
       if (mounted) {
-        setState(() { _isModified = false; });
+        setState(() {
+          _isModified = false;
+        });
         Navigator.pop(context, note);
       }
     } else {
@@ -137,7 +141,9 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
             ..where((n) => n.id.equals(widget.note!.id)))
           .getSingle();
       if (mounted) {
-        setState(() { _isModified = false; });
+        setState(() {
+          _isModified = false;
+        });
         Navigator.pop(context, note);
       }
     }
@@ -340,9 +346,10 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                   children: [
                     TextField(
                       controller: _titleController,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: _inkOn(_currentColor),
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: _inkOn(_currentColor),
+                              ),
                       decoration: InputDecoration(
                         hintText: 'Title',
                         hintStyle: TextStyle(
@@ -386,7 +393,6 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
 }
 
 class _SimpleColorPickerDialog extends StatefulWidget {
-
   const _SimpleColorPickerDialog({required this.initialColor});
   final Color initialColor;
 
@@ -441,26 +447,47 @@ class _SimpleColorPickerDialogState extends State<_SimpleColorPickerDialog> {
               gradient: LinearGradient(
                 colors: [
                   HSLColor.fromAHSL(
-                          1, 0, _hslColor.saturation, _hslColor.lightness,)
-                      .toColor(),
+                    1,
+                    0,
+                    _hslColor.saturation,
+                    _hslColor.lightness,
+                  ).toColor(),
                   HSLColor.fromAHSL(
-                          1, 60, _hslColor.saturation, _hslColor.lightness,)
-                      .toColor(),
+                    1,
+                    60,
+                    _hslColor.saturation,
+                    _hslColor.lightness,
+                  ).toColor(),
                   HSLColor.fromAHSL(
-                          1, 120, _hslColor.saturation, _hslColor.lightness,)
-                      .toColor(),
+                    1,
+                    120,
+                    _hslColor.saturation,
+                    _hslColor.lightness,
+                  ).toColor(),
                   HSLColor.fromAHSL(
-                          1, 180, _hslColor.saturation, _hslColor.lightness,)
-                      .toColor(),
+                    1,
+                    180,
+                    _hslColor.saturation,
+                    _hslColor.lightness,
+                  ).toColor(),
                   HSLColor.fromAHSL(
-                          1, 240, _hslColor.saturation, _hslColor.lightness,)
-                      .toColor(),
+                    1,
+                    240,
+                    _hslColor.saturation,
+                    _hslColor.lightness,
+                  ).toColor(),
                   HSLColor.fromAHSL(
-                          1, 300, _hslColor.saturation, _hslColor.lightness,)
-                      .toColor(),
+                    1,
+                    300,
+                    _hslColor.saturation,
+                    _hslColor.lightness,
+                  ).toColor(),
                   HSLColor.fromAHSL(
-                          1, 360, _hslColor.saturation, _hslColor.lightness,)
-                      .toColor(),
+                    1,
+                    360,
+                    _hslColor.saturation,
+                    _hslColor.lightness,
+                  ).toColor(),
                 ],
               ),
             ),
