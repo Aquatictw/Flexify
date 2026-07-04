@@ -104,16 +104,8 @@ class _ExercisePickerModalState extends State<ExercisePickerModal> {
           ),
           child: Column(
             children: [
-              // Handle
-              Container(
-                margin: const EdgeInsets.only(top: space8, bottom: space4),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  borderRadius: brPill,
-                ),
-              ),
+              // ponytail: theme's bottomSheetTheme.showDragHandle draws the
+              // grabber — no manual handle here or it doubles up.
               // Title
               Padding(
                 padding: const EdgeInsets.fromLTRB(space16, space4, space16, space8),

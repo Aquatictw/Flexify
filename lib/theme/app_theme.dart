@@ -50,6 +50,7 @@ ThemeData jlTheme(ColorScheme scheme) {
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.transparent,
       elevation: 0,
+      scrolledUnderElevation: 0,
       titleTextStyle: text.titleLarge?.copyWith(
         fontSize: 24,
         fontWeight: FontWeight.w800,
@@ -84,11 +85,14 @@ ThemeData jlTheme(ColorScheme scheme) {
     dialogTheme: const DialogThemeData(
       shape: RoundedRectangleBorder(borderRadius: brLg),
     ),
-    bottomSheetTheme: const BottomSheetThemeData(
-      shape: RoundedRectangleBorder(
+    bottomSheetTheme: BottomSheetThemeData(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(radiusLg)),
       ),
+      backgroundColor: scheme.surface,
       showDragHandle: true,
+      dragHandleColor: scheme.onSurfaceVariant.withValues(alpha: 0.4),
+      dragHandleSize: const Size(40, 4),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
