@@ -48,57 +48,74 @@ String dashboardShell({
 <title>$title - JackedLog</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     color-scheme: dark;
-    --bg: #0a0c12;
-    --surface: #12161f;
-    --surface-elevated: #1a2029;
-    --surface-strong: #222b3a;
-    --text: #f3f6fb;
-    --text-muted: #97a3b6;
-    --accent: #8b5cf6;
-    --accent-2: #22d3ee;
-    --accent-dim: rgba(139,92,246,0.16);
-    --accent-hover: #7c3aed;
-    --teal: #14b8a6;
-    --green: #22c55e;
-    --amber: #f59e0b;
-    --red: #ef4444;
-    --border: rgba(148,163,184,0.14);
-    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 32px rgba(0,0,0,0.18);
-    --radius: 12px;
+    --bg: #0d0f0c;
+    --surface: #151913;
+    --surface-elevated: #1f241c;
+    --surface-strong: #293025;
+    --text: #f4f1e9;
+    --text-muted: #a7ad9c;
+    --accent: #9fc46d;
+    --accent-dim: rgba(159,196,109,0.16);
+    --accent-hover: #b8d982;
+    --teal: #74b6a3;
+    --green: #9fc46d;
+    --amber: #d6a15d;
+    --red: #e06d5f;
+    --border: rgba(225,231,211,0.12);
+    --shadow: 0 1px 2px rgba(0,0,0,0.32), 0 18px 48px rgba(0,0,0,0.22);
+    --radius: 10px;
   }
   html.light {
     color-scheme: light;
-    --bg: #f4f6fa;
-    --surface: #ffffff;
-    --surface-elevated: #f1f5f9;
-    --surface-strong: #e8eef7;
-    --text: #111827;
-    --text-muted: #64748b;
-    --accent: #7c3aed;
-    --accent-2: #0891b2;
-    --accent-dim: rgba(124,58,237,0.10);
-    --accent-hover: #6d28d9;
-    --border: rgba(15,23,42,0.10);
-    --shadow: 0 1px 2px rgba(15,23,42,0.06), 0 10px 28px rgba(15,23,42,0.06);
+    --bg: #f5f3ee;
+    --surface: #fffdf7;
+    --surface-elevated: #eeeadf;
+    --surface-strong: #e2dccd;
+    --text: #1d2119;
+    --text-muted: #6b725f;
+    --accent: #617d3f;
+    --accent-dim: rgba(97,125,63,0.12);
+    --accent-hover: #4d6531;
+    --border: rgba(45,52,36,0.13);
+    --shadow: 0 1px 2px rgba(45,52,36,0.08), 0 18px 38px rgba(45,52,36,0.09);
   }
   *, *::before, *::after { box-sizing: border-box; }
-  html { background: var(--bg); }
+  html { background: var(--bg); scroll-behavior: smooth; }
   body {
     background:
-      radial-gradient(1100px 600px at 85% -10%, var(--accent-dim), transparent 60%),
+      radial-gradient(900px 520px at 88% -10%, var(--accent-dim), transparent 62%),
+      radial-gradient(700px 520px at 8% 18%, rgba(214,161,93,0.07), transparent 55%),
       var(--bg);
     background-attachment: fixed;
     color: var(--text);
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "tnum";
-    letter-spacing: -0.011em;
     margin: 0;
   }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.18;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size: 34px 34px;
+    mask-image: linear-gradient(to bottom, #000 0%, transparent 72%);
+  }
   a { color: var(--accent); }
+  a, button, input, select {
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
   .sidebar {
     position: fixed;
     top: 0;
@@ -114,14 +131,19 @@ String dashboardShell({
   }
   .sidebar .logo {
     padding: 1.35rem 1.25rem;
-    font-size: 1.3rem;
+    font-size: 1.25rem;
     font-weight: 800;
-    letter-spacing: -0.02em;
-    background: linear-gradient(120deg, #a78bfa, var(--accent-2));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--text);
     border-bottom: 1px solid var(--border);
+  }
+  .sidebar .logo::after {
+    content: "";
+    display: block;
+    width: 42px;
+    height: 3px;
+    margin-top: 0.45rem;
+    border-radius: 999px;
+    background: var(--accent);
   }
   .sidebar nav { display: flex; flex-direction: column; gap: 2px; padding: 0.75rem 0.6rem; flex: 1; }
   .sidebar nav a {
@@ -133,11 +155,10 @@ String dashboardShell({
     text-decoration: none;
     font-size: 0.88rem;
     font-weight: 500;
-    border-radius: 9px;
-    transition: background 0.15s, color 0.15s;
+    border-radius: 8px;
   }
   .sidebar nav a .nav-icon { display: inline-flex; opacity: 0.75; }
-  .sidebar nav a:hover { background: var(--surface-elevated); color: var(--text); }
+  .sidebar nav a:hover { background: var(--surface-elevated); color: var(--text); transform: translateX(2px); }
   .sidebar nav a.active {
     background: var(--accent-dim);
     color: var(--text);
@@ -147,7 +168,7 @@ String dashboardShell({
   .sidebar nav a.active .nav-icon { color: var(--accent); opacity: 1; }
   .main {
     margin-left: 240px;
-    min-height: 100vh;
+    min-height: 100dvh;
   }
   .header {
     display: flex;
@@ -156,13 +177,13 @@ String dashboardShell({
     gap: 1rem;
     padding: 0.85rem 1.5rem;
     border-bottom: 1px solid var(--border);
-    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
     backdrop-filter: blur(14px);
     position: sticky;
     top: 0;
     z-index: 50;
   }
-  .header h1 { font-size: 1.1rem; margin: 0; font-weight: 600; }
+  .header h1 { font-size: 1.08rem; margin: 0; font-weight: 700; letter-spacing: 0; }
   .header-left { display: flex; align-items: center; gap: 0.75rem; }
   .header-actions { display: flex; align-items: center; gap: 0.65rem; }
   .hamburger {
@@ -190,7 +211,7 @@ String dashboardShell({
     height: 36px;
     padding: 0 2rem 0 0.75rem;
     border: 1px solid var(--border);
-    border-radius: 7px;
+    border-radius: 8px;
     background: var(--surface-elevated);
     color: var(--text);
     font: inherit;
@@ -203,10 +224,10 @@ String dashboardShell({
     font-size: 1.1rem;
     cursor: pointer;
     padding: 0.3rem 0.5rem;
-    border-radius: 6px;
+    border-radius: 8px;
     line-height: 1;
   }
-  .theme-toggle:hover { background: var(--surface-elevated); }
+  .theme-toggle:hover { background: var(--surface-strong); transform: translateY(-1px); }
   .overlay {
     display: none;
     position: fixed;
@@ -215,9 +236,9 @@ String dashboardShell({
     z-index: 90;
   }
   .content {
-    width: min(100%, 1480px);
+    width: min(100%, 1440px);
     margin: 0 auto;
-    padding: 1.5rem;
+    padding: 1.35rem;
   }
   .empty-state {
     color: var(--text-muted);
@@ -249,7 +270,7 @@ String dashboardShell({
     overflow: hidden;
     min-height: 112px;
     padding: 1.15rem;
-    transition: transform 0.15s, border-color 0.15s;
+    isolation: isolate;
   }
   .metric-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--metric-color, var(--accent)) 45%, var(--border)); }
   .metric-card::before {
@@ -258,6 +279,17 @@ String dashboardShell({
     inset: 0 0 auto 0;
     height: 3px;
     background: linear-gradient(90deg, var(--metric-color, var(--accent)), transparent 90%);
+  }
+  .metric-card::after {
+    content: "";
+    position: absolute;
+    right: -32px;
+    top: -32px;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--metric-color, var(--accent)) 16%, transparent);
+    z-index: -1;
   }
   .metric-label {
     color: var(--text-muted);
@@ -270,7 +302,7 @@ String dashboardShell({
     margin-top: 0.35rem;
     font-size: 1.85rem;
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
     line-height: 1.1;
   }
   .metric-subtle {
@@ -326,7 +358,8 @@ String dashboardShell({
   .segmented a.active {
     background: var(--accent);
     border-color: var(--accent);
-    color: #fff;
+    color: color-mix(in srgb, var(--bg) 88%, #000);
+    font-weight: 700;
   }
   .badge {
     display: inline-flex;
@@ -610,7 +643,7 @@ String dashboardShell({
     transition: background 0.15s;
   }
   .page-link:hover { background: var(--surface-elevated); }
-  .page-link.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .page-link.active { background: var(--accent); border-color: var(--accent); color: color-mix(in srgb, var(--bg) 88%, #000); font-weight: 750; }
   .page-gap { color: var(--text-muted); }
   .table-card {
     background: var(--surface);
@@ -643,6 +676,11 @@ String dashboardShell({
   }
   .data-table td { padding: 0.6rem 1.25rem; border-top: 1px solid var(--border); }
   .data-table tr.best td { background: var(--accent-dim); font-weight: 650; }
+  .detail-side .data-table th,
+  .detail-side .data-table td {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
   .btn {
     display: inline-flex;
     align-items: center;
@@ -658,16 +696,15 @@ String dashboardShell({
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
-    transition: filter 0.15s, background 0.15s;
   }
   .btn:hover { background: var(--surface-strong); }
   .btn:disabled { opacity: 0.55; cursor: default; }
   .btn.primary {
-    background: linear-gradient(120deg, var(--accent), var(--accent-hover));
+    background: var(--accent);
     border-color: transparent;
-    color: #fff;
+    color: color-mix(in srgb, var(--bg) 88%, #000);
   }
-  .btn.primary:hover { filter: brightness(1.1); background: linear-gradient(120deg, var(--accent), var(--accent-hover)); }
+  .btn.primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
   .btn.danger { background: rgba(239,68,68,0.14); border-color: rgba(239,68,68,0.3); color: var(--red); }
   .btn.danger:hover { background: rgba(239,68,68,0.24); }
   .status-text { font-size: 0.85rem; }
@@ -686,9 +723,126 @@ String dashboardShell({
   .list-row .note { font-size: 0.8rem; color: var(--text-muted); font-style: italic; margin-top: 0.15rem; }
   .list-row .value { font-weight: 650; font-size: 0.9rem; white-space: nowrap; }
   .page-head { margin-bottom: 1.5rem; }
-  .page-head h2 { margin: 0 0 0.25rem; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
+  .page-head h2 { margin: 0 0 0.25rem; font-size: clamp(1.55rem, 2vw, 2.2rem); font-weight: 800; letter-spacing: 0; text-wrap: balance; }
   .page-head .meta { color: var(--text-muted); font-size: 0.9rem; }
   .page-head .notes { color: var(--text-muted); font-style: italic; font-size: 0.9rem; margin-top: 0.5rem; }
+  .detail-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    gap: 1.25rem;
+    align-items: start;
+  }
+  .detail-main,
+  .detail-side {
+    min-width: 0;
+  }
+  .exercise-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: end;
+    margin-bottom: 1.25rem;
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background:
+      radial-gradient(360px 180px at 92% 0%, var(--accent-dim), transparent 72%),
+      var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .exercise-hero h2 {
+    margin: 0;
+    font-size: clamp(1.7rem, 3vw, 3rem);
+    line-height: 0.95;
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.8rem;
+  }
+  .hero-stat {
+    min-width: 92px;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--surface-elevated) 80%, transparent);
+  }
+  .hero-stat span {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .hero-stat strong {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 1.08rem;
+  }
+  .chart-panel { min-height: 360px; }
+  .chart-panel canvas { max-height: 420px; }
+  .control-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+  .control-group > span {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .insight-list {
+    display: grid;
+    gap: 0.75rem;
+  }
+  .insight-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--border);
+  }
+  .insight-row:first-child { border-top: 0; padding-top: 0; }
+  .insight-row span { color: var(--text-muted); font-size: 0.82rem; }
+  .insight-row strong { font-size: 0.92rem; text-align: right; }
+  .history-list {
+    display: grid;
+    gap: 0.75rem;
+  }
+  .history-entry {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr) auto;
+    gap: 0.9rem;
+    align-items: center;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: inherit;
+    text-decoration: none;
+    box-shadow: var(--shadow);
+  }
+  .history-entry:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .history-date { color: var(--text-muted); font-size: 0.78rem; }
+  .history-title { font-weight: 700; color: var(--text); }
+  .history-sub { margin-top: 0.18rem; color: var(--text-muted); font-size: 0.8rem; }
+  .history-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.45rem;
+  }
 
   @media (max-width: 768px) {
     .sidebar { transform: translateX(-100%); }
@@ -704,6 +858,10 @@ String dashboardShell({
     .block-summary { grid-template-columns: 1fr; }
     .lift-grid,
     .block-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .detail-layout,
+    .exercise-hero,
+    .history-entry { grid-template-columns: 1fr; }
+    .history-metrics { justify-content: flex-start; }
   }
 </style>
 $extraHead
@@ -978,6 +1136,8 @@ $chartsHtml''';
 (function() {
   const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#888';
   const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#333';
+  const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#9fc46d';
+  const tealColor = getComputedStyle(document.documentElement).getPropertyValue('--teal').trim() || '#74b6a3';
 
   const chartOpts = {
     indexAxis: 'y',
@@ -998,8 +1158,8 @@ $chartsHtml''';
         labels: [$volumeLabels],
         datasets: [{
           data: [$volumeData],
-          backgroundColor: 'rgba(124,58,237,0.7)',
-          borderColor: 'rgba(124,58,237,1)',
+          backgroundColor: 'rgba(159,196,109,0.68)',
+          borderColor: accentColor,
           borderWidth: 1,
           borderRadius: 4
         }]
@@ -1016,8 +1176,8 @@ $chartsHtml''';
         labels: [$setsLabels],
         datasets: [{
           data: [$setsData],
-          backgroundColor: 'rgba(20,184,166,0.7)',
-          borderColor: 'rgba(20,184,166,1)',
+          backgroundColor: 'rgba(116,182,163,0.68)',
+          borderColor: tealColor,
           borderWidth: 1,
           borderRadius: 4
         }]
@@ -1082,13 +1242,13 @@ String _buildHeatmapSvg(Map<String, int> trainingDays) {
       } else if (maxSets > 0) {
         final intensity = sets / maxSets;
         if (intensity < 0.25) {
-          fill = 'rgba(124,58,237,0.3)';
+          fill = 'rgba(159,196,109,0.28)';
         } else if (intensity < 0.5) {
-          fill = 'rgba(124,58,237,0.5)';
+          fill = 'rgba(159,196,109,0.46)';
         } else if (intensity < 0.75) {
-          fill = 'rgba(124,58,237,0.7)';
+          fill = 'rgba(159,196,109,0.68)';
         } else {
-          fill = 'rgba(124,58,237,1)';
+          fill = 'rgba(159,196,109,1)';
         }
       } else {
         fill = 'var(--surface-elevated)';
@@ -1294,6 +1454,10 @@ Response exerciseDetailHandler(
 
   final records = dashboardService.getExerciseRecords(exerciseName);
   final repRecords = dashboardService.getRepRecords(exerciseName);
+  final workoutHistory = dashboardService.getExerciseWorkoutHistory(
+    exerciseName,
+    limit: 24,
+  );
   final progress = dashboardService.getExerciseProgress(
     exerciseName,
     metric: metric,
@@ -1337,33 +1501,51 @@ Response exerciseDetailHandler(
   <span>${_escapeHtml(exerciseName)}</span>
 </div>''';
 
-  // Personal records cards
   final hasRecords = records['hasRecords'] as bool;
-  String prCards;
+  final recentSetCount = workoutHistory.fold<int>(
+    0,
+    (sum, item) => sum + (item['setCount'] as int? ?? 0),
+  );
+  final recentVolume = workoutHistory.fold<double>(
+    0,
+    (sum, item) => sum + ((item['totalVolume'] as num?)?.toDouble() ?? 0),
+  );
+  final category = workoutHistory.isNotEmpty
+      ? workoutHistory.first['category'] as String?
+      : null;
+  final unit = workoutHistory.isNotEmpty
+      ? workoutHistory.first['unit'] as String?
+      : null;
+
+  String hero;
   if (hasRecords) {
     final bestWeight = records['bestWeight'] as double;
     final best1RM = records['best1RM'] as double;
     final bestVolume = records['bestVolume'] as double;
-    prCards = '''
-<div class="metric-grid">
-  <div class="metric-card" style="--metric-color:var(--accent)">
-    <div class="metric-label">Best Weight</div>
-    <div class="metric-value">${_formatNumber(bestWeight)}</div>
-    <div class="metric-subtle">Heaviest set</div>
+    hero = '''
+<section class="exercise-hero">
+  <div>
+    <h2>${_escapeHtml(exerciseName)}</h2>
+    <div class="hero-meta">
+      ${category != null && category.isNotEmpty ? '<span class="chip">${_escapeHtml(category)}</span>' : ''}
+      ${unit != null && unit.isNotEmpty ? '<span class="chip neutral">${_escapeHtml(unit)}</span>' : ''}
+      <span class="chip neutral">${workoutHistory.length} recent workouts</span>
+    </div>
   </div>
-  <div class="metric-card" style="--metric-color:var(--teal)">
-    <div class="metric-label">Estimated 1RM</div>
-    <div class="metric-value">${_formatNumber(best1RM)}</div>
-    <div class="metric-subtle">Epley formula</div>
+  <div class="hero-meta">
+    <div class="hero-stat"><span>Best weight</span><strong>${_formatNumber(bestWeight)}</strong></div>
+    <div class="hero-stat"><span>Est. 1RM</span><strong>${_formatNumber(best1RM)}</strong></div>
+    <div class="hero-stat"><span>Best volume</span><strong>${_formatNumber(bestVolume)}</strong></div>
   </div>
-  <div class="metric-card" style="--metric-color:var(--amber)">
-    <div class="metric-label">Best Volume</div>
-    <div class="metric-value">${_formatNumber(bestVolume)}</div>
-    <div class="metric-subtle">Single-set volume</div>
-  </div>
-</div>''';
+</section>''';
   } else {
-    prCards = '''
+    hero = '''
+<section class="exercise-hero">
+  <div>
+    <h2>${_escapeHtml(exerciseName)}</h2>
+    <div class="hero-meta"><span class="chip neutral">No recorded sets</span></div>
+  </div>
+</section>
 <div class="empty-state">
   <p>No records found for this exercise.</p>
 </div>''';
@@ -1390,7 +1572,7 @@ Response exerciseDetailHandler(
         '$label</a>');
   }
   final periodSelector = '''
-<div class="segmented" style="margin-bottom:0.75rem">$periodButtons</div>''';
+<div class="segmented">$periodButtons</div>''';
 
   // Metric selector
   const metrics = [
@@ -1410,7 +1592,7 @@ Response exerciseDetailHandler(
         '$label</a>');
   }
   final metricSelector = '''
-<div class="segmented" style="margin-bottom:1.5rem">$metricButtons</div>''';
+<div class="segmented">$metricButtons</div>''';
   final metricLabel = switch (metric) {
     'oneRepMax' => 'Est. 1RM',
     'volume' => 'Volume',
@@ -1421,7 +1603,11 @@ Response exerciseDetailHandler(
   String chartSection;
   if (progress.isEmpty) {
     chartSection = '''
-<div class="panel" style="margin-bottom:2rem">
+<div class="panel chart-panel">
+  <div class="control-row">
+    <div class="control-group"><span>Range</span>$periodSelector</div>
+    <div class="control-group"><span>Metric</span>$metricSelector</div>
+  </div>
   <p class="muted" style="text-align:center;margin:1rem 0">No data for this period</p>
 </div>''';
   } else {
@@ -1459,11 +1645,108 @@ Response exerciseDetailHandler(
     }).toList());
 
     chartSection = '''
-<div class="panel" style="margin-bottom:2rem">
+<div class="panel chart-panel">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">$metricLabel progress</h3>
+      <p class="panel-kicker">Daily bests; click a point to open the workout</p>
+    </div>
+  </div>
+  <div class="control-row">
+    <div class="control-group"><span>Range</span>$periodSelector</div>
+    <div class="control-group"><span>Metric</span>$metricSelector</div>
+  </div>
   <canvas id="progressChart"></canvas>
 </div>
 <script type="application/json" id="progress-data">$progressJson</script>
 <script type="application/json" id="trend-data">$trendJson</script>''';
+  }
+
+  String insightPanel;
+  if (workoutHistory.isEmpty) {
+    insightPanel = '''
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">Exercise data</h3>
+      <p class="panel-kicker">No recent workout rows found</p>
+    </div>
+  </div>
+</div>''';
+  } else {
+    final last = workoutHistory.first;
+    final lastStart = last['startTime'] as int?;
+    final lastDate = lastStart != null ? _formatDate(lastStart) : 'Unknown';
+    final bestRecent = workoutHistory.reduce((a, b) {
+      final aValue = ((a['bestEstimated1RM'] as num?)?.toDouble() ?? 0);
+      final bValue = ((b['bestEstimated1RM'] as num?)?.toDouble() ?? 0);
+      return aValue >= bValue ? a : b;
+    });
+    final bestSet = bestRecent['bestSet'] as Map<String, dynamic>?;
+    final bestSetText = bestSet == null
+        ? 'n/a'
+        : '${_formatNumber(bestSet['weight'] as num)} ${_escapeHtml((bestSet['unit'] ?? '').toString())} x ${_formatNumber(bestSet['reps'] as num)}';
+    insightPanel = '''
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">Exercise data</h3>
+      <p class="panel-kicker">Recent workout-level summary</p>
+    </div>
+  </div>
+  <div class="insight-list">
+    <div class="insight-row"><span>Last trained</span><strong>$lastDate</strong></div>
+    <div class="insight-row"><span>Recent sets</span><strong>$recentSetCount</strong></div>
+    <div class="insight-row"><span>Recent volume</span><strong>${_formatVolume(recentVolume)}</strong></div>
+    <div class="insight-row"><span>Best recent set</span><strong>$bestSetText</strong></div>
+    <div class="insight-row"><span>Best recent est. 1RM</span><strong>${_formatNumber((bestRecent['bestEstimated1RM'] as num?) ?? 0)}</strong></div>
+  </div>
+</div>''';
+  }
+
+  String workoutHistorySection;
+  if (workoutHistory.isEmpty) {
+    workoutHistorySection = '';
+  } else {
+    final rows = StringBuffer();
+    for (final entry in workoutHistory) {
+      final workoutId = entry['workoutId'] as int;
+      final startTime = entry['startTime'] as int?;
+      final date = startTime != null ? _formatDate(startTime) : 'Unknown';
+      final workoutName = entry['workoutName'] as String? ?? 'Workout';
+      final setCount = entry['setCount'] as int;
+      final totalVolume = (entry['totalVolume'] as num).toDouble();
+      final bestWeight = entry['bestWeight'] as double?;
+      final best1RM = entry['bestEstimated1RM'] as double?;
+      final bestSet = entry['bestSet'] as Map<String, dynamic>?;
+      final bestSetText = bestSet == null
+          ? 'No best set'
+          : '${_formatNumber(bestSet['weight'] as num)} ${_escapeHtml((bestSet['unit'] ?? '').toString())} x ${_formatNumber(bestSet['reps'] as num)}';
+      rows.write('''
+<a class="history-entry" href="${_dashboardHref('/dashboard/workout/$workoutId', apiKey, selectedBackup)}">
+  <div class="history-date">$date</div>
+  <div>
+    <div class="history-title">${_escapeHtml(workoutName)}</div>
+    <div class="history-sub">Best set: $bestSetText</div>
+  </div>
+  <div class="history-metrics">
+    <span class="chip">$setCount sets</span>
+    <span class="chip neutral">${_formatVolume(totalVolume)} volume</span>
+    ${bestWeight != null ? '<span class="chip neutral">${_formatNumber(bestWeight)} best</span>' : ''}
+    ${best1RM != null ? '<span class="chip neutral">${_formatNumber(best1RM)} e1RM</span>' : ''}
+  </div>
+</a>''');
+    }
+    workoutHistorySection = '''
+<div class="panel" style="margin-top:1.25rem">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">Workout history</h3>
+      <p class="panel-kicker">Recent sessions for this exercise, grouped by workout</p>
+    </div>
+  </div>
+  <div class="history-list">$rows</div>
+</div>''';
   }
 
   // Rep records table
@@ -1477,11 +1760,19 @@ Response exerciseDetailHandler(
       final reps = rec['repCount'];
       final weight = rec['maxWeight'];
       final unit = rec['unit'] ?? '';
+      final created = rec['created'] as int?;
+      final workoutId = rec['workoutId'];
+      final date = created != null ? _formatDate(created) : '';
+      final workoutLink = workoutId is int
+          ? _dashboardHref(
+              '/dashboard/workout/$workoutId', apiKey, selectedBackup)
+          : null;
       rows.write('''
 <tr>
   <td>${_formatNumber(reps as num)}</td>
-  <td>${_formatNumber(weight as num)}</td>
-  <td>${_escapeHtml(unit.toString())}</td>
+  <td>${_formatNumber(weight as num)} ${_escapeHtml(unit.toString())}</td>
+  <td>${_escapeHtml(date)}</td>
+  <td>${workoutLink != null ? '<a href="$workoutLink">Open</a>' : ''}</td>
 </tr>''');
     }
     repTable = '''
@@ -1489,7 +1780,7 @@ Response exerciseDetailHandler(
   <h3 class="table-title">Rep Records</h3>
   <table class="data-table">
     <thead>
-      <tr><th>Reps</th><th>Best Weight</th><th>Unit</th></tr>
+      <tr><th>Reps</th><th>Best</th><th>Date</th><th>Workout</th></tr>
     </thead>
     <tbody>$rows</tbody>
   </table>
@@ -1498,11 +1789,17 @@ Response exerciseDetailHandler(
 
   final content = '''
 $breadcrumb
-$prCards
-$periodSelector
-$metricSelector
-$chartSection
-$repTable''';
+$hero
+<div class="detail-layout">
+  <div class="detail-main">
+    $chartSection
+    $workoutHistorySection
+  </div>
+  <aside class="detail-side">
+    $insightPanel
+    $repTable
+  </aside>
+</div>''';
 
   final extraHead = progress.isNotEmpty
       ? '<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>'
@@ -1516,6 +1813,7 @@ $repTable''';
   const trendData = JSON.parse(document.getElementById('trend-data').textContent);
   const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#333';
   const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#888';
+  const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#9fc46d';
   const metricLabel = ${jsonEncode(metricLabel)};
 
   const labels = progressData.map(d => d.date);
@@ -1527,23 +1825,23 @@ $repTable''';
   const datasets = [{
     label: 'Progress',
     data: values,
-    borderColor: '#8B5CF6',
+    borderColor: accentColor,
     borderWidth: 3,
     tension: 0.35,
     pointRadius: 4,
     pointHoverRadius: 7,
     pointHitRadius: 12,
-    pointBackgroundColor: '#8B5CF6',
+    pointBackgroundColor: accentColor,
     pointBorderColor: getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#11151d',
     pointBorderWidth: 2,
     fill: 'origin',
     backgroundColor: function(context) {
       const chart = context.chart;
       const {ctx, chartArea} = chart;
-      if (!chartArea) return 'rgba(139,92,246,0.1)';
+      if (!chartArea) return 'rgba(159,196,109,0.1)';
       const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-      gradient.addColorStop(0, 'rgba(139,92,246,0.3)');
-      gradient.addColorStop(1, 'rgba(139,92,246,0.02)');
+      gradient.addColorStop(0, 'rgba(159,196,109,0.3)');
+      gradient.addColorStop(1, 'rgba(159,196,109,0.02)');
       return gradient;
     }
   }];
@@ -1555,7 +1853,7 @@ $repTable''';
     datasets.push({
       label: 'Trend',
       data: trendValues,
-      borderColor: 'rgba(139,92,246,0.5)',
+      borderColor: 'rgba(159,196,109,0.5)',
       borderWidth: 2,
       borderDash: [5, 5],
       pointRadius: 0,
@@ -2657,6 +2955,9 @@ var bwChart;
   const data = JSON.parse(document.getElementById('bw-data').textContent);
   const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#333';
   const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#888';
+  const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#9fc46d';
+  const tealColor = getComputedStyle(document.documentElement).getPropertyValue('--teal').trim() || '#74b6a3';
+  const amberColor = getComputedStyle(document.documentElement).getPropertyValue('--amber').trim() || '#d6a15d';
 
   const ctx = document.getElementById('bodyweightChart');
   if (ctx) {
@@ -2668,26 +2969,26 @@ var bwChart;
           {
             label: 'Bodyweight',
             data: data.weights,
-            borderColor: '#7C3AED',
+            borderColor: accentColor,
             borderWidth: 3,
             tension: 0.35,
             pointRadius: 4,
-            pointBackgroundColor: '#7C3AED',
+            pointBackgroundColor: accentColor,
             fill: 'origin',
             backgroundColor: function(context) {
               const chart = context.chart;
               const {ctx, chartArea} = chart;
-              if (!chartArea) return 'rgba(124,58,237,0.1)';
+              if (!chartArea) return 'rgba(159,196,109,0.1)';
               const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-              gradient.addColorStop(0, 'rgba(124,58,237,0.3)');
-              gradient.addColorStop(1, 'rgba(124,58,237,0.02)');
+              gradient.addColorStop(0, 'rgba(159,196,109,0.3)');
+              gradient.addColorStop(1, 'rgba(159,196,109,0.02)');
               return gradient;
             }
           },
           {
             label: '14-Day MA',
             data: data.ma14,
-            borderColor: '#06B6D4',
+            borderColor: tealColor,
             borderDash: [5, 5],
             borderWidth: 2,
             pointRadius: 0,
@@ -2698,7 +2999,7 @@ var bwChart;
           {
             label: '7-Day MA',
             data: data.ma7,
-            borderColor: '#10B981',
+            borderColor: accentColor,
             borderDash: [5, 5],
             borderWidth: 2,
             pointRadius: 0,
@@ -2709,7 +3010,7 @@ var bwChart;
           {
             label: '3-Day MA',
             data: data.ma3,
-            borderColor: '#F59E0B',
+            borderColor: amberColor,
             borderDash: [5, 5],
             borderWidth: 2,
             pointRadius: 0,
@@ -2745,7 +3046,12 @@ function toggleMA(datasetIndex) {
   bwChart.setDatasetVisibility(datasetIndex, !isHidden);
   bwChart.update();
 
-  const colors = { 1: '#06B6D4', 2: '#10B981', 3: '#F59E0B' };
+  const styles = getComputedStyle(document.documentElement);
+  const colors = {
+    1: styles.getPropertyValue('--teal').trim() || '#74b6a3',
+    2: styles.getPropertyValue('--accent').trim() || '#9fc46d',
+    3: styles.getPropertyValue('--amber').trim() || '#d6a15d'
+  };
   const btn = document.getElementById('ma-btn-' + datasetIndex);
   if (btn) {
     btn.classList.toggle('active', !isHidden);

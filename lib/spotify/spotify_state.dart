@@ -21,7 +21,6 @@ enum ConnectionStatus {
 
 /// Track information for display
 class Track {
-
   Track({
     required this.title,
     required this.artist,
@@ -84,7 +83,6 @@ class Track {
 /// Provider for Spotify playback state management
 /// Uses ChangeNotifier pattern following WorkoutState conventions
 class SpotifyState extends ChangeNotifier {
-
   /// Initialize SpotifyState and check for existing connection
   SpotifyState() {
     _initialize();
@@ -160,10 +158,12 @@ class SpotifyState extends ChangeNotifier {
         final accessToken = settings.spotifyAccessToken;
         final tokenExpiryMs = settings.spotifyTokenExpiry;
 
-        // Restore tokens if they exist
-        if (accessToken != null && tokenExpiryMs != null) {
-          final tokenExpiry =
-              DateTime.fromMillisecondsSinceEpoch(tokenExpiryMs);
+        // Restore tokens if they exist. Access token presence is the
+        // "previously connected" signal, even when the token has expired.
+        if (accessToken != null) {
+          final tokenExpiry = tokenExpiryMs != null
+              ? DateTime.fromMillisecondsSinceEpoch(tokenExpiryMs)
+              : null;
           _service.restoreTokens(
             accessToken: accessToken,
             tokenExpiry: tokenExpiry,
@@ -175,6 +175,13 @@ class SpotifyState extends ChangeNotifier {
           } else {
             print('🎵 Token restored but expired, reconnection needed');
           }
+
+          print('🎵 Saved Spotify token found, attempting silent reconnect');
+          final success = await connect(silent: true);
+          if (!success) {
+            print('🎵 Silent Spotify reconnect failed, manual connect needed');
+          }
+          return;
         }
       }
 
@@ -294,8 +301,7 @@ class SpotifyState extends ChangeNotifier {
       }).toList();
 
       // Fetch recently played
-      final recentlyPlayedData =
-          await _webApiService.getRecentlyPlayed();
+      final recentlyPlayedData = await _webApiService.getRecentlyPlayed();
       _recentlyPlayed = recentlyPlayedData.map((item) {
         return Track(
           title: item['title'] as String,
@@ -367,7 +373,7 @@ class SpotifyState extends ChangeNotifier {
 
   /// Connect to Spotify
   /// Returns true if connection successful
-  Future<bool> connect() async {
+  Future<bool> connect({bool silent = false}) async {
     _connectionStatus = ConnectionStatus.connecting;
     _errorMessage = null;
     notifyListeners();
@@ -392,14 +398,16 @@ class SpotifyState extends ChangeNotifier {
 
         return true;
       } else {
-        _connectionStatus = ConnectionStatus.error;
-        _errorMessage = 'Failed to connect';
+        _connectionStatus =
+            silent ? ConnectionStatus.disconnected : ConnectionStatus.error;
+        _errorMessage = silent ? null : 'Failed to connect';
         notifyListeners();
         return false;
       }
     } catch (e) {
-      _connectionStatus = ConnectionStatus.error;
-      _errorMessage = e.toString();
+      _connectionStatus =
+          silent ? ConnectionStatus.disconnected : ConnectionStatus.error;
+      _errorMessage = silent ? null : e.toString();
       notifyListeners();
       return false;
     }
@@ -410,6 +418,13 @@ class SpotifyState extends ChangeNotifier {
     stopPolling();
     await _service.disconnect();
     _webApiService.clearCache();
+    await db.settings.update().write(
+          const SettingsCompanion(
+            spotifyAccessToken: Value(null),
+            spotifyRefreshToken: Value(null),
+            spotifyTokenExpiry: Value(null),
+          ),
+        );
     _connectionStatus = ConnectionStatus.disconnected;
     _errorMessage = null;
     _currentPlayerState = null;

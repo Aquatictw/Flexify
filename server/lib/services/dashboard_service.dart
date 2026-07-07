@@ -337,6 +337,90 @@ class DashboardService {
     return {'exerciseName': exerciseName, 'records': records};
   }
 
+  /// Get recent per-workout history for a specific exercise.
+  ///
+  /// Returns a list of maps with workout date/metadata, set count, volume,
+  /// best weight, best estimated 1RM, and the best set for that workout.
+  List<Map<String, dynamic>> getExerciseWorkoutHistory(
+    String exerciseName, {
+    int limit = 20,
+  }) {
+    if (_db == null || limit <= 0) return [];
+
+    final categoryExpr =
+        _hasColumn('gym_sets', 'category') ? 'gs.category' : 'NULL';
+    final unitExpr = _hasColumn('gym_sets', 'unit') ? 'gs.unit' : 'NULL';
+
+    final result = _db!.select('''
+      SELECT gs.id, gs.weight, gs.reps, $unitExpr as unit, gs.created,
+        $categoryExpr as category,
+        CASE WHEN gs.weight >= 0 THEN gs.weight / (1.0278 - 0.0278 * gs.reps)
+          ELSE gs.weight * (1.0278 - 0.0278 * gs.reps) END as estimated_1rm,
+        w.id as workout_id, w.name as workout_name,
+        w.start_time, w.end_time, DATE(w.start_time, 'unixepoch') as workout_date
+      FROM gym_sets gs
+      INNER JOIN workouts w ON w.id = gs.workout_id
+      WHERE gs.name = ? AND gs.hidden = 0 AND gs.sequence >= 0 AND gs.reps > 0
+      ORDER BY w.start_time DESC, gs.created DESC, gs.id DESC
+    ''', [exerciseName]);
+
+    final history = <Map<String, dynamic>>[];
+    Map<String, dynamic>? current;
+    int? currentWorkoutId;
+
+    for (final row in result) {
+      final workoutId = row['workout_id'] as int;
+      if (workoutId != currentWorkoutId) {
+        if (history.length >= limit) break;
+        currentWorkoutId = workoutId;
+        current = {
+          'date': row['workout_date'],
+          'workoutId': workoutId,
+          'workoutName': row['workout_name'],
+          'startTime': row['start_time'],
+          'endTime': row['end_time'],
+          'setCount': 0,
+          'totalVolume': 0.0,
+          'bestWeight': null,
+          'bestEstimated1RM': null,
+          'bestSet': null,
+          'category': row['category'],
+          'unit': row['unit'],
+        };
+        history.add(current);
+      }
+
+      final weight = (row['weight'] as num).toDouble();
+      final reps = (row['reps'] as num).toDouble();
+      final estimated1RM = (row['estimated_1rm'] as num).toDouble();
+      final bestEstimated1RM = current!['bestEstimated1RM'] as double?;
+
+      current['setCount'] = (current['setCount'] as int) + 1;
+      current['totalVolume'] =
+          (current['totalVolume'] as double) + weight * reps;
+      if (current['bestWeight'] == null ||
+          weight > (current['bestWeight'] as double)) {
+        current['bestWeight'] = weight;
+      }
+      if (bestEstimated1RM == null || estimated1RM > bestEstimated1RM) {
+        current['bestEstimated1RM'] = estimated1RM;
+        current['bestSet'] = {
+          'id': row['id'],
+          'weight': weight,
+          'reps': reps,
+          'unit': row['unit'],
+          'created': row['created'],
+          'estimated1RM': estimated1RM,
+          'volume': weight * reps,
+        };
+      }
+      current['category'] ??= row['category'];
+      current['unit'] ??= row['unit'];
+    }
+
+    return history;
+  }
+
   /// Get all distinct non-null category names from exercises.
   List<String> getCategories() {
     if (_db == null) return [];

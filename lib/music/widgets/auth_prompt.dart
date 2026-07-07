@@ -73,6 +73,9 @@ class _AuthPromptState extends State<AuthPrompt> {
 
   @override
   Widget build(BuildContext context) {
+    final spotifyState = context.watch<SpotifyState>();
+    final isConnecting = _isConnecting ||
+        spotifyState.connectionStatus == ConnectionStatus.connecting;
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -142,8 +145,8 @@ class _AuthPromptState extends State<AuthPrompt> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: _isConnecting ? null : _handleConnect,
-                    icon: _isConnecting
+                    onPressed: isConnecting ? null : _handleConnect,
+                    icon: isConnecting
                         ? SizedBox(
                             width: 20,
                             height: 20,
@@ -156,7 +159,7 @@ class _AuthPromptState extends State<AuthPrompt> {
                           )
                         : const Icon(Icons.link_rounded),
                     label: Text(
-                      _isConnecting ? 'Connecting...' : 'Connect with Spotify',
+                      isConnecting ? 'Connecting...' : 'Connect with Spotify',
                       style: textTheme.labelLarge,
                     ),
                     style: FilledButton.styleFrom(

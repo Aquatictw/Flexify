@@ -73,7 +73,8 @@ void main() {
 
   test('returns null active block when none is active', () {
     final backup = File('${tempDir.path}/jackedlog_backup_2026-06-14.db');
-    _writeBackup(backup, workoutCount: 1, includeBlocks: true, activeBlock: false);
+    _writeBackup(backup,
+        workoutCount: 1, includeBlocks: true, activeBlock: false);
 
     expect(service.ensureOpen(), isTrue);
     expect(service.getActiveBlock(), isNull);
@@ -117,6 +118,77 @@ void main() {
     expect(sets[3]['dropSet'], isTrue);
   });
 
+  test('returns recent per-workout exercise history', () {
+    final backup = File('${tempDir.path}/jackedlog_backup_2026-06-14.db');
+    _writeBackup(backup, workoutCount: 2);
+
+    final db = sqlite3.open(backup.path);
+    try {
+      db.execute('''
+        INSERT INTO gym_sets (
+          name, weight, reps, unit, created, hidden, cardio, category,
+          workout_id, sequence
+        ) VALUES
+          ('Squat', 120.0, 3.0, 'kg', 1700086401, 0, 0, 'Legs', 1, 0),
+          ('Squat', 110.0, 5.0, 'kg', 1700172801, 0, 0, 'Legs', 2, 0),
+          ('Squat', 90.0, 8.0, 'kg', 1700172802, 0, 0, 'Legs', 2, 0),
+          ('Squat', 200.0, 1.0, 'kg', 1700172803, 1, 0, 'Legs', 2, 0),
+          ('Bench Press', 150.0, 1.0, 'kg', 1700172804, 0, 0, 'Chest', 2, 0),
+          ('Squat', 300.0, 1.0, 'kg', 1700172805, 0, 0, 'Legs', NULL, 0)
+      ''');
+    } finally {
+      db.dispose();
+    }
+
+    expect(service.ensureOpen(), isTrue);
+
+    final history = service.getExerciseWorkoutHistory('Squat');
+
+    expect(history, hasLength(2));
+    expect(history.first['workoutId'], 2);
+    expect(history.first['workoutName'], 'Workout 2');
+    expect(history.first['date'], '2023-11-16');
+    expect(history.first['setCount'], 3);
+    expect(history.first['totalVolume'], 1770.0);
+    expect(history.first['bestWeight'], 110.0);
+    expect(history.first['category'], 'Legs');
+    expect(history.first['unit'], 'kg');
+
+    final bestSet = history.first['bestSet'] as Map<String, dynamic>;
+    expect(bestSet['weight'], 110.0);
+    expect(bestSet['reps'], 5.0);
+    expect(bestSet['volume'], 550.0);
+    expect(history.first['bestEstimated1RM'], closeTo(123.762, 0.001));
+
+    expect(history.last['workoutId'], 1);
+    expect(history.last['setCount'], 2);
+    expect(history.last['totalVolume'], 860.0);
+
+    expect(service.getExerciseWorkoutHistory('Squat', limit: 1), hasLength(1));
+    expect(service.getExerciseWorkoutHistory('Missing'), isEmpty);
+  });
+
+  test('exercise workout history tolerates old gym set metadata columns', () {
+    final backup = File('${tempDir.path}/jackedlog_backup_2026-06-14.db');
+    _writeBackup(
+      backup,
+      workoutCount: 1,
+      includeGymSetCategory: false,
+      includeGymSetUnit: false,
+    );
+
+    expect(service.ensureOpen(), isTrue);
+
+    final history = service.getExerciseWorkoutHistory('Squat');
+
+    expect(history, hasLength(1));
+    expect(history.single['category'], isNull);
+    expect(history.single['unit'], isNull);
+
+    final bestSet = history.single['bestSet'] as Map<String, dynamic>;
+    expect(bestSet['unit'], isNull);
+  });
+
   test('returns null active block when blocks table is missing', () {
     final backup = File('${tempDir.path}/jackedlog_backup_2026-06-14.db');
     _writeBackup(backup, workoutCount: 1);
@@ -132,6 +204,8 @@ void _writeBackup(
   bool includeBodyweightNotes = true,
   bool includeBlocks = false,
   bool activeBlock = true,
+  bool includeGymSetCategory = true,
+  bool includeGymSetUnit = true,
 }) {
   final db = sqlite3.open(file.path);
   try {
@@ -154,11 +228,11 @@ void _writeBackup(
         name TEXT NOT NULL,
         weight REAL NOT NULL,
         reps REAL NOT NULL,
-        unit TEXT NOT NULL,
+        ${includeGymSetUnit ? 'unit TEXT NOT NULL,' : ''}
         created INTEGER NOT NULL,
         hidden INTEGER NOT NULL DEFAULT 0,
         cardio INTEGER NOT NULL DEFAULT 0,
-        category TEXT,
+        ${includeGymSetCategory ? 'category TEXT,' : ''}
         workout_id INTEGER,
         sequence INTEGER NOT NULL DEFAULT 0,
         exercise_type TEXT,
@@ -180,17 +254,47 @@ void _writeBackup(
     final insertWorkout = db.prepare(
       'INSERT INTO workouts (start_time, end_time, name) VALUES (?, ?, ?)',
     );
+    final gymSetColumns = [
+      'name',
+      'weight',
+      'reps',
+      if (includeGymSetUnit) 'unit',
+      'created',
+      'hidden',
+      'cardio',
+      if (includeGymSetCategory) 'category',
+      'workout_id',
+      'sequence',
+    ];
+    final gymSetValues = [
+      '?',
+      '?',
+      '?',
+      if (includeGymSetUnit) '?',
+      '?',
+      '0',
+      '0',
+      if (includeGymSetCategory) '?',
+      '?',
+      '0',
+    ];
     final insertSet = db.prepare('''
-      INSERT INTO gym_sets (
-        name, weight, reps, unit, created, hidden, cardio, category, workout_id,
-        sequence
-      ) VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?, 0)
+      INSERT INTO gym_sets (${gymSetColumns.join(', ')})
+      VALUES (${gymSetValues.join(', ')})
     ''');
     try {
       for (var i = 1; i <= workoutCount; i++) {
         final start = 1700000000 + i * 86400;
         insertWorkout.execute([start, start + 3600, 'Workout $i']);
-        insertSet.execute(['Squat', 100.0, 5.0, 'kg', start, 'Legs', i]);
+        insertSet.execute([
+          'Squat',
+          100.0,
+          5.0,
+          if (includeGymSetUnit) 'kg',
+          start,
+          if (includeGymSetCategory) 'Legs',
+          i,
+        ]);
       }
     } finally {
       insertWorkout.dispose();
@@ -235,10 +339,17 @@ void _writeBackup(
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ''', [
         1700000000,
-        142.5, 102.5, 182.5, 62.5,
-        140.0, 100.0, 180.0, 60.0,
+        142.5,
+        102.5,
+        182.5,
+        62.5,
+        140.0,
+        100.0,
+        180.0,
+        60.0,
         'kg',
-        1, 2,
+        1,
+        2,
         activeBlock ? 1 : 0,
         activeBlock ? null : 1700500000,
       ]);
