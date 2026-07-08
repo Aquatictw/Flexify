@@ -189,6 +189,41 @@ void main() {
       expect(achievements.length, 3);
     });
 
+    test('detects cardio PRs independently', () async {
+      final workoutId = await testDb.workouts.insertOne(createTestWorkout());
+
+      await testDb.gymSets.insertOne(
+        createTestSet(
+          workoutId: workoutId,
+          name: 'Treadmill',
+          unit: 'km',
+          cardio: true,
+          duration: 20,
+          distance: 4,
+          incline: 2,
+        ),
+      );
+
+      final achievements = await checkForRecords(
+        exerciseName: 'Treadmill',
+        weight: 0,
+        reps: 0,
+        unit: 'km',
+        cardio: true,
+        duration: 30,
+        distance: 7,
+        incline: 4,
+        excludeSetId: null,
+      );
+
+      expect(achievements.map((a) => a.type).toSet(), {
+        RecordType.bestDuration,
+        RecordType.bestDistance,
+        RecordType.bestSpeed,
+        RecordType.bestIncline,
+      });
+    });
+
     test('drop sets counted normally for PRs', () async {
       final workoutId = await testDb.workouts.insertOne(createTestWorkout());
 

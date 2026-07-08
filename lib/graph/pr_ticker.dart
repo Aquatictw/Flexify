@@ -80,6 +80,11 @@ class _RecentPrTickerState extends State<RecentPrTicker> {
           RecordType.bestWeight => set.weight,
           RecordType.best1RM => calculate1RM(set.weight, set.reps),
           RecordType.bestVolume => calculateVolume(set.weight, set.reps),
+          RecordType.bestDuration => set.duration,
+          RecordType.bestDistance => set.distance,
+          RecordType.bestSpeed =>
+            set.duration > 0 ? set.distance / set.duration * 60 : 0.0,
+          RecordType.bestIncline => (set.incline ?? 0).toDouble(),
         };
         events.add(
           _PrEvent(
@@ -162,6 +167,10 @@ class _PrChip extends StatelessWidget {
         RecordType.best1RM => '1RM',
         RecordType.bestVolume => 'VOL',
         RecordType.bestWeight => 'WT',
+        RecordType.bestDuration => 'TIME',
+        RecordType.bestDistance => 'DIST',
+        RecordType.bestSpeed => 'SPD',
+        RecordType.bestIncline => 'INCL',
       };
 
   @override

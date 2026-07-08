@@ -35,7 +35,8 @@ class QueryHelpers {
             ..orderBy([
               (u) => OrderingTerm(
                     expression: const CustomExpression<int>(
-                        'COALESCE(set_order, CAST((julianday(created) - 2440587.5) * 86400000 AS INTEGER))',),
+                      'COALESCE(set_order, CAST((julianday(created) - 2440587.5) * 86400000 AS INTEGER))',
+                    ),
                   ),
             ]))
           .get();
@@ -56,7 +57,8 @@ class QueryHelpers {
                 )
                 ..orderBy([
                   OrderingTerm(
-                      expression: db.gymSets.created,),
+                    expression: db.gymSets.created,
+                  ),
                 ]))
               .get();
 
@@ -100,8 +102,7 @@ class QueryHelpers {
                   tbl.hidden.equals(false),
             )
             ..orderBy([
-              (u) =>
-                  OrderingTerm(expression: u.created),
+              (u) => OrderingTerm(expression: u.created),
             ]))
           .get();
     }
@@ -130,7 +131,8 @@ class QueryHelpers {
     // Get all historical sets for this exercise to compare against
     final allSetsForExercise = await (db.gymSets.select()
           ..where(
-              (tbl) => tbl.name.equals(exerciseName) & tbl.hidden.equals(false),)
+            (tbl) => tbl.name.equals(exerciseName) & tbl.hidden.equals(false),
+          )
           ..orderBy([
             (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
           ]))
@@ -147,6 +149,11 @@ class QueryHelpers {
 
       // Get all sets except this one for comparison
       final otherSets = allSetsForExercise.where((s) => s.id != set.id);
+
+      if (set.cardio) {
+        records[set.id] = calculateCardioRecords(set, otherSets);
+        continue;
+      }
 
       if (otherSets.isEmpty) {
         // No other sets exist - this must be a record
@@ -226,7 +233,6 @@ class QueryHelpers {
 
 /// Data returned by loadExerciseData query
 class ExerciseLoadData {
-
   ExerciseLoadData({
     required this.previousSets,
     required this.existingSets,
@@ -243,7 +249,6 @@ class ExerciseLoadData {
 
 /// Data returned by loadWorkoutResumeData
 class WorkoutResumeData {
-
   WorkoutResumeData({
     required this.existingSets,
     required this.removedExercises,

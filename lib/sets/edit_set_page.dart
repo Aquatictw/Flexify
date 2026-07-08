@@ -9,7 +9,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-import '../animated_fab.dart';
 import '../constants.dart';
 import '../database/database.dart';
 import '../database/gym_sets.dart';
@@ -20,9 +19,9 @@ import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
 import '../timer/timer_state.dart';
 import '../utils.dart';
+import '../widgets/sticky_form_action.dart';
 
 class EditSetPage extends StatefulWidget {
-
   const EditSetPage({required this.gymSet, super.key});
   final GymSet gymSet;
 
@@ -87,10 +86,9 @@ class _EditSetPageState extends State<EditSetPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       appBar: buildAppBar(),
       body: buildBody(),
-      floatingActionButton: buildSaveButton(),
+      bottomNavigationBar: buildSaveButton(),
     );
   }
 
@@ -405,7 +403,7 @@ class _EditSetPageState extends State<EditSetPage> {
   }
 
   Widget buildSaveButton() {
-    return AnimatedFab(
+    return StickyFormAction(
       onPressed: save,
       label: const Text('Save'),
       icon: const Icon(Icons.save),
@@ -612,7 +610,8 @@ class _EditSetPageState extends State<EditSetPage> {
       planState.updateDefaults();
       return Navigator.of(context).pop();
     } else {
-      final insert = gymSet.toCompanion(false).copyWith(id: const Value.absent());
+      final insert =
+          gymSet.toCompanion(false).copyWith(id: const Value.absent());
       await db.into(db.gymSets).insert(insert);
       // Clear PR cache since a set was inserted
       clearPRCache();

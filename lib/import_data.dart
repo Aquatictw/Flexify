@@ -18,9 +18,9 @@ import 'settings/settings_state.dart';
 import 'utils.dart';
 
 class ImportData extends StatelessWidget {
-
   const ImportData({
-    required this.ctx, super.key,
+    required this.ctx,
+    super.key,
   });
   final BuildContext ctx;
 
@@ -85,7 +85,8 @@ class ImportData extends StatelessWidget {
   }
 
   Future<FilePickerResult?> _importDatabaseNativeWithResult(
-      BuildContext context,) async {
+    BuildContext context,
+  ) async {
     final FilePickerResult? result = await FilePicker.platform.pickFiles();
     if (result == null) return null;
 
@@ -188,8 +189,10 @@ class ImportData extends StatelessWidget {
       // Parse workouts CSV
       String workoutsCsvContent;
       try {
-        workoutsCsvContent = utf8.decode(workoutsFile.content as List<int>,
-            allowMalformed: false,);
+        workoutsCsvContent = utf8.decode(
+          workoutsFile.content as List<int>,
+          allowMalformed: false,
+        );
       } catch (e) {
         workoutsCsvContent = latin1.decode(workoutsFile.content as List<int>);
       }
@@ -217,12 +220,17 @@ class ImportData extends StatelessWidget {
       final hasBodyWeightColumn = setsHeader.contains('bodyweight');
       final hasSupersetColumns = setsHeader.contains('supersetid');
       final hasSetOrderColumn = setsHeader.contains('setorder');
+      final cardioMetricIndex = setsHeader.indexWhere(
+        (column) => column == 'cardio_metric' || column == 'cardiometric',
+      );
+      final hasCardioMetricColumn = cardioMetricIndex != -1;
 
       // Import workouts first (skip header row)
       final workoutsToInsert = workoutsRows.skip(1).map((row) {
         if (row.length < 6) {
           throw Exception(
-              'Workout row has insufficient columns: ${row.length}',);
+            'Workout row has insufficient columns: ${row.length}',
+          );
         }
 
         return WorkoutsCompanion(
@@ -249,6 +257,7 @@ class ImportData extends StatelessWidget {
         // Old format (v54 and earlier): had bodyWeight column at index 9
         // New format (v55+): removed bodyWeight column
         final offset = hasBodyWeightColumn ? 1 : 0;
+        final cardioMetricOffset = hasCardioMetricColumn ? 1 : 0;
 
         return GymSetsCompanion(
           id: Value(int.tryParse(row[0]?.toString() ?? '0') ?? 0),
@@ -259,9 +268,11 @@ class ImportData extends StatelessWidget {
           created: Value(parseDate(row[5])),
           cardio: Value(parseBool(row.elementAtOrNull(6))),
           duration: Value(
-              double.tryParse(row.elementAtOrNull(7)?.toString() ?? '0') ?? 0,),
+            double.tryParse(row.elementAtOrNull(7)?.toString() ?? '0') ?? 0,
+          ),
           distance: Value(
-              double.tryParse(row.elementAtOrNull(8)?.toString() ?? '0') ?? 0,),
+            double.tryParse(row.elementAtOrNull(8)?.toString() ?? '0') ?? 0,
+          ),
           // Skip bodyWeight column (index 9) if present in old format
           incline: Value(_parseNullableInt(row.elementAtOrNull(9 + offset))),
           restMs: Value(_parseNullableInt(row.elementAtOrNull(10 + offset))),
@@ -272,28 +283,71 @@ class ImportData extends StatelessWidget {
           category:
               Value(_parseNullableString(row.elementAtOrNull(15 + offset))),
           notes: Value(_parseNullableString(row.elementAtOrNull(16 + offset))),
-          sequence: Value(int.tryParse(
-                  row.elementAtOrNull(17 + offset)?.toString() ?? '0',) ??
-              0,),
-          setOrder: Value(hasSetOrderColumn
-              ? _parseNullableInt(row.elementAtOrNull(18 + offset))
-              : null,),
-          warmup: Value(parseBool(row
-              .elementAtOrNull(hasSetOrderColumn ? 19 + offset : 18 + offset),),),
-          exerciseType: Value(_parseNullableString(row
-              .elementAtOrNull(hasSetOrderColumn ? 20 + offset : 19 + offset),),),
-          brandName: Value(_parseNullableString(row
-              .elementAtOrNull(hasSetOrderColumn ? 21 + offset : 20 + offset),),),
-          dropSet: Value(parseBool(row
-              .elementAtOrNull(hasSetOrderColumn ? 22 + offset : 21 + offset),),),
-          supersetId: Value(hasSupersetColumns
-              ? _parseNullableString(row.elementAtOrNull(
-                  hasSetOrderColumn ? 23 + offset : 22 + offset,),)
-              : null,),
-          supersetPosition: Value(hasSupersetColumns
-              ? _parseNullableInt(row.elementAtOrNull(
-                  hasSetOrderColumn ? 24 + offset : 23 + offset,),)
-              : null,),
+          sequence: Value(
+            int.tryParse(
+                  row.elementAtOrNull(17 + offset)?.toString() ?? '0',
+                ) ??
+                0,
+          ),
+          setOrder: Value(
+            hasSetOrderColumn
+                ? _parseNullableInt(row.elementAtOrNull(18 + offset))
+                : null,
+          ),
+          warmup: Value(
+            parseBool(
+              row.elementAtOrNull(
+                  hasSetOrderColumn ? 19 + offset : 18 + offset),
+            ),
+          ),
+          exerciseType: Value(
+            _parseNullableString(
+              row.elementAtOrNull(
+                  hasSetOrderColumn ? 20 + offset : 19 + offset),
+            ),
+          ),
+          brandName: Value(
+            _parseNullableString(
+              row.elementAtOrNull(
+                  hasSetOrderColumn ? 21 + offset : 20 + offset),
+            ),
+          ),
+          cardioMetric: Value(
+            hasCardioMetricColumn
+                ? _parseNullableString(row.elementAtOrNull(cardioMetricIndex))
+                : null,
+          ),
+          dropSet: Value(
+            parseBool(
+              row.elementAtOrNull(
+                hasSetOrderColumn
+                    ? 22 + offset + cardioMetricOffset
+                    : 21 + offset + cardioMetricOffset,
+              ),
+            ),
+          ),
+          supersetId: Value(
+            hasSupersetColumns
+                ? _parseNullableString(
+                    row.elementAtOrNull(
+                      hasSetOrderColumn
+                          ? 23 + offset + cardioMetricOffset
+                          : 22 + offset + cardioMetricOffset,
+                    ),
+                  )
+                : null,
+          ),
+          supersetPosition: Value(
+            hasSupersetColumns
+                ? _parseNullableInt(
+                    row.elementAtOrNull(
+                      hasSetOrderColumn
+                          ? 24 + offset + cardioMetricOffset
+                          : 23 + offset + cardioMetricOffset,
+                    ),
+                  )
+                : null,
+          ),
         );
       });
 

@@ -53,7 +53,6 @@ void showRecordNotification(
 }
 
 class _RecordNotificationDialog extends StatefulWidget {
-
   const _RecordNotificationDialog({
     required this.achievements,
     required this.exerciseName,
@@ -175,9 +174,13 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
                                 ),
                                 gradient: LinearGradient(
                                   begin: Alignment(
-                                      -2 + 4 * _shimmerController.value, 0,),
+                                    -2 + 4 * _shimmerController.value,
+                                    0,
+                                  ),
                                   end: Alignment(
-                                      -1 + 4 * _shimmerController.value, 0,),
+                                    -1 + 4 * _shimmerController.value,
+                                    0,
+                                  ),
                                   colors: [
                                     Colors.transparent,
                                     Colors.white.withValues(alpha: 0.1),
@@ -290,7 +293,6 @@ class _RecordNotificationDialogState extends State<_RecordNotificationDialog>
 }
 
 class _RecordBadge extends StatelessWidget {
-
   const _RecordBadge({required this.achievement});
   final RecordAchievement achievement;
 
@@ -411,6 +413,11 @@ class _RecordBadge extends StatelessWidget {
           return '${(value / 1000).toStringAsFixed(1)}k ${achievement.unit}';
         }
         return '${value.toStringAsFixed(0)} ${achievement.unit}';
+      case RecordType.bestDuration:
+      case RecordType.bestDistance:
+      case RecordType.bestSpeed:
+      case RecordType.bestIncline:
+        return '${_formatWeight(value)} ${achievement.unit}';
     }
   }
 
@@ -423,7 +430,6 @@ class _RecordBadge extends StatelessWidget {
 }
 
 class _ConfettiParticle {
-
   _ConfettiParticle(Random random)
       : startX = random.nextDouble(),
         startY = random.nextDouble() * 0.3,
@@ -444,7 +450,6 @@ class _ConfettiParticle {
 }
 
 class _ConfettiPainter extends CustomPainter {
-
   _ConfettiPainter({
     required this.particles,
     required this.progress,
@@ -495,9 +500,9 @@ class _ConfettiPainter extends CustomPainter {
 
 /// A small crown icon widget for indicating record sets
 class RecordCrown extends StatelessWidget {
-
   const RecordCrown({
-    required this.records, super.key,
+    required this.records,
+    super.key,
     this.size = 16,
     this.showTooltip = true,
   });
@@ -528,6 +533,14 @@ class RecordCrown extends StatelessWidget {
           return 'Volume';
         case RecordType.bestWeight:
           return 'Weight';
+        case RecordType.bestDuration:
+          return 'Time';
+        case RecordType.bestDistance:
+          return 'Distance';
+        case RecordType.bestSpeed:
+          return 'Speed';
+        case RecordType.bestIncline:
+          return 'Incline';
       }
     }).join(', ');
 
@@ -569,7 +582,6 @@ class RecordCrown extends StatelessWidget {
 
 /// A compact record indicator showing just the icon
 class RecordIndicator extends StatelessWidget {
-
   const RecordIndicator({required this.records, super.key});
   final Set<RecordType> records;
 
@@ -588,6 +600,14 @@ class RecordIndicator extends StatelessWidget {
           _buildMiniIcon(Icons.fitness_center, colorScheme.primary),
         if (records.contains(RecordType.bestVolume))
           _buildMiniIcon(Icons.local_fire_department, colorScheme.tertiary),
+        if (records.contains(RecordType.bestDuration))
+          _buildMiniIcon(Icons.timer_outlined, colorScheme.primary),
+        if (records.contains(RecordType.bestDistance))
+          _buildMiniIcon(Icons.straighten, colorScheme.tertiary),
+        if (records.contains(RecordType.bestSpeed))
+          _buildMiniIcon(Icons.speed, context.jl.pr),
+        if (records.contains(RecordType.bestIncline))
+          _buildMiniIcon(Icons.trending_up, colorScheme.secondary),
       ],
     );
   }

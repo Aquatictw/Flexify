@@ -19,8 +19,9 @@ const ormCol = CustomExpression<double>(
 double getCardio(TypedResult row, CardioMetric metric) {
   switch (metric) {
     case CardioMetric.pace:
-      return row.read(db.gymSets.distance.sum() / db.gymSets.duration.sum()) ??
-          0;
+      return (row.read(db.gymSets.distance.sum() / db.gymSets.duration.sum()) ??
+              0) *
+          60;
     case CardioMetric.distance:
       return row.read(db.gymSets.distance.sum())!;
     case CardioMetric.duration:
@@ -28,7 +29,7 @@ double getCardio(TypedResult row, CardioMetric metric) {
     case CardioMetric.incline:
       return row.read(db.gymSets.incline.avg())!;
     case CardioMetric.inclineAdjustedPace:
-      return row.read(inclineAdjustedPace)!;
+      return row.read(inclineAdjustedPace)! * 60;
   }
 }
 
@@ -76,17 +77,20 @@ Future<List<CardioData>> getCardioData({
     var value = getCardio(result, metric);
     final unit = result.read(db.gymSets.unit)!;
 
-    if (unit == 'km' && target == 'mi') {
+    final convertsDistance = metric == CardioMetric.pace ||
+        metric == CardioMetric.distance ||
+        metric == CardioMetric.inclineAdjustedPace;
+    if (convertsDistance && unit == 'km' && target == 'mi') {
       value /= 1.609;
-    } else if (unit == 'mi' && target == 'km') {
+    } else if (convertsDistance && unit == 'mi' && target == 'km') {
       value *= 1.609;
-    } else if (unit == 'm' && target == 'km') {
+    } else if (convertsDistance && unit == 'm' && target == 'km') {
       value /= 1000;
-    } else if (unit == 'km' && target == 'm') {
+    } else if (convertsDistance && unit == 'km' && target == 'm') {
       value *= 1000;
-    } else if (unit == 'm' && target == 'mi') {
+    } else if (convertsDistance && unit == 'm' && target == 'mi') {
       value /= 1609.34;
-    } else if (unit == 'mi' && target == 'm') {
+    } else if (convertsDistance && unit == 'mi' && target == 'm') {
       value *= 1609.34;
     }
 
@@ -512,7 +516,8 @@ Future<List<RepRecord>> getRepRecords({
   required String name,
   required String targetUnit,
 }) async {
-  final results = await db.customSelect('''
+  final results = await db.customSelect(
+    '''
     SELECT
       CAST(reps AS INTEGER) as rep_count,
       MAX(weight) as max_weight,
@@ -526,7 +531,9 @@ Future<List<RepRecord>> getRepRecords({
       AND reps = CAST(reps AS INTEGER)
     GROUP BY CAST(reps AS INTEGER)
     ORDER BY rep_count ASC
-  ''', variables: [Variable.withString(name)],).get();
+  ''',
+    variables: [Variable.withString(name)],
+  ).get();
 
   final List<RepRecord> records = [];
   for (final row in results) {
@@ -546,7 +553,8 @@ Future<List<RepRecord>> getRepRecords({
     }
 
     records.add(
-        (reps: reps, weight: weight, created: created, workoutId: workoutId),);
+      (reps: reps, weight: weight, created: created, workoutId: workoutId),
+    );
   }
 
   return records;
@@ -575,14 +583,17 @@ Future<ExerciseRecords> getExerciseRecords({
   required String name,
   required String targetUnit,
 }) async {
-  final result = await db.customSelect('''
+  final result = await db.customSelect(
+    '''
     SELECT
       MAX(weight) as best_weight,
       MAX(CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END) as best_1rm,
       MAX(weight * reps) as best_volume
     FROM gym_sets
     WHERE name = ? AND hidden = 0
-  ''', variables: [Variable.withString(name)],).getSingleOrNull();
+  ''',
+    variables: [Variable.withString(name)],
+  ).getSingleOrNull();
 
   if (result == null) {
     return (
@@ -608,28 +619,37 @@ Future<ExerciseRecords> getExerciseRecords({
   final bestVolume = result.read<double?>('best_volume') ?? 0.0;
 
   // Get dates, workout IDs, and set details for each record
-  final weightDate = await db.customSelect('''
+  final weightDate = await db.customSelect(
+    '''
     SELECT created, workout_id, reps FROM gym_sets
     WHERE name = ? AND hidden = 0 AND weight = (SELECT MAX(weight) FROM gym_sets WHERE name = ? AND hidden = 0)
     LIMIT 1
-  ''', variables: [
-    Variable.withString(name),
-    Variable.withString(name),
-  ],).getSingleOrNull();
+  ''',
+    variables: [
+      Variable.withString(name),
+      Variable.withString(name),
+    ],
+  ).getSingleOrNull();
 
-  final ormDate = await db.customSelect('''
+  final ormDate = await db.customSelect(
+    '''
     SELECT created, workout_id, reps, weight FROM gym_sets
     WHERE name = ? AND hidden = 0
     ORDER BY CASE WHEN weight >= 0 THEN weight / (1.0278 - 0.0278 * reps) ELSE weight * (1.0278 - 0.0278 * reps) END DESC
     LIMIT 1
-  ''', variables: [Variable.withString(name)],).getSingleOrNull();
+  ''',
+    variables: [Variable.withString(name)],
+  ).getSingleOrNull();
 
-  final volumeDate = await db.customSelect('''
+  final volumeDate = await db.customSelect(
+    '''
     SELECT created, workout_id, reps, weight FROM gym_sets
     WHERE name = ? AND hidden = 0
     ORDER BY weight * reps DESC
     LIMIT 1
-  ''', variables: [Variable.withString(name)],).getSingleOrNull();
+  ''',
+    variables: [Variable.withString(name)],
+  ).getSingleOrNull();
 
   return (
     bestWeight: bestWeight,
@@ -637,15 +657,18 @@ Future<ExerciseRecords> getExerciseRecords({
     bestVolume: bestVolume,
     bestWeightDate: weightDate != null
         ? DateTime.fromMillisecondsSinceEpoch(
-            weightDate.read<int>('created') * 1000,)
+            weightDate.read<int>('created') * 1000,
+          )
         : null,
     best1RMDate: ormDate != null
         ? DateTime.fromMillisecondsSinceEpoch(
-            ormDate.read<int>('created') * 1000,)
+            ormDate.read<int>('created') * 1000,
+          )
         : null,
     bestVolumeDate: volumeDate != null
         ? DateTime.fromMillisecondsSinceEpoch(
-            volumeDate.read<int>('created') * 1000,)
+            volumeDate.read<int>('created') * 1000,
+          )
         : null,
     bestWeightWorkoutId: weightDate?.read<int?>('workout_id'),
     best1RMWorkoutId: ormDate?.read<int?>('workout_id'),
@@ -682,6 +705,8 @@ class GymSets extends Table {
   TextColumn get exerciseType =>
       text().nullable()(); // free weight, machine, cable
   TextColumn get brandName => text().nullable()(); // brand for machine
+  TextColumn get cardioMetric =>
+      text().nullable()(); // primary cardio input field
   BoolColumn get dropSet =>
       boolean().withDefault(const Constant(false))(); // Drop set indicator
   TextColumn get supersetId =>

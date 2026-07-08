@@ -10,9 +10,10 @@ import '../theme/tokens.dart';
 import '../utils.dart';
 
 class ExerciseTile extends StatefulWidget {
-
   const ExerciseTile({
-    required this.onChange, required this.planExercise, super.key,
+    required this.onChange,
+    required this.planExercise,
+    super.key,
   });
   final PlanExercisesCompanion planExercise;
   final Function(PlanExercisesCompanion) onChange;
@@ -40,6 +41,17 @@ class _ExerciseTileState extends State<ExerciseTile> {
     return result?.brandName;
   }
 
+  Future<bool> _isCardio() async {
+    final result = await (db.gymSets.select()
+          ..where((tbl) => tbl.name.equals(widget.planExercise.exercise.value))
+          ..orderBy([
+            (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
+    return result?.cardio ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListTile(
@@ -49,77 +61,92 @@ class _ExerciseTileState extends State<ExerciseTile> {
           showDialog(
             context: context,
             builder: (context) {
-              bool timers = !widget.planExercise.timers.present || widget.planExercise.timers.value;
+              bool timers = !widget.planExercise.timers.present ||
+                  widget.planExercise.timers.value;
 
               return AlertDialog.adaptive(
                 title: Text(widget.planExercise.exercise.value),
                 content: SingleChildScrollView(
-                  child: material.Column(
-                    children: [
-                      Selector<SettingsState, int?>(
-                        selector: (context, settings) =>
-                            settings.value.warmupSets,
-                        builder: (context, value, child) => TextField(
-                          controller: warmup,
-                          keyboardType: TextInputType.number,
-                          onTap: () => selectAll(warmup),
-                          onChanged: (value) {
-                            final pe = widget.planExercise.copyWith(
-                              enabled: const Value(true),
-                              warmupSets: Value(int.tryParse(warmup.text)),
-                            );
-                            widget.onChange(pe);
-                          },
-                          decoration: InputDecoration(
-                            labelText: 'Warmup sets',
-                            border: const OutlineInputBorder(),
-                            hintText: (value ?? 0).toString(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Selector<SettingsState, int>(
-                        selector: (context, settings) => settings.value.maxSets,
-                        builder: (context, value, child) => TextField(
-                          controller: max,
-                          keyboardType: TextInputType.number,
-                          onTap: () => selectAll(max),
-                          onChanged: (value) {
-                            if (int.parse(max.text) > 0 &&
-                                int.parse(max.text) <= 20) {
-                              final pe = widget.planExercise.copyWith(
-                                enabled: const Value(true),
-                                maxSets: Value(int.parse(max.text)),
-                              );
-                              widget.onChange(pe);
-                            }
-                          },
-                          decoration: InputDecoration(
-                            labelText: 'Working sets (max: 20)',
-                            border: const OutlineInputBorder(),
-                            hintText: value.toString(),
-                          ),
-                        ),
-                      ),
-                      StatefulBuilder(
-                        builder: (context, setState) => ListTile(
-                          title: const Text('Rest timers'),
-                          trailing: Switch(
-                            value: timers,
-                            onChanged: (value) {
-                              setState(() {
-                                timers = value;
-                              });
-                              widget.onChange(
-                                widget.planExercise.copyWith(
-                                  timers: Value(value),
+                  child: FutureBuilder<bool>(
+                    future: _isCardio(),
+                    builder: (context, snapshot) {
+                      final isCardio = snapshot.data ?? false;
+                      return material.Column(
+                        children: [
+                          if (isCardio)
+                            const Text('Cardio exercises start with one bout.')
+                          else ...[
+                            Selector<SettingsState, int?>(
+                              selector: (context, settings) =>
+                                  settings.value.warmupSets,
+                              builder: (context, value, child) => TextField(
+                                controller: warmup,
+                                keyboardType: TextInputType.number,
+                                onTap: () => selectAll(warmup),
+                                onChanged: (value) {
+                                  final pe = widget.planExercise.copyWith(
+                                    enabled: const Value(true),
+                                    warmupSets:
+                                        Value(int.tryParse(warmup.text)),
+                                  );
+                                  widget.onChange(pe);
+                                },
+                                decoration: InputDecoration(
+                                  labelText: 'Warmup sets',
+                                  border: const OutlineInputBorder(),
+                                  hintText: (value ?? 0).toString(),
                                 ),
-                              );
-                            },
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Selector<SettingsState, int>(
+                              selector: (context, settings) =>
+                                  settings.value.maxSets,
+                              builder: (context, value, child) => TextField(
+                                controller: max,
+                                keyboardType: TextInputType.number,
+                                onTap: () => selectAll(max),
+                                onChanged: (value) {
+                                  final parsed = int.tryParse(max.text);
+                                  if (parsed != null &&
+                                      parsed > 0 &&
+                                      parsed <= 20) {
+                                    final pe = widget.planExercise.copyWith(
+                                      enabled: const Value(true),
+                                      maxSets: Value(parsed),
+                                    );
+                                    widget.onChange(pe);
+                                  }
+                                },
+                                decoration: InputDecoration(
+                                  labelText: 'Working sets (max: 20)',
+                                  border: const OutlineInputBorder(),
+                                  hintText: value.toString(),
+                                ),
+                              ),
+                            ),
+                          ],
+                          StatefulBuilder(
+                            builder: (context, setState) => ListTile(
+                              title: const Text('Rest timers'),
+                              trailing: Switch(
+                                value: timers,
+                                onChanged: (value) {
+                                  setState(() {
+                                    timers = value;
+                                  });
+                                  widget.onChange(
+                                    widget.planExercise.copyWith(
+                                      timers: Value(value),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
+                        ],
+                      );
+                    },
                   ),
                 ),
                 actions: [
@@ -163,8 +190,9 @@ class _ExerciseTileState extends State<ExerciseTile> {
                   child: Text(
                     brandName,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color:
-                              Theme.of(context).colorScheme.onSecondaryContainer,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSecondaryContainer,
                         ),
                   ),
                 ),

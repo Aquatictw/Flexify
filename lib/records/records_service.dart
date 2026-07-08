@@ -22,6 +22,18 @@ enum RecordType {
 
   /// Heaviest weight lifted
   bestWeight,
+
+  /// Longest cardio duration
+  bestDuration,
+
+  /// Longest cardio distance
+  bestDistance,
+
+  /// Fastest cardio speed
+  bestSpeed,
+
+  /// Steepest cardio incline
+  bestIncline,
 }
 
 /// Compact badge label for history cards, e.g. "1RM PR" / "Vol PR" / "Wt PR".
@@ -29,6 +41,10 @@ String recordShortLabel(RecordType t) => switch (t) {
       RecordType.best1RM => '1RM',
       RecordType.bestVolume => 'Vol',
       RecordType.bestWeight => 'Wt',
+      RecordType.bestDuration => 'Time',
+      RecordType.bestDistance => 'Dist',
+      RecordType.bestSpeed => 'Speed',
+      RecordType.bestIncline => 'Incl',
     };
 
 /// Represents a personal record achievement
@@ -52,6 +68,14 @@ class RecordAchievement {
         return 'Best Volume';
       case RecordType.bestWeight:
         return 'Best Weight';
+      case RecordType.bestDuration:
+        return 'Best Time';
+      case RecordType.bestDistance:
+        return 'Best Distance';
+      case RecordType.bestSpeed:
+        return 'Best Speed';
+      case RecordType.bestIncline:
+        return 'Best Incline';
     }
   }
 
@@ -63,6 +87,14 @@ class RecordAchievement {
         return '🔥';
       case RecordType.bestWeight:
         return '🏆';
+      case RecordType.bestDuration:
+        return '⏱';
+      case RecordType.bestDistance:
+        return '📍';
+      case RecordType.bestSpeed:
+        return '⚡';
+      case RecordType.bestIncline:
+        return '⛰';
     }
   }
 
@@ -89,6 +121,47 @@ double calculateVolume(double weight, double reps) {
   return weight * reps;
 }
 
+double calculateCardioSpeed(double distance, double durationMinutes) {
+  if (durationMinutes <= 0) return 0;
+  return distance / durationMinutes * 60;
+}
+
+Set<RecordType> calculateCardioRecords(GymSet set, Iterable<GymSet> otherSets) {
+  final records = <RecordType>{};
+  final others = otherSets.where((s) => s.cardio);
+
+  if (others.isEmpty) {
+    records
+      ..add(RecordType.bestDuration)
+      ..add(RecordType.bestDistance)
+      ..add(RecordType.bestIncline);
+    if (set.duration > 0) records.add(RecordType.bestSpeed);
+    return records;
+  }
+
+  var bestDuration = 0.0;
+  var bestDistance = 0.0;
+  var bestSpeed = 0.0;
+  var bestIncline = 0;
+  for (final other in others) {
+    if (other.duration > bestDuration) bestDuration = other.duration;
+    if (other.distance > bestDistance) bestDistance = other.distance;
+    final speed = calculateCardioSpeed(other.distance, other.duration);
+    if (speed > bestSpeed) bestSpeed = speed;
+    if ((other.incline ?? 0) > bestIncline) {
+      bestIncline = other.incline ?? 0;
+    }
+  }
+
+  if (set.duration > bestDuration) records.add(RecordType.bestDuration);
+  if (set.distance > bestDistance) records.add(RecordType.bestDistance);
+  if (calculateCardioSpeed(set.distance, set.duration) > bestSpeed) {
+    records.add(RecordType.bestSpeed);
+  }
+  if ((set.incline ?? 0) > bestIncline) records.add(RecordType.bestIncline);
+  return records;
+}
+
 /// Check if a completed set achieves any new records
 /// Returns a list of record achievements (can be multiple if multiple records are broken)
 Future<List<RecordAchievement>> checkForRecords({
@@ -97,8 +170,93 @@ Future<List<RecordAchievement>> checkForRecords({
   required double reps,
   required String unit,
   required int? excludeSetId,
+  bool cardio = false,
+  double duration = 0,
+  double distance = 0,
+  int? incline,
 }) async {
   final achievements = <RecordAchievement>[];
+
+  if (cardio) {
+    final bestQuery = '''
+      SELECT
+        MAX(duration) as best_duration,
+        MAX(distance) as best_distance,
+        MAX(CASE WHEN duration > 0 THEN distance / duration * 60 ELSE NULL END) as best_speed,
+        MAX(incline) as best_incline
+      FROM gym_sets
+      WHERE name = ?
+        AND hidden = 0
+        AND warmup = 0
+        AND cardio = 1
+        ${excludeSetId != null ? 'AND id != ?' : ''}
+    ''';
+
+    final variables = <Variable>[Variable.withString(exerciseName)];
+    if (excludeSetId != null) {
+      variables.add(Variable.withInt(excludeSetId));
+    }
+
+    final result = await db
+        .customSelect(
+          bestQuery,
+          variables: variables,
+        )
+        .getSingleOrNull();
+
+    final previousBestDuration = result?.read<double?>('best_duration');
+    final previousBestDistance = result?.read<double?>('best_distance');
+    final previousBestSpeed = result?.read<double?>('best_speed');
+    final previousBestIncline = result?.read<int?>('best_incline');
+    final isFirst = previousBestDuration == null &&
+        previousBestDistance == null &&
+        previousBestSpeed == null &&
+        previousBestIncline == null;
+    final currentSpeed = duration > 0 ? distance / duration * 60 : 0.0;
+
+    if (isFirst || duration > (previousBestDuration ?? 0)) {
+      achievements.add(
+        RecordAchievement(
+          type: RecordType.bestDuration,
+          newValue: duration,
+          previousValue: previousBestDuration,
+          unit: 'min',
+        ),
+      );
+    }
+    if (isFirst || distance > (previousBestDistance ?? 0)) {
+      achievements.add(
+        RecordAchievement(
+          type: RecordType.bestDistance,
+          newValue: distance,
+          previousValue: previousBestDistance,
+          unit: unit,
+        ),
+      );
+    }
+    if (duration > 0 && (isFirst || currentSpeed > (previousBestSpeed ?? 0))) {
+      achievements.add(
+        RecordAchievement(
+          type: RecordType.bestSpeed,
+          newValue: currentSpeed,
+          previousValue: previousBestSpeed,
+          unit: '$unit/h',
+        ),
+      );
+    }
+    if (isFirst || (incline ?? 0) > (previousBestIncline ?? 0)) {
+      achievements.add(
+        RecordAchievement(
+          type: RecordType.bestIncline,
+          newValue: (incline ?? 0).toDouble(),
+          previousValue: previousBestIncline?.toDouble(),
+          unit: '%',
+        ),
+      );
+    }
+
+    return achievements;
+  }
 
   // Get current best values for this exercise (excluding the current set)
   final bestQuery = '''
@@ -367,6 +525,33 @@ Future<Map<int, Set<RecordType>>> getWorkoutRecords(int workoutId) async {
     }
   }
 
+  final cardioSets = await (db.gymSets.select()
+        ..where(
+          (s) =>
+              s.workoutId.equals(workoutId) &
+              s.hidden.equals(false) &
+              s.warmup.equals(false) &
+              s.cardio.equals(true),
+        ))
+      .get();
+
+  for (final set in cardioSets) {
+    final allExerciseSets = await (db.gymSets.select()
+          ..where(
+            (s) =>
+                s.name.equals(set.name) &
+                s.hidden.equals(false) &
+                s.warmup.equals(false) &
+                s.cardio.equals(true),
+          ))
+        .get();
+    final recordTypes = calculateCardioRecords(
+      set,
+      allExerciseSets.where((other) => other.id != set.id),
+    );
+    if (recordTypes.isNotEmpty) recordsMap[set.id] = recordTypes;
+  }
+
   return recordsMap;
 }
 
@@ -543,6 +728,42 @@ Future<Map<int, Map<int, Set<RecordType>>>> getBatchWorkoutRecords(
     if (types.isNotEmpty) {
       (workoutRecords[set.workoutId!] ??= <int, Set<RecordType>>{})[set.id] =
           types;
+    }
+  }
+
+  final cardioWorkoutSets = await (db.gymSets.select()
+        ..where(
+          (s) =>
+              s.workoutId.isIn(workoutIds) &
+              s.hidden.equals(false) &
+              s.warmup.equals(false) &
+              s.cardio.equals(true),
+        ))
+      .get();
+
+  final cardioExerciseNames = cardioWorkoutSets.map((s) => s.name).toSet();
+  for (final exerciseName in cardioExerciseNames) {
+    final allExerciseSets = await (db.gymSets.select()
+          ..where(
+            (s) =>
+                s.name.equals(exerciseName) &
+                s.hidden.equals(false) &
+                s.warmup.equals(false) &
+                s.cardio.equals(true),
+          ))
+        .get();
+
+    for (final set in cardioWorkoutSets
+        .where((workoutSet) => workoutSet.name == exerciseName)) {
+      if (set.workoutId == null) continue;
+      final recordTypes = calculateCardioRecords(
+        set,
+        allExerciseSets.where((other) => other.id != set.id),
+      );
+      if (recordTypes.isNotEmpty) {
+        (workoutRecords[set.workoutId!] ??= <int, Set<RecordType>>{})[set.id] =
+            recordTypes;
+      }
     }
   }
 

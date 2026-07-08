@@ -19,17 +19,19 @@ LazyDatabase openConnection() {
   return createNativeConnection();
 }
 
-@DriftDatabase(tables: [
-  Plans,
-  GymSets,
-  Settings,
-  PlanExercises,
-  Metadata,
-  Workouts,
-  Notes,
-  BodyweightEntries,
-  FiveThreeOneBlocks,
-],)
+@DriftDatabase(
+  tables: [
+    Plans,
+    GymSets,
+    Settings,
+    PlanExercises,
+    Metadata,
+    Workouts,
+    Notes,
+    BodyweightEntries,
+    FiveThreeOneBlocks,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());
 
@@ -80,37 +82,51 @@ class AppDatabase extends _$AppDatabase {
           );
 
           // v32→33: Add peekGraph setting
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN peek_graph INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN peek_graph INTEGER',
+              )
+              .catchError((e) {});
 
           // v33→34: Add curve_smoothness and notifications
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN curve_smoothness INTEGER',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN notifications INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN curve_smoothness INTEGER',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN notifications INTEGER',
+              )
+              .catchError((e) {});
 
           // v35→36: Add showCategories
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN show_categories INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN show_categories INTEGER',
+              )
+              .catchError((e) {});
 
           // v36→37: Add showNotes
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN show_notes INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN show_notes INTEGER',
+              )
+              .catchError((e) {});
 
           // v37→38: Add notes to gymSets
-          await m.database.customStatement(
-            'ALTER TABLE gym_sets ADD COLUMN notes TEXT',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE gym_sets ADD COLUMN notes TEXT',
+              )
+              .catchError((e) {});
 
           // v38→39: Add showGlobalProgress
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN show_global_progress INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN show_global_progress INTEGER',
+              )
+              .catchError((e) {});
 
           // v39→40: Create metadata table
           await m.database.customStatement('''
@@ -127,9 +143,11 @@ class AppDatabase extends _$AppDatabase {
           );
 
           // v42→43: Add scrollableTabs
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN scrollable_tabs INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN scrollable_tabs INTEGER',
+              )
+              .catchError((e) {});
 
           // v43→44: Delete disabled plan exercises
           await m.database.customStatement('''
@@ -137,9 +155,11 @@ class AppDatabase extends _$AppDatabase {
           ''');
 
           // v45→46: Add and backfill sequence column in plan_exercises
-          await m.database.customStatement(
-            'ALTER TABLE plan_exercises ADD COLUMN sequence INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE plan_exercises ADD COLUMN sequence INTEGER',
+              )
+              .catchError((e) {});
           await m.database.customStatement('''
             UPDATE plan_exercises
             SET sequence = (
@@ -166,9 +186,11 @@ class AppDatabase extends _$AppDatabase {
               notes TEXT
             )
           ''');
-          await m.database.customStatement(
-            'ALTER TABLE gym_sets ADD COLUMN workout_id INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE gym_sets ADD COLUMN workout_id INTEGER',
+              )
+              .catchError((e) {});
           await m.createIndex(
             Index(
               'gym_sets',
@@ -181,22 +203,30 @@ class AppDatabase extends _$AppDatabase {
         // Runs when migrating FROM a version <=51 TO a version >=52
         if (from < 52 && to >= 52) {
           // v48→49: Add sequence column to gym_sets
-          await m.database.customStatement(
-            'ALTER TABLE gym_sets ADD COLUMN sequence INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE gym_sets ADD COLUMN sequence INTEGER',
+              )
+              .catchError((e) {});
 
           // v49→50: Add warmup flag
-          await m.database.customStatement(
-            'ALTER TABLE gym_sets ADD COLUMN warmup INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE gym_sets ADD COLUMN warmup INTEGER',
+              )
+              .catchError((e) {});
 
           // v50→52: Add exercise_type, brand_name, create notes table
-          await m.database.customStatement(
-            'ALTER TABLE gym_sets ADD COLUMN exercise_type TEXT',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE gym_sets ADD COLUMN brand_name TEXT',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE gym_sets ADD COLUMN exercise_type TEXT',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE gym_sets ADD COLUMN brand_name TEXT',
+              )
+              .catchError((e) {});
           await m.database.customStatement('''
             CREATE TABLE IF NOT EXISTS notes (
               id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -213,31 +243,45 @@ class AppDatabase extends _$AppDatabase {
         // Runs when migrating FROM a version <=56 TO a version >=57
         if (from < 57 && to >= 57) {
           // v52→53: Add drop_set column
-          await m.database.customStatement(
-            'ALTER TABLE gym_sets ADD COLUMN drop_set INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE gym_sets ADD COLUMN drop_set INTEGER',
+              )
+              .catchError((e) {});
 
           // v53→54: Add 5/3/1 training columns
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN fivethreeone_squat_tm REAL',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN fivethreeone_bench_tm REAL',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN fivethreeone_deadlift_tm REAL',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN fivethreeone_press_tm REAL',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN fivethreeone_week INTEGER NOT NULL DEFAULT 1',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN fivethreeone_squat_tm REAL',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN fivethreeone_bench_tm REAL',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN fivethreeone_deadlift_tm REAL',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN fivethreeone_press_tm REAL',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN fivethreeone_week INTEGER NOT NULL DEFAULT 1',
+              )
+              .catchError((e) {});
 
           // v54→57: Add customColorSeed, create bodyweight_entries, remove TimerPage, add lastAutoBackupTime, add superset columns
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN custom_color_seed INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN custom_color_seed INTEGER',
+              )
+              .catchError((e) {});
 
           await m.database.customStatement('''
             CREATE TABLE IF NOT EXISTS bodyweight_entries (
@@ -249,9 +293,11 @@ class AppDatabase extends _$AppDatabase {
           ''');
 
           // Remove TimerPage from existing users' tabs
-          final result = await m.database.customSelect(
-            'SELECT tabs FROM settings LIMIT 1',
-          ).getSingleOrNull();
+          final result = await m.database
+              .customSelect(
+                'SELECT tabs FROM settings LIMIT 1',
+              )
+              .getSingleOrNull();
 
           if (result != null) {
             final currentTabs = result.read<String>('tabs');
@@ -268,26 +314,34 @@ class AppDatabase extends _$AppDatabase {
             }
           }
 
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN last_auto_backup_time INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN last_auto_backup_time INTEGER',
+              )
+              .catchError((e) {});
 
           // Add superset columns
-          await m.database.customStatement(
-            'ALTER TABLE gym_sets ADD COLUMN superset_id TEXT',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE gym_sets ADD COLUMN superset_position INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE gym_sets ADD COLUMN superset_id TEXT',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE gym_sets ADD COLUMN superset_position INTEGER',
+              )
+              .catchError((e) {});
         }
 
         // from57To61: Consolidates v57-v61 changes
         // Runs when migrating FROM a version <=60 TO a version >=61
         if (from < 61 && to >= 61) {
           // v57→58: Add set_order with backfill logic
-          await m.database.customStatement(
-            'ALTER TABLE gym_sets ADD COLUMN set_order INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE gym_sets ADD COLUMN set_order INTEGER',
+              )
+              .catchError((e) {});
 
           await m.database.customStatement('''
             UPDATE gym_sets
@@ -303,20 +357,28 @@ class AppDatabase extends _$AppDatabase {
           ''');
 
           // v58→59: Add selfie_image_path to workouts
-          await m.database.customStatement(
-            'ALTER TABLE workouts ADD COLUMN selfie_image_path TEXT',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE workouts ADD COLUMN selfie_image_path TEXT',
+              )
+              .catchError((e) {});
 
           // v59→60: Add Spotify columns
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN spotify_access_token TEXT',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN spotify_refresh_token TEXT',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN spotify_token_expiry INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN spotify_access_token TEXT',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN spotify_refresh_token TEXT',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN spotify_token_expiry INTEGER',
+              )
+              .catchError((e) {});
 
           // v60→61: CRITICAL - sequence normalization fix (keep exactly as-is)
           // Fix old workout data where each set had unique sequence values
@@ -391,9 +453,11 @@ class AppDatabase extends _$AppDatabase {
         // Runs when migrating FROM a version <=61 TO a version >=62
         if (from < 62 && to >= 62) {
           // Add sequence column
-          await m.database.customStatement(
-            'ALTER TABLE notes ADD COLUMN sequence INTEGER',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE notes ADD COLUMN sequence INTEGER',
+              )
+              .catchError((e) {});
 
           // Backfill: assign sequence based on updated timestamp (most recent = highest)
           await m.database.customStatement('''
@@ -409,9 +473,11 @@ class AppDatabase extends _$AppDatabase {
         // from62To63: Add backup status tracking
         // Runs when migrating FROM a version <=62 TO a version >=63
         if (from < 63 && to >= 63) {
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN last_backup_status TEXT',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN last_backup_status TEXT',
+              )
+              .catchError((e) {});
         }
 
         // from63To64: Add five_three_one_blocks table for block programming
@@ -435,38 +501,65 @@ class AppDatabase extends _$AppDatabase {
 
         // from64To65: Add starting TM columns for block completion tracking
         if (from < 65 && to >= 65) {
-          await m.database.customStatement(
-            'ALTER TABLE five_three_one_blocks ADD COLUMN start_squat_tm REAL',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE five_three_one_blocks ADD COLUMN start_bench_tm REAL',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE five_three_one_blocks ADD COLUMN start_deadlift_tm REAL',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE five_three_one_blocks ADD COLUMN start_press_tm REAL',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE five_three_one_blocks ADD COLUMN start_squat_tm REAL',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE five_three_one_blocks ADD COLUMN start_bench_tm REAL',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE five_three_one_blocks ADD COLUMN start_deadlift_tm REAL',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE five_three_one_blocks ADD COLUMN start_press_tm REAL',
+              )
+              .catchError((e) {});
           // Backfill existing blocks with current TMs as starting TMs
-          await m.database.customStatement(
-            'UPDATE five_three_one_blocks SET start_squat_tm = squat_tm, start_bench_tm = bench_tm, start_deadlift_tm = deadlift_tm, start_press_tm = press_tm',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'UPDATE five_three_one_blocks SET start_squat_tm = squat_tm, start_bench_tm = bench_tm, start_deadlift_tm = deadlift_tm, start_press_tm = press_tm',
+              )
+              .catchError((e) {});
         }
 
         // from65To66: Add server backup push columns
         if (from < 66 && to >= 66) {
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN server_url TEXT',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN server_api_key TEXT',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN last_push_time INTEGER',
-          ).catchError((e) {});
-          await m.database.customStatement(
-            'ALTER TABLE settings ADD COLUMN last_push_status TEXT',
-          ).catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN server_url TEXT',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN server_api_key TEXT',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN last_push_time INTEGER',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN last_push_status TEXT',
+              )
+              .catchError((e) {});
+        }
+
+        // from66To67: Add primary cardio metric metadata
+        if (from < 67 && to >= 67) {
+          await m.database
+              .customStatement(
+                'ALTER TABLE gym_sets ADD COLUMN cardio_metric TEXT',
+              )
+              .catchError((e) {});
         }
       },
       beforeOpen: (details) async {
@@ -483,7 +576,8 @@ class AppDatabase extends _$AppDatabase {
         // Drop notes column if it exists (from earlier version)
         try {
           await customStatement(
-              'ALTER TABLE bodyweight_entries DROP COLUMN notes',);
+            'ALTER TABLE bodyweight_entries DROP COLUMN notes',
+          );
         } catch (e) {
           // Column might not exist, ignore error
         }
@@ -495,5 +589,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 66;
+  int get schemaVersion => 67;
 }

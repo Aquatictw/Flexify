@@ -16,8 +16,10 @@ import '../records/records_service.dart';
 import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
 import '../timer/timer_state.dart';
+import '../utils/cardio_format.dart';
 import '../widgets/bodypart_tag.dart';
 import '../widgets/five_three_one_calculator.dart';
+import '../widgets/sets/cardio_bout.dart';
 import '../widgets/sets/set_row.dart';
 import '../widgets/superset/superset_badge.dart';
 import 'plan_state.dart';
@@ -63,6 +65,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
   int _defaultReps = 8;
   String? _brandName;
   String? _exerciseType;
+  String? _cardioMetric;
+  bool _isCardio = false;
   String? _category;
   int? _restMs; // Custom rest time for this exercise
 
@@ -130,7 +134,9 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     final defaultUnit = referenceSet?.unit ?? settings.strengthUnit;
     _brandName = referenceSet?.brandName;
     _exerciseType = referenceSet?.exerciseType;
-    _category = referenceSet?.category;
+    _isCardio = referenceSet?.cardio ?? false;
+    _cardioMetric = referenceSet?.cardioMetric ?? cardioMetricDuration;
+    _category = referenceSet?.category ?? (_isCardio ? 'Cardio' : null);
     _restMs = referenceSet?.restMs;
 
     // Use existing sets from helper
@@ -157,6 +163,10 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           SetData(
             weight: set.weight,
             reps: set.reps.toInt(),
+            duration: set.duration,
+            distance: set.distance,
+            incline: set.incline,
+            cardioMetric: set.cardioMetric ?? _cardioMetric,
             completed: !set.hidden, // hidden=false means completed
             savedSetId: set.id,
             isWarmup: set.warmup,
@@ -167,7 +177,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       }
 
       setState(() {
-        unit = defaultUnit;
+        unit = _isCardio ? settings.cardioUnit : defaultUnit;
         sets = loadedSets;
         _initialized = true;
       });
@@ -189,62 +199,102 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         final startingSetOrder =
             existingSetCount?.read(db.gymSets.id.count()) ?? 0;
 
-        // Create working sets based on previous working sets.
-        // One transaction for all inserts: N separate commits (one fsync each)
-        // was the stutter when a freshly-added exercise first expands.
-        await db.transaction(() async {
-          for (int i = 0; i < maxSets; i++) {
-            double weight;
-            int reps;
+        if (_isCardio) {
+          final previous = _previousWorkingSets.firstOrNull;
+          final gymSet = await db.into(db.gymSets).insertReturning(
+                GymSetsCompanion.insert(
+                  name: widget.exercise.exercise,
+                  reps: 0,
+                  weight: 0,
+                  unit: settings.cardioUnit,
+                  created: DateTime.now().toLocal(),
+                  planId: Value(widget.planId),
+                  workoutId: Value(widget.workoutId),
+                  sequence: Value(widget.sequence),
+                  setOrder: Value(startingSetOrder),
+                  hidden: const Value(true),
+                  cardio: const Value(true),
+                  duration: Value(previous?.duration ?? 0),
+                  distance: Value(previous?.distance ?? 0),
+                  incline: Value(previous?.incline),
+                  cardioMetric: Value(_cardioMetric),
+                  brandName: Value(_brandName),
+                  exerciseType: Value(_exerciseType),
+                  category: Value(_category),
+                  supersetId: Value(_supersetId),
+                  supersetPosition: Value(_supersetPosition),
+                ),
+              );
 
-            if (i < _previousWorkingSets.length) {
-              // Use the value from the corresponding previous working set
-              weight = _previousWorkingSets[i].weight;
-              reps = _previousWorkingSets[i].reps.toInt();
-            } else if (_previousWorkingSets.isNotEmpty) {
-              // Use the last previous working set value
-              weight = _previousWorkingSets.last.weight;
-              reps = _previousWorkingSets.last.reps.toInt();
-            } else {
-              // Fallback to defaults
-              weight = _defaultWeight;
-              reps = _defaultReps;
+          newSets.add(
+            SetData(
+              weight: 0,
+              reps: 0,
+              duration: gymSet.duration,
+              distance: gymSet.distance,
+              incline: gymSet.incline,
+              cardioMetric: gymSet.cardioMetric ?? _cardioMetric,
+              savedSetId: gymSet.id,
+            ),
+          );
+        } else {
+          // Create working sets based on previous working sets.
+          // One transaction for all inserts: N separate commits (one fsync each)
+          // was the stutter when a freshly-added exercise first expands.
+          await db.transaction(() async {
+            for (int i = 0; i < maxSets; i++) {
+              double weight;
+              int reps;
+
+              if (i < _previousWorkingSets.length) {
+                // Use the value from the corresponding previous working set
+                weight = _previousWorkingSets[i].weight;
+                reps = _previousWorkingSets[i].reps.toInt();
+              } else if (_previousWorkingSets.isNotEmpty) {
+                // Use the last previous working set value
+                weight = _previousWorkingSets.last.weight;
+                reps = _previousWorkingSets.last.reps.toInt();
+              } else {
+                // Fallback to defaults
+                weight = _defaultWeight;
+                reps = _defaultReps;
+              }
+
+              final gymSet = await db.into(db.gymSets).insertReturning(
+                    GymSetsCompanion.insert(
+                      name: widget.exercise.exercise,
+                      reps: reps.toDouble(),
+                      weight: weight,
+                      unit: defaultUnit,
+                      created: DateTime.now().toLocal(),
+                      planId: Value(widget.planId),
+                      workoutId: Value(widget.workoutId),
+                      sequence: Value(widget.sequence),
+                      setOrder: Value(
+                        startingSetOrder + i,
+                      ), // Set position within exercise
+                      hidden: const Value(true), // Uncompleted
+                      brandName: Value(_brandName),
+                      exerciseType: Value(_exerciseType),
+                      category: Value(_category),
+                      supersetId: Value(_supersetId),
+                      supersetPosition: Value(_supersetPosition),
+                    ),
+                  );
+
+              newSets.add(
+                SetData(
+                  weight: weight,
+                  reps: reps,
+                  savedSetId: gymSet.id,
+                ),
+              );
             }
-
-            final gymSet = await db.into(db.gymSets).insertReturning(
-                  GymSetsCompanion.insert(
-                    name: widget.exercise.exercise,
-                    reps: reps.toDouble(),
-                    weight: weight,
-                    unit: defaultUnit,
-                    created: DateTime.now().toLocal(),
-                    planId: Value(widget.planId),
-                    workoutId: Value(widget.workoutId),
-                    sequence: Value(widget.sequence),
-                    setOrder: Value(
-                      startingSetOrder + i,
-                    ), // Set position within exercise
-                    hidden: const Value(true), // Uncompleted
-                    brandName: Value(_brandName),
-                    exerciseType: Value(_exerciseType),
-                    category: Value(_category),
-                    supersetId: Value(_supersetId),
-                    supersetPosition: Value(_supersetPosition),
-                  ),
-                );
-
-            newSets.add(
-              SetData(
-                weight: weight,
-                reps: reps,
-                savedSetId: gymSet.id,
-              ),
-            );
-          }
-        });
+          });
+        }
         if (mounted) {
           setState(() {
-            unit = defaultUnit;
+            unit = _isCardio ? settings.cardioUnit : defaultUnit;
             sets = newSets;
             _initialized = true;
           });
@@ -252,25 +302,36 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       } else {
         // No workout ID - memory only (shouldn't happen normally)
         setState(() {
-          unit = defaultUnit;
-          sets = List.generate(maxSets, (i) {
-            if (i < _previousWorkingSets.length) {
-              return SetData(
-                weight: _previousWorkingSets[i].weight,
-                reps: _previousWorkingSets[i].reps.toInt(),
-              );
-            } else if (_previousWorkingSets.isNotEmpty) {
-              return SetData(
-                weight: _previousWorkingSets.last.weight,
-                reps: _previousWorkingSets.last.reps.toInt(),
-              );
-            } else {
-              return SetData(
-                weight: _defaultWeight,
-                reps: _defaultReps,
-              );
-            }
-          });
+          unit = _isCardio ? settings.cardioUnit : defaultUnit;
+          sets = _isCardio
+              ? [
+                  SetData(
+                    weight: 0,
+                    reps: 0,
+                    duration: _previousWorkingSets.firstOrNull?.duration ?? 0,
+                    distance: _previousWorkingSets.firstOrNull?.distance ?? 0,
+                    incline: _previousWorkingSets.firstOrNull?.incline,
+                    cardioMetric: _cardioMetric,
+                  ),
+                ]
+              : List.generate(maxSets, (i) {
+                  if (i < _previousWorkingSets.length) {
+                    return SetData(
+                      weight: _previousWorkingSets[i].weight,
+                      reps: _previousWorkingSets[i].reps.toInt(),
+                    );
+                  } else if (_previousWorkingSets.isNotEmpty) {
+                    return SetData(
+                      weight: _previousWorkingSets.last.weight,
+                      reps: _previousWorkingSets.last.reps.toInt(),
+                    );
+                  } else {
+                    return SetData(
+                      weight: _defaultWeight,
+                      reps: _defaultReps,
+                    );
+                  }
+                });
           _initialized = true;
         });
       }
@@ -518,6 +579,15 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
               setOrder: Value(setOrderValue), // Use index as setOrder
               notes: Value(widget.exerciseNotes ?? ''),
               hidden: const Value(false),
+              cardio: Value(_isCardio),
+              duration:
+                  _isCardio ? Value(setData.duration) : const Value.absent(),
+              distance:
+                  _isCardio ? Value(setData.distance) : const Value.absent(),
+              incline:
+                  _isCardio ? Value(setData.incline) : const Value.absent(),
+              cardioMetric:
+                  _isCardio ? Value(_cardioMetric) : const Value.absent(),
               warmup: Value(setData.isWarmup),
               dropSet: Value(setData.isDropSet),
               brandName: Value(_brandName),
@@ -537,13 +607,19 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       });
     }
 
-    // Check for records (only for non-warmup, non-cardio sets)
-    if (!setData.isWarmup && setData.weight > 0 && setData.reps > 0) {
+    // Check for records
+    final shouldCheckRecords = !setData.isWarmup &&
+        (_isCardio || (setData.weight > 0 && setData.reps > 0));
+    if (shouldCheckRecords) {
       final achievements = await checkForRecords(
         exerciseName: widget.exercise.exercise,
         weight: setData.weight,
         reps: setData.reps.toDouble(),
         unit: unit,
+        cardio: _isCardio,
+        duration: setData.duration,
+        distance: setData.distance,
+        incline: setData.incline,
         excludeSetId: sets[index]
             .savedSetId, // Exclude this set to compare against previous bests
       );
@@ -750,6 +826,69 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     }
   }
 
+  Future<void> _addBout() async {
+    HapticFeedback.selectionClick();
+
+    final previous = sets.lastOrNull;
+    final insertIndex = sets.length;
+
+    if (widget.workoutId != null) {
+      final gymSet = await db.into(db.gymSets).insertReturning(
+            GymSetsCompanion.insert(
+              name: widget.exercise.exercise,
+              reps: 0,
+              weight: 0,
+              unit: unit,
+              created: DateTime.now().toLocal(),
+              planId: Value(widget.planId),
+              workoutId: Value(widget.workoutId),
+              sequence: Value(widget.sequence),
+              setOrder: Value(insertIndex),
+              notes: Value(widget.exerciseNotes ?? ''),
+              hidden: const Value(true),
+              cardio: const Value(true),
+              duration: Value(previous?.duration ?? 0),
+              distance: Value(previous?.distance ?? 0),
+              incline: Value(previous?.incline),
+              cardioMetric: Value(_cardioMetric),
+              brandName: Value(_brandName),
+              exerciseType: Value(_exerciseType),
+              category: Value(_category),
+              supersetId: Value(_supersetId),
+              supersetPosition: Value(_supersetPosition),
+            ),
+          );
+
+      setState(() {
+        sets.add(
+          SetData(
+            weight: 0,
+            reps: 0,
+            duration: gymSet.duration,
+            distance: gymSet.distance,
+            incline: gymSet.incline,
+            cardioMetric: gymSet.cardioMetric ?? _cardioMetric,
+            savedSetId: gymSet.id,
+          ),
+        );
+      });
+      return;
+    }
+
+    setState(() {
+      sets.add(
+        SetData(
+          weight: 0,
+          reps: 0,
+          duration: previous?.duration ?? 0,
+          distance: previous?.distance ?? 0,
+          incline: previous?.incline,
+          cardioMetric: _cardioMetric,
+        ),
+      );
+    });
+  }
+
   Future<void> _updateSet(int index) async {
     final setData = sets[index];
     if (setData.savedSetId == null) return;
@@ -759,8 +898,11 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
           ..where((tbl) => tbl.id.equals(setData.savedSetId!)))
         .write(
       GymSetsCompanion(
-        weight: Value(setData.weight),
-        reps: Value(setData.reps.toDouble()),
+        weight: _isCardio ? const Value.absent() : Value(setData.weight),
+        reps: _isCardio ? const Value.absent() : Value(setData.reps.toDouble()),
+        duration: _isCardio ? Value(setData.duration) : const Value.absent(),
+        distance: _isCardio ? Value(setData.distance) : const Value.absent(),
+        incline: _isCardio ? Value(setData.incline) : const Value.absent(),
       ),
     );
 
@@ -909,7 +1051,11 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                       borderRadius: brSm,
                     ),
                     child: Icon(
-                      allCompleted ? Icons.check : Icons.fitness_center,
+                      allCompleted
+                          ? Icons.check
+                          : _isCardio
+                              ? Icons.directions_run
+                              : Icons.fitness_center,
                       color: allCompleted
                           ? colorScheme.onPrimary
                           : colorScheme.primary,
@@ -937,30 +1083,6 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                 supersetIndex: _supersetIndex!,
                                 position: _supersetPosition!,
                                 isCompact: true,
-                              ),
-                            ],
-                            if (_brandName != null &&
-                                _brandName!.isNotEmpty) ...[
-                              const SizedBox(width: space4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: space4,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.secondaryContainer
-                                      .withValues(alpha: 0.7),
-                                  borderRadius: brSm,
-                                ),
-                                child: Text(
-                                  _brandName!,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelSmall
-                                      ?.copyWith(
-                                        color: colorScheme.onSecondaryContainer,
-                                      ),
-                                ),
                               ),
                             ],
                           ],
@@ -1004,7 +1126,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '$completedCount / ${sets.length} sets',
+                                '$completedCount / ${sets.length} ${_isCardio ? 'bouts' : 'sets'}',
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodySmall
@@ -1012,7 +1134,8 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                               ),
-                              if (_category != null && _category!.isNotEmpty) ...[
+                              if (_category != null &&
+                                  _category!.isNotEmpty) ...[
                                 const SizedBox(width: space8),
                                 BodypartTag(bodypart: _category),
                               ],
@@ -1041,7 +1164,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                                   ),
                                 ),
                               ],
-                              if (completedCount > 0) ...[
+                              if (!_isCardio && completedCount > 0) ...[
                                 const SizedBox(width: space12),
                                 Icon(
                                   Icons.fitness_center,
@@ -1101,211 +1224,215 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                     padding: const EdgeInsets.symmetric(vertical: space8),
                     child: Column(
                       children: [
-                        ReorderableListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: sets.length,
-                          onReorder: _reorderSets,
-                          proxyDecorator: (child, index, animation) {
-                            return Material(
-                              elevation: 6,
-                              shadowColor: colorScheme.shadow,
-                              borderRadius: brMd,
-                              child: child,
-                            );
-                          },
-                          itemBuilder: (context, index) {
-                            // Calculate display index (exclude warmups and drop sets from numbering)
-                            final warmupCount = sets
-                                .take(index)
-                                .where((s) => s.isWarmup)
-                                .length;
-                            final dropSetCount = sets
-                                .take(index)
-                                .where((s) => s.isDropSet)
-                                .length;
-                            final displayIndex = sets[index].isWarmup
-                                ? index + 1 - dropSetCount
-                                : sets[index].isDropSet
-                                    ? index + 1 - warmupCount
-                                    : index - warmupCount - dropSetCount + 1;
+                        if (_isCardio)
+                          ..._buildCardioBoutChildren(colorScheme)
+                        else ...[
+                          ReorderableListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: sets.length,
+                            onReorder: _reorderSets,
+                            proxyDecorator: (child, index, animation) {
+                              return Material(
+                                elevation: 6,
+                                shadowColor: colorScheme.shadow,
+                                borderRadius: brMd,
+                                child: child,
+                              );
+                            },
+                            itemBuilder: (context, index) {
+                              // Calculate display index (exclude warmups and drop sets from numbering)
+                              final warmupCount = sets
+                                  .take(index)
+                                  .where((s) => s.isWarmup)
+                                  .length;
+                              final dropSetCount = sets
+                                  .take(index)
+                                  .where((s) => s.isDropSet)
+                                  .length;
+                              final displayIndex = sets[index].isWarmup
+                                  ? index + 1 - dropSetCount
+                                  : sets[index].isDropSet
+                                      ? index + 1 - warmupCount
+                                      : index - warmupCount - dropSetCount + 1;
 
-                            return SetRow(
-                              key: ValueKey(
-                                'set_${sets[index].savedSetId ?? index}',
-                              ),
-                              index: displayIndex,
-                              setData: sets[index],
-                              unit: unit,
-                              records: sets[index].records,
-                              onWeightChanged: (value) {
-                                setState(() => sets[index].weight = value);
-                                if (sets[index].savedSetId != null) {
-                                  _updateSet(index);
-                                }
-                              },
-                              onRepsChanged: (value) {
-                                setState(() => sets[index].reps = value);
-                                if (sets[index].savedSetId != null) {
-                                  _updateSet(index);
-                                }
-                              },
-                              onToggle: () {
-                                // Unfocus to close keyboard when completing a set
-                                if (!sets[index].completed) {
-                                  FocusScope.of(context).unfocus();
-                                }
-                                _toggleSet(index);
-                              },
-                              onDelete: () => _deleteSet(index),
-                              onTypeChanged: (isWarmup, isDropSet) =>
-                                  _changeSetType(index, isWarmup, isDropSet),
-                            );
-                          },
-                        ),
-                        // Add set buttons row
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: space12,
-                            vertical: space4,
+                              return SetRow(
+                                key: ValueKey(
+                                  'set_${sets[index].savedSetId ?? index}',
+                                ),
+                                index: displayIndex,
+                                setData: sets[index],
+                                unit: unit,
+                                records: sets[index].records,
+                                onWeightChanged: (value) {
+                                  setState(() => sets[index].weight = value);
+                                  if (sets[index].savedSetId != null) {
+                                    _updateSet(index);
+                                  }
+                                },
+                                onRepsChanged: (value) {
+                                  setState(() => sets[index].reps = value);
+                                  if (sets[index].savedSetId != null) {
+                                    _updateSet(index);
+                                  }
+                                },
+                                onToggle: () {
+                                  // Unfocus to close keyboard when completing a set
+                                  if (!sets[index].completed) {
+                                    FocusScope.of(context).unfocus();
+                                  }
+                                  _toggleSet(index);
+                                },
+                                onDelete: () => _deleteSet(index),
+                                onTypeChanged: (isWarmup, isDropSet) =>
+                                    _changeSetType(index, isWarmup, isDropSet),
+                              );
+                            },
                           ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  // Add Warmup button
-                                  Expanded(
-                                    child: InkWell(
-                                      onTap: () => _addSet(isWarmup: true),
-                                      borderRadius: brMd,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: space8 + 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
+                          // Add set buttons row
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: space12,
+                              vertical: space4,
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    // Add Warmup button
+                                    Expanded(
+                                      child: InkWell(
+                                        onTap: () => _addSet(isWarmup: true),
+                                        borderRadius: brMd,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: space8 + 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: context.jl.warmup
+                                                  .withValues(alpha: 0.5),
+                                            ),
+                                            borderRadius: brMd,
                                             color: context.jl.warmup
-                                                .withValues(alpha: 0.5),
+                                                .withValues(alpha: 0.15),
                                           ),
-                                          borderRadius: brMd,
-                                          color: context.jl.warmup
-                                              .withValues(alpha: 0.15),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.whatshot_outlined,
-                                              size: 16,
-                                              color: context.jl.warmup,
-                                            ),
-                                            const SizedBox(width: space4 + 2),
-                                            Text(
-                                              'Warmup',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelMedium
-                                                  ?.copyWith(
-                                                    color: context.jl.warmup,
-                                                  ),
-                                            ),
-                                          ],
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.whatshot_outlined,
+                                                size: 16,
+                                                color: context.jl.warmup,
+                                              ),
+                                              const SizedBox(width: space4 + 2),
+                                              Text(
+                                                'Warmup',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .labelMedium
+                                                    ?.copyWith(
+                                                      color: context.jl.warmup,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: space4 + 2),
-                                  // Add Drop Set button
-                                  Expanded(
-                                    child: InkWell(
-                                      onTap: () => _addSet(isDropSet: true),
-                                      borderRadius: brMd,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: space8 + 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
+                                    const SizedBox(width: space4 + 2),
+                                    // Add Drop Set button
+                                    Expanded(
+                                      child: InkWell(
+                                        onTap: () => _addSet(isDropSet: true),
+                                        borderRadius: brMd,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: space8 + 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: context.jl.dropSet
+                                                  .withValues(alpha: 0.5),
+                                            ),
+                                            borderRadius: brMd,
                                             color: context.jl.dropSet
-                                                .withValues(alpha: 0.5),
+                                                .withValues(alpha: 0.15),
                                           ),
-                                          borderRadius: brMd,
-                                          color: context.jl.dropSet
-                                              .withValues(alpha: 0.15),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.trending_down,
-                                              size: 16,
-                                              color: context.jl.dropSet,
-                                            ),
-                                            const SizedBox(width: space4 + 2),
-                                            Text(
-                                              'Drop',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelMedium
-                                                  ?.copyWith(
-                                                    color: context.jl.dropSet,
-                                                  ),
-                                            ),
-                                          ],
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.trending_down,
+                                                size: 16,
+                                                color: context.jl.dropSet,
+                                              ),
+                                              const SizedBox(width: space4 + 2),
+                                              Text(
+                                                'Drop',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .labelMedium
+                                                    ?.copyWith(
+                                                      color: context.jl.dropSet,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: space4 + 2),
-                                  // Add Working Set button
-                                  Expanded(
-                                    child: InkWell(
-                                      onTap: _addSet,
-                                      borderRadius: brMd,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: space8 + 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
+                                    const SizedBox(width: space4 + 2),
+                                    // Add Working Set button
+                                    Expanded(
+                                      child: InkWell(
+                                        onTap: _addSet,
+                                        borderRadius: brMd,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: space8 + 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: context.jl.working
+                                                  .withValues(alpha: 0.5),
+                                            ),
+                                            borderRadius: brMd,
                                             color: context.jl.working
-                                                .withValues(alpha: 0.5),
+                                                .withValues(alpha: 0.15),
                                           ),
-                                          borderRadius: brMd,
-                                          color: context.jl.working
-                                              .withValues(alpha: 0.15),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.add,
-                                              size: 16,
-                                              color: context.jl.working,
-                                            ),
-                                            const SizedBox(width: space4 + 2),
-                                            Text(
-                                              'Working',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelMedium
-                                                  ?.copyWith(
-                                                    color: context.jl.working,
-                                                  ),
-                                            ),
-                                          ],
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.add,
+                                                size: 16,
+                                                color: context.jl.working,
+                                              ),
+                                              const SizedBox(width: space4 + 2),
+                                              Text(
+                                                'Working',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .labelMedium
+                                                    ?.copyWith(
+                                                      color: context.jl.working,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   )
@@ -1328,5 +1455,81 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
       return '${(total / 1000).toStringAsFixed(1)}k';
     }
     return total.toStringAsFixed(0);
+  }
+
+  List<Widget> _buildCardioBoutChildren(ColorScheme colorScheme) {
+    return [
+      for (int index = 0; index < sets.length; index++)
+        CardioBout(
+          key: ValueKey('bout_${sets[index].savedSetId ?? index}'),
+          index: index + 1,
+          setData: sets[index],
+          unit: unit,
+          records: sets[index].records,
+          onDurationChanged: (value) {
+            setState(() {
+              final speed =
+                  cardioSpeed(sets[index].distance, sets[index].duration);
+              sets[index].duration = value;
+              if (speed > 0) {
+                sets[index].distance = speed * value / 60;
+              }
+            });
+            _updateSet(index);
+          },
+          onDistanceChanged: (value) {
+            setState(() => sets[index].distance = value);
+            _updateSet(index);
+          },
+          onSpeedChanged: (value) {
+            setState(() {
+              sets[index].distance = value * sets[index].duration / 60;
+            });
+            _updateSet(index);
+          },
+          onInclineChanged: (value) {
+            setState(() => sets[index].incline = value);
+            _updateSet(index);
+          },
+          onToggle: () {
+            if (!sets[index].completed) FocusScope.of(context).unfocus();
+            _toggleSet(index);
+          },
+          onDelete: () => _deleteSet(index),
+        ),
+      Padding(
+        padding:
+            const EdgeInsets.symmetric(horizontal: space12, vertical: space4),
+        child: InkWell(
+          onTap: _addBout,
+          borderRadius: brMd,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: space8 + 2),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.7),
+              ),
+              borderRadius: brMd,
+              color:
+                  colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.add, size: 16, color: colorScheme.primary),
+                const SizedBox(width: space4 + 2),
+                Text(
+                  'Add bout',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: colorScheme.primary,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ];
   }
 }

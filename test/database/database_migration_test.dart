@@ -11,8 +11,8 @@ import 'package:jackedlog/database/schema.dart';
 /// These tests verify that the consolidated database migrations correctly
 /// transform schemas and preserve data.
 ///
-/// After migration consolidation, we maintain 5 strategic schema versions:
-/// v31, v48, v52, v57, v61
+/// After migration consolidation, we maintain strategic schema versions:
+/// v31, v48, v52, v57, v61, v67
 
 /// Helper to insert minimal Settings record for migration testing.
 Future<void> insertMinimalSettings(AppDatabase db) async {
@@ -43,7 +43,7 @@ void main() {
 
   setUpAll(() {
     // Verify only the consolidated schema files exist
-    final schemaFiles = [31, 48, 52, 57, 61];
+    final schemaFiles = [31, 48, 52, 57, 61, 67];
     for (final version in schemaFiles) {
       final schemaFile = File('drift_schemas/db/drift_schema_v$version.json');
       expect(
@@ -69,7 +69,7 @@ void main() {
   });
 
   group('Consolidated Migration Tests', () {
-    test('verifies only 5 strategic schema versions exist', () {
+    test('verifies only 6 strategic schema versions exist', () {
       final schemaDir = Directory('drift_schemas/db');
       final schemaFiles = schemaDir
           .listSync()
@@ -80,12 +80,13 @@ void main() {
 
       expect(
         schemaFiles.length,
-        equals(5),
-        reason: 'Should have exactly 5 schema files (v31, v48, v52, v57, v61)',
+        equals(6),
+        reason:
+            'Should have exactly 6 schema files (v31, v48, v52, v57, v61, v67)',
       );
     });
 
-    test('fresh install creates v61 schema correctly', () async {
+    test('fresh install creates v67 schema correctly', () async {
       TestWidgetsFlutterBinding.ensureInitialized();
       final db = AppDatabase();
 
@@ -93,13 +94,14 @@ void main() {
       await insertMinimalSettings(db);
 
       // Verify current schema version
-      final versionQuery = await db.customSelect('PRAGMA user_version').getSingle();
+      final versionQuery =
+          await db.customSelect('PRAGMA user_version').getSingle();
       final version = versionQuery.read<int>('user_version');
 
       expect(
         version,
-        equals(61),
-        reason: 'Fresh install should create v61 schema',
+        equals(67),
+        reason: 'Fresh install should create v67 schema',
       );
 
       // Verify all tables exist
@@ -138,17 +140,21 @@ void main() {
 
       // Verify workouts table exists
       final tableQuery = await db
-          .customSelect("SELECT name FROM sqlite_master WHERE type='table' AND name='workouts'")
+          .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='workouts'")
           .getSingleOrNull();
 
-      expect(tableQuery, isNotNull, reason: 'Workouts table should exist after v31→v48');
+      expect(tableQuery, isNotNull,
+          reason: 'Workouts table should exist after v31→v48');
 
       // Verify metadata table exists
       final metadataQuery = await db
-          .customSelect("SELECT name FROM sqlite_master WHERE type='table' AND name='metadata'")
+          .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='metadata'")
           .getSingleOrNull();
 
-      expect(metadataQuery, isNotNull, reason: 'Metadata table should exist after v31→v48');
+      expect(metadataQuery, isNotNull,
+          reason: 'Metadata table should exist after v31→v48');
 
       await db.close();
     });
@@ -168,17 +174,19 @@ void main() {
 
       // Verify notes table exists
       final tableQuery = await db
-          .customSelect("SELECT name FROM sqlite_master WHERE type='table' AND name='notes'")
+          .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='notes'")
           .getSingleOrNull();
 
-      expect(tableQuery, isNotNull, reason: 'Notes table should exist after v48→v52');
+      expect(tableQuery, isNotNull,
+          reason: 'Notes table should exist after v48→v52');
 
       // Verify gym_sets has sequence and warmup columns
-      final columnsQuery = await db
-          .customSelect("PRAGMA table_info(gym_sets)")
-          .get();
+      final columnsQuery =
+          await db.customSelect("PRAGMA table_info(gym_sets)").get();
 
-      final columns = columnsQuery.map((row) => row.read<String>('name')).toList();
+      final columns =
+          columnsQuery.map((row) => row.read<String>('name')).toList();
       expect(columns, contains('sequence'));
       expect(columns, contains('warmup'));
 
@@ -200,17 +208,19 @@ void main() {
 
       // Verify bodyweight_entries table exists
       final tableQuery = await db
-          .customSelect("SELECT name FROM sqlite_master WHERE type='table' AND name='bodyweight_entries'")
+          .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='bodyweight_entries'")
           .getSingleOrNull();
 
-      expect(tableQuery, isNotNull, reason: 'bodyweight_entries table should exist after v52→v57');
+      expect(tableQuery, isNotNull,
+          reason: 'bodyweight_entries table should exist after v52→v57');
 
       // Verify 5/3/1 training columns exist in settings
-      final columnsQuery = await db
-          .customSelect("PRAGMA table_info(settings)")
-          .get();
+      final columnsQuery =
+          await db.customSelect("PRAGMA table_info(settings)").get();
 
-      final columns = columnsQuery.map((row) => row.read<String>('name')).toList();
+      final columns =
+          columnsQuery.map((row) => row.read<String>('name')).toList();
       expect(columns, contains('fivethreeone_squat_tm'));
       expect(columns, contains('fivethreeone_week'));
 
@@ -275,12 +285,13 @@ void main() {
       }
 
       // Verify set_order column exists
-      final columnsQuery = await db
-          .customSelect("PRAGMA table_info(gym_sets)")
-          .get();
+      final columnsQuery =
+          await db.customSelect("PRAGMA table_info(gym_sets)").get();
 
-      final columns = columnsQuery.map((row) => row.read<String>('name')).toList();
-      expect(columns, contains('set_order'), reason: 'set_order column should exist after v57→v61');
+      final columns =
+          columnsQuery.map((row) => row.read<String>('name')).toList();
+      expect(columns, contains('set_order'),
+          reason: 'set_order column should exist after v57→v61');
 
       // Verify sequence normalization: all bench press sets should have sequence=0
       final sets = await db.select(db.gymSets).get();
@@ -290,13 +301,15 @@ void main() {
         expect(
           set.sequence,
           equals(0),
-          reason: 'After v60→v61 migration, all sets of same exercise should have sequence=0',
+          reason:
+              'After v60→v61 migration, all sets of same exercise should have sequence=0',
         );
       }
 
       // Verify set_order is correctly assigned (0, 1, 2)
       final setOrders = sets.map((s) => s.setOrder).toList()..sort();
-      expect(setOrders, equals([0, 1, 2]), reason: 'set_order should be 0, 1, 2');
+      expect(setOrders, equals([0, 1, 2]),
+          reason: 'set_order should be 0, 1, 2');
 
       // Verify Spotify columns exist
       expect(columns, contains('spotify_access_token'));

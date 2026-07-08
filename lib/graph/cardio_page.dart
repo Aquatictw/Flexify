@@ -103,7 +103,7 @@ class _CardioPageState extends State<CardioPage> {
         .getSingleOrNull();
     if (mounted) {
       setState(() {
-        category = result?.category;
+        category = result?.category ?? 'Cardio';
       });
     }
   }
@@ -126,7 +126,7 @@ class _CardioPageState extends State<CardioPage> {
   String _getMetricLabel(CardioMetric m) {
     switch (m) {
       case CardioMetric.pace:
-        return 'Pace';
+        return 'Speed';
       case CardioMetric.distance:
         return 'Distance';
       case CardioMetric.duration:
@@ -134,7 +134,7 @@ class _CardioPageState extends State<CardioPage> {
       case CardioMetric.incline:
         return 'Incline';
       case CardioMetric.inclineAdjustedPace:
-        return 'Adj. Pace';
+        return 'Adj. Speed';
     }
   }
 
@@ -355,7 +355,7 @@ class _CardioPageState extends State<CardioPage> {
   String _formatValue(CardioData row) {
     switch (metric) {
       case CardioMetric.pace:
-        return '${row.value.toStringAsFixed(2)} ${row.unit}/min';
+        return '${row.value.toStringAsFixed(2)} ${row.unit}/h';
       case CardioMetric.duration:
         return formatDurationMinutes(row.value);
       case CardioMetric.distance:
@@ -363,7 +363,7 @@ class _CardioPageState extends State<CardioPage> {
       case CardioMetric.incline:
         return '${row.value.toStringAsFixed(1)}%';
       case CardioMetric.inclineAdjustedPace:
-        return '${row.value.toStringAsFixed(2)} adj';
+        return '${row.value.toStringAsFixed(2)} adj ${row.unit}/h';
     }
   }
 

@@ -14,9 +14,13 @@ import 'plan_state.dart';
 import 'swap_workout.dart';
 
 class ExerciseModal extends StatefulWidget {
-
   const ExerciseModal({
-    required this.exercise, required this.hasData, required this.onSelect, required this.planId, required this.onMax, super.key,
+    required this.exercise,
+    required this.hasData,
+    required this.onSelect,
+    required this.planId,
+    required this.onMax,
+    super.key,
   });
   final String exercise;
   final bool hasData;
@@ -32,6 +36,7 @@ class _ExerciseModalState extends State<ExerciseModal> {
   final max = TextEditingController();
   final warmup = TextEditingController();
   bool timers = true;
+  bool isCardio = false;
 
   @override
   void initState() {
@@ -51,6 +56,18 @@ class _ExerciseModalState extends State<ExerciseModal> {
       setState(() {
         timers = planExercise.timers;
       });
+    });
+
+    (db.gymSets.select()
+          ..where((tbl) => tbl.name.equals(widget.exercise))
+          ..orderBy([
+            (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
+          ])
+          ..limit(1))
+        .getSingleOrNull()
+        .then((gymSet) {
+      if (!mounted) return;
+      setState(() => isCardio = gymSet?.cardio ?? false);
     });
   }
 
@@ -72,37 +89,41 @@ class _ExerciseModalState extends State<ExerciseModal> {
                   content: SingleChildScrollView(
                     child: material.Column(
                       children: [
-                        Selector<SettingsState, int?>(
-                          selector: (context, settings) =>
-                              settings.value.warmupSets,
-                          builder: (context, value, child) => TextField(
-                            controller: warmup,
-                            keyboardType: TextInputType.number,
-                            onTap: () => selectAll(warmup),
-                            onChanged: changeWarmup,
-                            decoration: InputDecoration(
-                              labelText: 'Warmup sets',
-                              border: const OutlineInputBorder(),
-                              hintText: (value ?? 0).toString(),
+                        if (isCardio)
+                          const Text('Cardio exercises start with one bout.')
+                        else ...[
+                          Selector<SettingsState, int?>(
+                            selector: (context, settings) =>
+                                settings.value.warmupSets,
+                            builder: (context, value, child) => TextField(
+                              controller: warmup,
+                              keyboardType: TextInputType.number,
+                              onTap: () => selectAll(warmup),
+                              onChanged: changeWarmup,
+                              decoration: InputDecoration(
+                                labelText: 'Warmup sets',
+                                border: const OutlineInputBorder(),
+                                hintText: (value ?? 0).toString(),
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        Selector<SettingsState, int>(
-                          selector: (context, settings) =>
-                              settings.value.maxSets,
-                          builder: (context, value, child) => TextField(
-                            controller: max,
-                            keyboardType: TextInputType.number,
-                            onTap: () => selectAll(max),
-                            onChanged: changeMax,
-                            decoration: InputDecoration(
-                              labelText: 'Working sets (max: 20)',
-                              border: const OutlineInputBorder(),
-                              hintText: value.toString(),
+                          const SizedBox(height: 16),
+                          Selector<SettingsState, int>(
+                            selector: (context, settings) =>
+                                settings.value.maxSets,
+                            builder: (context, value, child) => TextField(
+                              controller: max,
+                              keyboardType: TextInputType.number,
+                              onTap: () => selectAll(max),
+                              onChanged: changeMax,
+                              decoration: InputDecoration(
+                                labelText: 'Working sets (max: 20)',
+                                border: const OutlineInputBorder(),
+                                hintText: value.toString(),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                         const SizedBox(height: 16),
                         StatefulBuilder(
                           builder: (context, setState) => ListTile(

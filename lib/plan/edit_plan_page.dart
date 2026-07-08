@@ -5,7 +5,6 @@ import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../animated_fab.dart';
 import '../constants.dart';
 import '../database/database.dart';
 import '../day_selector.dart';
@@ -13,11 +12,11 @@ import '../graph/add_exercise_page.dart';
 import '../main.dart';
 import '../theme/tokens.dart';
 import '../utils.dart';
+import '../widgets/sticky_form_action.dart';
 import 'exercise_tile.dart';
 import 'plan_state.dart';
 
 class EditPlanPage extends StatefulWidget {
-
   const EditPlanPage({required this.plan, super.key});
   final PlansCompanion plan;
 
@@ -27,7 +26,8 @@ class EditPlanPage extends StatefulWidget {
 
 class _EditPlanPageState extends State<EditPlanPage> {
   late List<bool> days;
-  late List<PlanExercisesCompanion> exercises = context.read<PlanState>().exercises;
+  late List<PlanExercisesCompanion> exercises =
+      context.read<PlanState>().exercises;
 
   bool showOff = true;
   String search = '';
@@ -101,7 +101,6 @@ class _EditPlanPageState extends State<EditPlanPage> {
       title = 'Add plan';
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(title),
       ),
@@ -150,11 +149,11 @@ class _EditPlanPageState extends State<EditPlanPage> {
             ),
             const SizedBox(height: space8),
             ...List.generate(tiles.length, (index) => tiles.elementAt(index)),
-            const SizedBox(height: 176),
+            const SizedBox(height: space24),
           ],
         ),
       ),
-      floatingActionButton: AnimatedFab(
+      bottomNavigationBar: StickyFormAction(
         onPressed: save,
         label: const Text('Save'),
         icon: const Icon(Icons.save),

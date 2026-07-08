@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-import '../animated_fab.dart';
 import '../database/database.dart';
 import '../database/gym_sets.dart';
 import '../main.dart';
@@ -13,9 +12,9 @@ import '../records/records_service.dart';
 import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
 import '../utils.dart';
+import '../widgets/sticky_form_action.dart';
 
 class EditSetsPage extends StatefulWidget {
-
   const EditSetsPage({required this.ids, super.key});
   final List<int> ids;
 
@@ -51,7 +50,6 @@ class _EditSetsPageState extends State<EditSetsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(
           'Edit ${widget.ids.length} sets',
@@ -276,7 +274,7 @@ class _EditSetsPageState extends State<EditSetsPage> {
           ),
         ),
       ),
-      floatingActionButton: AnimatedFab(
+      bottomNavigationBar: StickyFormAction(
         onPressed: save,
         label: const Text('Update'),
         icon: const Icon(Icons.sync),

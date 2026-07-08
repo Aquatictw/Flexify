@@ -10,7 +10,7 @@ import 'package:provider/provider.dart';
 import '../constants.dart';
 import '../database/database.dart';
 import '../database/gym_sets.dart';
-import '../utils/duration_format.dart';
+import '../utils/cardio_format.dart';
 import '../graph/cardio_page.dart';
 import '../graph/strength_page.dart';
 import '../main.dart';
@@ -23,12 +23,12 @@ import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
 import '../utils.dart';
 import '../widgets/bodypart_tag.dart';
+import '../widgets/sets/cardio_bout.dart';
 import '../widgets/sets/set_row.dart';
 import '../widgets/workout/exercise_picker_modal.dart';
 import 'workout_state.dart';
 
 class WorkoutDetailPage extends StatefulWidget {
-
   const WorkoutDetailPage({required this.workout, super.key});
   final Workout workout;
 
@@ -45,7 +45,14 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   bool _isEditMode = false;
   bool _isReorderMode = false;
   bool _hasUnsavedChanges = false;
-  List<({String name, int sequence, List<SetData> editableSets, String unit})> _exerciseGroups = [];
+  List<
+      ({
+        String name,
+        int sequence,
+        List<SetData> editableSets,
+        String unit,
+        bool cardio,
+      })> _exerciseGroups = [];
 
   Workout get currentWorkout => _currentWorkout ?? widget.workout;
 
@@ -54,17 +61,20 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     super.initState();
     _currentWorkout = widget.workout;
     setsStream = (db.gymSets.select()
-          ..where((s) =>
-              s.workoutId.equals(widget.workout.id) &
-              s.hidden.equals(false) &
-              s.sequence.isBiggerOrEqualValue(0),)
+          ..where(
+            (s) =>
+                s.workoutId.equals(widget.workout.id) &
+                s.hidden.equals(false) &
+                s.sequence.isBiggerOrEqualValue(0),
+          )
           ..orderBy([
             // Order by sequence first (exercise position)
             (s) => OrderingTerm(expression: s.sequence),
             // Then by setOrder if available, fallback to created timestamp
             (s) => OrderingTerm(
                   expression: const CustomExpression<int>(
-                      'COALESCE(set_order, CAST((julianday(created) - 2440587.5) * 86400000 AS INTEGER))',),
+                    'COALESCE(set_order, CAST((julianday(created) - 2440587.5) * 86400000 AS INTEGER))',
+                  ),
                 ),
           ]))
         .watch();
@@ -81,24 +91,34 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   }
 
   // Edit mode methods
-  void _enterEditMode(List<({String name, int sequence, List<GymSet> sets})> groups) {
+  void _enterEditMode(
+      List<({String name, int sequence, List<GymSet> sets})> groups) {
     setState(() {
       _isEditMode = true;
       _hasUnsavedChanges = false;
-      _exerciseGroups = groups.map((g) => (
-        name: g.name,
-        sequence: g.sequence,
-        unit: g.sets.firstOrNull?.unit ?? 'kg',
-        editableSets: g.sets.map((s) => SetData(
-          weight: s.weight,
-          reps: s.reps.toInt(),
-          completed: !s.hidden,
-          savedSetId: s.id,
-          isWarmup: s.warmup,
-          isDropSet: s.dropSet,
-          records: _recordsMap[s.id] ?? {},
-        )).toList(),
-      )).toList();
+      _exerciseGroups = groups
+          .map((g) => (
+                name: g.name,
+                sequence: g.sequence,
+                unit: g.sets.firstOrNull?.unit ?? 'kg',
+                cardio: g.sets.firstOrNull?.cardio ?? false,
+                editableSets: g.sets
+                    .map((s) => SetData(
+                          weight: s.weight,
+                          reps: s.reps.toInt(),
+                          duration: s.duration,
+                          distance: s.distance,
+                          incline: s.incline,
+                          cardioMetric: s.cardioMetric,
+                          completed: !s.hidden,
+                          savedSetId: s.id,
+                          isWarmup: s.warmup,
+                          isDropSet: s.dropSet,
+                          records: _recordsMap[s.id] ?? {},
+                        ))
+                    .toList(),
+              ))
+          .toList();
     });
   }
 
@@ -121,7 +141,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Discard changes?'),
-        content: const Text('You have unsaved changes. Are you sure you want to discard them?'),
+        content: const Text(
+            'You have unsaved changes. Are you sure you want to discard them?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -138,7 +159,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   }
 
   Future<void> _editWorkoutName() async {
-    final nameController = TextEditingController(text: currentWorkout.name ?? 'Workout');
+    final nameController =
+        TextEditingController(text: currentWorkout.name ?? 'Workout');
     final newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -189,7 +211,10 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     if (result != null && mounted) {
       final nextSequence = _exerciseGroups.isEmpty
           ? 0
-          : _exerciseGroups.map((e) => e.sequence).reduce((a, b) => a > b ? a : b) + 1;
+          : _exerciseGroups
+                  .map((e) => e.sequence)
+                  .reduce((a, b) => a > b ? a : b) +
+              1;
 
       // Insert a placeholder set to database
       final newSet = await db.gymSets.insertReturning(
@@ -211,14 +236,17 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
           name: result,
           sequence: nextSequence,
           unit: newSet.unit,
-          editableSets: [SetData(
-            weight: newSet.weight,
-            reps: newSet.reps.toInt(),
-            completed: !newSet.hidden,
-            savedSetId: newSet.id,
-            isWarmup: newSet.warmup,
-            isDropSet: newSet.dropSet,
-          )],
+          cardio: newSet.cardio,
+          editableSets: [
+            SetData(
+              weight: newSet.weight,
+              reps: newSet.reps.toInt(),
+              completed: !newSet.hidden,
+              savedSetId: newSet.id,
+              isWarmup: newSet.warmup,
+              isDropSet: newSet.dropSet,
+            )
+          ],
         ));
         _hasUnsavedChanges = true;
       });
@@ -295,6 +323,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
           name: old.name,
           sequence: i,
           unit: old.unit,
+          cardio: old.cardio,
           editableSets: old.editableSets,
         );
       }
@@ -354,6 +383,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         name: group.name,
         sequence: i,
         unit: group.unit,
+        cardio: group.cardio,
         editableSets: group.editableSets,
       );
     }
@@ -364,7 +394,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   }
 
   // Set editing methods
-  Future<void> _updateSetWeight(int exerciseIndex, int setIndex, double value) async {
+  Future<void> _updateSetWeight(
+      int exerciseIndex, int setIndex, double value) async {
     final sets = _exerciseGroups[exerciseIndex].editableSets;
     sets[setIndex].weight = value;
 
@@ -380,7 +411,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     });
   }
 
-  Future<void> _updateSetReps(int exerciseIndex, int setIndex, int value) async {
+  Future<void> _updateSetReps(
+      int exerciseIndex, int setIndex, int value) async {
     final sets = _exerciseGroups[exerciseIndex].editableSets;
     sets[setIndex].reps = value;
 
@@ -396,11 +428,74 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     });
   }
 
-  Future<void> _addSetToExercise(int exerciseIndex, {bool isWarmup = false, bool isDropSet = false}) async {
+  Future<void> _updateCardioSet(int exerciseIndex, int setIndex) async {
+    final sets = _exerciseGroups[exerciseIndex].editableSets;
+    final set = sets[setIndex];
+
+    if (set.savedSetId != null) {
+      await (db.gymSets.update()
+            ..where((tbl) => tbl.id.equals(set.savedSetId!)))
+          .write(
+        GymSetsCompanion(
+          duration: Value(set.duration),
+          distance: Value(set.distance),
+          incline: Value(set.incline),
+        ),
+      );
+      clearPRCache();
+    }
+
+    setState(() {
+      _hasUnsavedChanges = true;
+    });
+  }
+
+  Future<void> _addSetToExercise(int exerciseIndex,
+      {bool isWarmup = false, bool isDropSet = false}) async {
     HapticFeedback.selectionClick();
 
     final group = _exerciseGroups[exerciseIndex];
     final sets = group.editableSets;
+
+    if (group.cardio) {
+      final previous = sets.lastOrNull;
+      final gymSet = await db.into(db.gymSets).insertReturning(
+            GymSetsCompanion.insert(
+              name: group.name,
+              reps: 0,
+              weight: 0,
+              unit: group.unit,
+              created: DateTime.now().toLocal(),
+              workoutId: Value(widget.workout.id),
+              sequence: Value(group.sequence),
+              setOrder: Value(sets.length),
+              hidden: const Value(false),
+              cardio: const Value(true),
+              duration: Value(previous?.duration ?? 0),
+              distance: Value(previous?.distance ?? 0),
+              incline: Value(previous?.incline),
+              cardioMetric: Value(previous?.cardioMetric),
+            ),
+          );
+
+      setState(() {
+        sets.add(
+          SetData(
+            weight: 0,
+            reps: 0,
+            duration: gymSet.duration,
+            distance: gymSet.distance,
+            incline: gymSet.incline,
+            cardioMetric: gymSet.cardioMetric,
+            completed: true,
+            savedSetId: gymSet.id,
+          ),
+        );
+        _hasUnsavedChanges = true;
+      });
+      clearPRCache();
+      return;
+    }
 
     // Determine insert position
     int insertIndex;
@@ -424,7 +519,9 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       final lastDrop = sets.lastWhere((s) => s.isDropSet);
       weight = lastDrop.weight;
       reps = lastDrop.reps;
-    } else if (!isWarmup && !isDropSet && sets.any((s) => !s.isWarmup && !s.isDropSet)) {
+    } else if (!isWarmup &&
+        !isDropSet &&
+        sets.any((s) => !s.isWarmup && !s.isDropSet)) {
       final lastWorking = sets.lastWhere((s) => !s.isWarmup && !s.isDropSet);
       weight = lastWorking.weight;
       reps = lastWorking.reps;
@@ -435,30 +532,32 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
 
     // Insert to database
     final gymSet = await db.into(db.gymSets).insertReturning(
-      GymSetsCompanion.insert(
-        name: group.name,
-        reps: reps.toDouble(),
-        weight: weight,
-        unit: group.unit,
-        created: DateTime.now().toLocal(),
-        workoutId: Value(widget.workout.id),
-        sequence: Value(group.sequence),
-        setOrder: Value(insertIndex),
-        hidden: const Value(false),
-        warmup: Value(isWarmup),
-        dropSet: Value(isDropSet),
-      ),
-    );
+          GymSetsCompanion.insert(
+            name: group.name,
+            reps: reps.toDouble(),
+            weight: weight,
+            unit: group.unit,
+            created: DateTime.now().toLocal(),
+            workoutId: Value(widget.workout.id),
+            sequence: Value(group.sequence),
+            setOrder: Value(insertIndex),
+            hidden: const Value(false),
+            warmup: Value(isWarmup),
+            dropSet: Value(isDropSet),
+          ),
+        );
 
     // Add to local list
-    sets.insert(insertIndex, SetData(
-      weight: weight,
-      reps: reps,
-      completed: true,
-      savedSetId: gymSet.id,
-      isWarmup: isWarmup,
-      isDropSet: isDropSet,
-    ));
+    sets.insert(
+        insertIndex,
+        SetData(
+          weight: weight,
+          reps: reps,
+          completed: true,
+          savedSetId: gymSet.id,
+          isWarmup: isWarmup,
+          isDropSet: isDropSet,
+        ));
 
     // Update setOrder for all sets
     for (int i = 0; i < sets.length; i++) {
@@ -494,7 +593,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     });
   }
 
-  Future<void> _changeSetType(int exerciseIndex, int setIndex, bool isWarmup, bool isDropSet) async {
+  Future<void> _changeSetType(
+      int exerciseIndex, int setIndex, bool isWarmup, bool isDropSet) async {
     HapticFeedback.lightImpact();
 
     final sets = _exerciseGroups[exerciseIndex].editableSets;
@@ -505,9 +605,9 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       await (db.gymSets.update()
             ..where((tbl) => tbl.id.equals(sets[setIndex].savedSetId!)))
           .write(GymSetsCompanion(
-            warmup: Value(isWarmup),
-            dropSet: Value(isDropSet),
-          ));
+        warmup: Value(isWarmup),
+        dropSet: Value(isDropSet),
+      ));
     }
 
     setState(() {
@@ -515,7 +615,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     });
   }
 
-  Future<void> _showExerciseMenu(int exerciseIndex, ColorScheme colorScheme) async {
+  Future<void> _showExerciseMenu(
+      int exerciseIndex, ColorScheme colorScheme) async {
     final group = _exerciseGroups[exerciseIndex];
     await showModalBottomSheet(
       context: context,
@@ -552,7 +653,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             ),
             const Divider(),
             ListTile(
-              leading: Icon(Icons.remove_circle_outline, color: colorScheme.error),
+              leading:
+                  Icon(Icons.remove_circle_outline, color: colorScheme.error),
               title: Text(
                 'Remove Exercise',
                 style: TextStyle(color: colorScheme.error),
@@ -597,437 +699,459 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       },
       child: Scaffold(
         body: StreamBuilder<List<GymSet>>(
-        stream: setsStream,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return Scaffold(
-              appBar: AppBar(title: Text(widget.workout.name ?? 'Workout')),
-              body: const Center(child: CircularProgressIndicator()),
-            );
-          }
+          stream: setsStream,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return Scaffold(
+                appBar: AppBar(title: Text(widget.workout.name ?? 'Workout')),
+                body: const Center(child: CircularProgressIndicator()),
+              );
+            }
 
-          final sets = snapshot.data!;
+            final sets = snapshot.data!;
 
-          // Group sets by exercise, detecting sequence gaps for multiple instances
-          final List<({String name, List<GymSet> sets, int minSeq, int maxSeq})>
-              exerciseGroups = [];
+            // Group sets by exercise, detecting sequence gaps for multiple instances
+            final List<
+                    ({String name, List<GymSet> sets, int minSeq, int maxSeq})>
+                exerciseGroups = [];
 
-          if (sets.isNotEmpty) {
-            // Sort by sequence first to ensure proper grouping
-            final sortedSets = List<GymSet>.from(sets)
-              ..sort((a, b) => a.sequence.compareTo(b.sequence));
+            if (sets.isNotEmpty) {
+              // Sort by sequence first to ensure proper grouping
+              final sortedSets = List<GymSet>.from(sets)
+                ..sort((a, b) => a.sequence.compareTo(b.sequence));
 
-            String? currentExercise;
-            List<GymSet> currentSets = [];
-            int? currentMinSeq;
-            int? currentMaxSeq;
+              String? currentExercise;
+              List<GymSet> currentSets = [];
+              int? currentMinSeq;
+              int? currentMaxSeq;
 
-            for (final set in sortedSets) {
-              if (currentExercise == null ||
-                  set.name != currentExercise ||
-                  (currentMaxSeq != null && set.sequence != currentMaxSeq)) {
-                // New exercise or sequence change detected - save previous group
-                if (currentExercise != null && currentSets.isNotEmpty) {
-                  exerciseGroups.add((
+              for (final set in sortedSets) {
+                if (currentExercise == null ||
+                    set.name != currentExercise ||
+                    (currentMaxSeq != null && set.sequence != currentMaxSeq)) {
+                  // New exercise or sequence change detected - save previous group
+                  if (currentExercise != null && currentSets.isNotEmpty) {
+                    exerciseGroups.add(
+                      (
+                        name: currentExercise,
+                        sets: currentSets,
+                        minSeq: currentMinSeq!,
+                        maxSeq: currentMaxSeq!,
+                      ),
+                    );
+                  }
+                  // Start new group
+                  currentExercise = set.name;
+                  currentSets = [set];
+                  currentMinSeq = set.sequence;
+                  currentMaxSeq = set.sequence;
+                } else {
+                  // Continue current group - sets must have same sequence
+                  currentSets.add(set);
+                  currentMaxSeq = set.sequence;
+                }
+              }
+
+              // Add last group
+              if (currentExercise != null && currentSets.isNotEmpty) {
+                exerciseGroups.add(
+                  (
                     name: currentExercise,
                     sets: currentSets,
                     minSeq: currentMinSeq!,
                     maxSeq: currentMaxSeq!,
-                  ),);
-                }
-                // Start new group
-                currentExercise = set.name;
-                currentSets = [set];
-                currentMinSeq = set.sequence;
-                currentMaxSeq = set.sequence;
-              } else {
-                // Continue current group - sets must have same sequence
-                currentSets.add(set);
-                currentMaxSeq = set.sequence;
+                  ),
+                );
               }
             }
 
-            // Add last group
-            if (currentExercise != null && currentSets.isNotEmpty) {
-              exerciseGroups.add((
-                name: currentExercise,
-                sets: currentSets,
-                minSeq: currentMinSeq!,
-                maxSeq: currentMaxSeq!,
-              ),);
+            // Group exercises into supersets
+            // First, collect all unique superset IDs in order
+            final supersetIds = <String>[];
+            for (final group in exerciseGroups) {
+              final supersetId = group.sets.firstOrNull?.supersetId;
+              if (supersetId != null && !supersetIds.contains(supersetId)) {
+                supersetIds.add(supersetId);
+              }
             }
-          }
 
-          // Group exercises into supersets
-          // First, collect all unique superset IDs in order
-          final supersetIds = <String>[];
-          for (final group in exerciseGroups) {
-            final supersetId = group.sets.firstOrNull?.supersetId;
-            if (supersetId != null && !supersetIds.contains(supersetId)) {
-              supersetIds.add(supersetId);
+            // Create display items - render each exercise individually, even in supersets
+            final displayItems = <Map<String, dynamic>>[];
+            int i = 0;
+            while (i < exerciseGroups.length) {
+              final group = exerciseGroups[i];
+              final supersetId = group.sets.firstOrNull?.supersetId;
+              final supersetPosition = group.sets.firstOrNull?.supersetPosition;
+
+              if (supersetId != null && supersetPosition != null) {
+                // This exercise is part of a superset - render individually with metadata
+                final supersetIndex = supersetIds.indexOf(supersetId);
+
+                // Determine if this is the first or last exercise in the superset
+                final isFirstInSuperset = i == 0 ||
+                    exerciseGroups[i - 1].sets.firstOrNull?.supersetId !=
+                        supersetId;
+                final isLastInSuperset = i == exerciseGroups.length - 1 ||
+                    exerciseGroups[i + 1].sets.firstOrNull?.supersetId !=
+                        supersetId;
+
+                displayItems.add({
+                  'type': 'exercise',
+                  'name': group.name,
+                  'sets': group.sets,
+                  'supersetIndex': supersetIndex,
+                  'supersetPosition': supersetPosition,
+                  'isFirstInSuperset': isFirstInSuperset,
+                  'isLastInSuperset': isLastInSuperset,
+                });
+              } else {
+                // Regular exercise (not in a superset)
+                displayItems.add({
+                  'type': 'exercise',
+                  'name': group.name,
+                  'sets': group.sets,
+                });
+              }
+              i++;
             }
-          }
 
-          // Create display items - render each exercise individually, even in supersets
-          final displayItems = <Map<String, dynamic>>[];
-          int i = 0;
-          while (i < exerciseGroups.length) {
-            final group = exerciseGroups[i];
-            final supersetId = group.sets.firstOrNull?.supersetId;
-            final supersetPosition = group.sets.firstOrNull?.supersetPosition;
+            final totalVolume = sets.fold<double>(
+              0,
+              (sum, s) => sum + (s.weight * s.reps),
+            );
 
-            if (supersetId != null && supersetPosition != null) {
-              // This exercise is part of a superset - render individually with metadata
-              final supersetIndex = supersetIds.indexOf(supersetId);
+            // Count unique exercise names (not instances)
+            final uniqueExerciseNames = sets.map((s) => s.name).toSet().length;
 
-              // Determine if this is the first or last exercise in the superset
-              final isFirstInSuperset = i == 0 ||
-                  exerciseGroups[i - 1].sets.firstOrNull?.supersetId !=
-                      supersetId;
-              final isLastInSuperset = i == exerciseGroups.length - 1 ||
-                  exerciseGroups[i + 1].sets.firstOrNull?.supersetId !=
-                      supersetId;
-
-              displayItems.add({
-                'type': 'exercise',
-                'name': group.name,
-                'sets': group.sets,
-                'supersetIndex': supersetIndex,
-                'supersetPosition': supersetPosition,
-                'isFirstInSuperset': isFirstInSuperset,
-                'isLastInSuperset': isLastInSuperset,
-              });
-            } else {
-              // Regular exercise (not in a superset)
-              displayItems.add({
-                'type': 'exercise',
-                'name': group.name,
-                'sets': group.sets,
-              });
-            }
-            i++;
-          }
-
-          final totalVolume = sets.fold<double>(
-            0,
-            (sum, s) => sum + (s.weight * s.reps),
-          );
-
-          // Count unique exercise names (not instances)
-          final uniqueExerciseNames = sets.map((s) => s.name).toSet().length;
-
-          return CustomScrollView(
-            slivers: [
-              // Stylish App Bar Header
-              SliverAppBar(
-                expandedHeight: 200,
-                pinned: true,
-                backgroundColor: _isEditMode
-                    ? colorScheme.tertiaryContainer
-                    : null,
-                title: _isReorderMode
-                    ? const Text('Reorder Exercises')
-                    : null,
-                leading: _isReorderMode
-                    ? IconButton(
-                        icon: const Icon(Icons.close),
-                        tooltip: 'Cancel reorder',
-                        onPressed: () => setState(() => _isReorderMode = false),
-                      )
-                    : _isEditMode
-                        ? IconButton(
-                            icon: const Icon(Icons.close),
-                            tooltip: 'Cancel editing',
-                            onPressed: () => _exitEditMode(save: false),
-                          )
-                        : null,
-                actions: [
-                  if (_isReorderMode) ...[
-                    // Done button in reorder mode
-                    TextButton.icon(
-                      onPressed: () => setState(() => _isReorderMode = false),
-                      icon: const Icon(Icons.check),
-                      label: const Text('Done'),
-                    ),
-                  ] else if (_isEditMode) ...[
-                    // Reorder button in edit mode (only if more than 1 exercise)
-                    if (_exerciseGroups.length > 1)
-                      IconButton(
-                        icon: const Icon(Icons.swap_vert),
-                        tooltip: 'Reorder exercises',
-                        onPressed: () => setState(() => _isReorderMode = true),
-                      ),
-                    // Selfie button in edit mode
-                    IconButton(
-                      icon: Icon(
-                        currentWorkout.selfieImagePath != null
-                            ? Icons.camera_alt
-                            : Icons.add_a_photo_outlined,
-                      ),
-                      tooltip: currentWorkout.selfieImagePath != null
-                          ? 'Change Selfie'
-                          : 'Add Selfie',
-                      onPressed: () => _editSelfie(context),
-                    ),
-                    // Save button in edit mode
-                    IconButton(
-                      icon: const Icon(Icons.check),
-                      tooltip: 'Done editing',
-                      onPressed: () => _exitEditMode(save: true),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () => _deleteWorkout(context),
-                    ),
-                  ] else ...[
-                    // Edit button when not in edit mode (only for ended workouts)
-                    if (workoutEnded)
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined),
-                        tooltip: 'Edit Workout',
-                        onPressed: () => _enterEditMode(
-                          exerciseGroups.map((g) => (
-                            name: g.name,
-                            sequence: g.minSeq,
-                            sets: g.sets,
-                          )).toList(),
-                        ),
-                      ),
-                    if (workoutEnded)
-                      IconButton(
-                        icon: const Icon(Icons.play_arrow),
-                        tooltip: 'Resume Workout',
-                        onPressed: () => _resumeWorkout(context),
-                      ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () => _deleteWorkout(context),
-                    ),
-                  ],
-                ],
-                flexibleSpace: FlexibleSpaceBar(
-                  background: currentWorkout.selfieImagePath != null
-                      ? Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            // Selfie image
-                            Image.file(
-                              File(currentWorkout.selfieImagePath!),
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  _buildDefaultGradientBackground(colorScheme),
-                            ),
-                            // Dark gradient overlay for text readability
-                            Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.black.withValues(alpha: 0.3),
-                                    Colors.black.withValues(alpha: 0.6),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            // Content on top
-                            SafeArea(
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(20, 60, 20, 20),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildDateBadge(),
-                                    const SizedBox(height: 12),
-                                    _isEditMode
-                                        ? GestureDetector(
-                                            onTap: _editWorkoutName,
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Flexible(
-                                                  child: Text(
-                                                    currentWorkout.name ?? 'Workout',
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .headlineSmall
-                                                        ?.copyWith(
-                                                          fontWeight: FontWeight.bold,
-                                                          color: Colors.white,
-                                                        ),
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Icon(
-                                                  Icons.edit_outlined,
-                                                  size: 20,
-                                                  color: Colors.white.withValues(alpha: 0.7),
-                                                ),
-                                              ],
-                                            ),
-                                          )
-                                        : Text(
-                                            currentWorkout.name ?? 'Workout',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .headlineSmall
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      DateFormat('HH:mm')
-                                          .format(currentWorkout.startTime),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.9),
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
+            return CustomScrollView(
+              slivers: [
+                // Stylish App Bar Header
+                SliverAppBar(
+                  expandedHeight: 200,
+                  pinned: true,
+                  backgroundColor:
+                      _isEditMode ? colorScheme.tertiaryContainer : null,
+                  title:
+                      _isReorderMode ? const Text('Reorder Exercises') : null,
+                  leading: _isReorderMode
+                      ? IconButton(
+                          icon: const Icon(Icons.close),
+                          tooltip: 'Cancel reorder',
+                          onPressed: () =>
+                              setState(() => _isReorderMode = false),
                         )
-                      : _buildDefaultGradientBackground(colorScheme),
-                ),
-              ),
-              // Stats section
-              SliverToBoxAdapter(
-                child: _buildStatsSection(
-                    sets, totalVolume, uniqueExerciseNames, _recordsMap.length,),
-              ),
-              // Notes section
-              if (widget.workout.notes?.isNotEmpty ?? false)
-                SliverToBoxAdapter(
-                  child: _buildNotesSection(),
-                ),
-              // Empty state (only in view mode)
-              if (displayItems.isEmpty && !_isEditMode)
-                const SliverFillRemaining(
-                  child: Center(
-                    child: Text('No exercises in this workout'),
-                  ),
-                ),
-              // Edit mode: use reorderable list with add/remove
-              if (_isEditMode) ...[
-                if (_isReorderMode)
-                  SliverReorderableList(
-                    itemCount: _exerciseGroups.length,
-                    onReorder: _reorderExercises,
-                    itemBuilder: (context, index) {
-                      final group = _exerciseGroups[index];
-                      return ReorderableDragStartListener(
-                        key: ValueKey('reorder_${group.name}_${group.sequence}'),
-                        index: index,
-                        child: _buildReorderableExerciseTile(
-                          index,
-                          colorScheme,
-                        ),
-                      );
-                    },
-                  )
-                else
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => _buildEditableExerciseCard(
-                        index,
-                        colorScheme,
+                      : _isEditMode
+                          ? IconButton(
+                              icon: const Icon(Icons.close),
+                              tooltip: 'Cancel editing',
+                              onPressed: () => _exitEditMode(save: false),
+                            )
+                          : null,
+                  actions: [
+                    if (_isReorderMode) ...[
+                      // Done button in reorder mode
+                      TextButton.icon(
+                        onPressed: () => setState(() => _isReorderMode = false),
+                        icon: const Icon(Icons.check),
+                        label: const Text('Done'),
                       ),
-                      childCount: _exerciseGroups.length,
-                    ),
-                  ),
-                // Add Exercise button at the end
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _addExercise,
-                        borderRadius: brSm,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: space16),
-                          decoration: BoxDecoration(
-                            borderRadius: brSm,
-                            border: Border.all(
-                              color: colorScheme.primary.withValues(alpha: 0.4),
-                              width: 1.5,
-                            ),
-                            gradient: LinearGradient(
-                              colors: [
-                                colorScheme.primaryContainer.withValues(alpha: 0.3),
-                                colorScheme.secondaryContainer.withValues(alpha: 0.2),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+                    ] else if (_isEditMode) ...[
+                      // Reorder button in edit mode (only if more than 1 exercise)
+                      if (_exerciseGroups.length > 1)
+                        IconButton(
+                          icon: const Icon(Icons.swap_vert),
+                          tooltip: 'Reorder exercises',
+                          onPressed: () =>
+                              setState(() => _isReorderMode = true),
+                        ),
+                      // Selfie button in edit mode
+                      IconButton(
+                        icon: Icon(
+                          currentWorkout.selfieImagePath != null
+                              ? Icons.camera_alt
+                              : Icons.add_a_photo_outlined,
+                        ),
+                        tooltip: currentWorkout.selfieImagePath != null
+                            ? 'Change Selfie'
+                            : 'Add Selfie',
+                        onPressed: () => _editSelfie(context),
+                      ),
+                      // Save button in edit mode
+                      IconButton(
+                        icon: const Icon(Icons.check),
+                        tooltip: 'Done editing',
+                        onPressed: () => _exitEditMode(save: true),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () => _deleteWorkout(context),
+                      ),
+                    ] else ...[
+                      // Edit button when not in edit mode (only for ended workouts)
+                      if (workoutEnded)
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined),
+                          tooltip: 'Edit Workout',
+                          onPressed: () => _enterEditMode(
+                            exerciseGroups
+                                .map((g) => (
+                                      name: g.name,
+                                      sequence: g.minSeq,
+                                      sets: g.sets,
+                                    ))
+                                .toList(),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                        ),
+                      if (workoutEnded)
+                        IconButton(
+                          icon: const Icon(Icons.play_arrow),
+                          tooltip: 'Resume Workout',
+                          onPressed: () => _resumeWorkout(context),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () => _deleteWorkout(context),
+                      ),
+                    ],
+                  ],
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: currentWorkout.selfieImagePath != null
+                        ? Stack(
+                            fit: StackFit.expand,
                             children: [
-                              Icon(
-                                Icons.add_circle,
-                                color: colorScheme.primary,
-                                size: 20,
+                              // Selfie image
+                              Image.file(
+                                File(currentWorkout.selfieImagePath!),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    _buildDefaultGradientBackground(
+                                        colorScheme),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Add Exercise',
-                                style: TextStyle(
-                                  color: colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
+                              // Dark gradient overlay for text readability
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.black.withValues(alpha: 0.3),
+                                      Colors.black.withValues(alpha: 0.6),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              // Content on top
+                              SafeArea(
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(20, 60, 20, 20),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      _buildDateBadge(),
+                                      const SizedBox(height: 12),
+                                      _isEditMode
+                                          ? GestureDetector(
+                                              onTap: _editWorkoutName,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Flexible(
+                                                    child: Text(
+                                                      currentWorkout.name ??
+                                                          'Workout',
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .headlineSmall
+                                                          ?.copyWith(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            color: Colors.white,
+                                                          ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Icon(
+                                                    Icons.edit_outlined,
+                                                    size: 20,
+                                                    color: Colors.white
+                                                        .withValues(alpha: 0.7),
+                                                  ),
+                                                ],
+                                              ),
+                                            )
+                                          : Text(
+                                              currentWorkout.name ?? 'Workout',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .headlineSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                  ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        DateFormat('HH:mm')
+                                            .format(currentWorkout.startTime),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: Colors.white
+                                                  .withValues(alpha: 0.9),
+                                            ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
+                          )
+                        : _buildDefaultGradientBackground(colorScheme),
+                  ),
+                ),
+                // Stats section
+                SliverToBoxAdapter(
+                  child: _buildStatsSection(
+                    sets,
+                    totalVolume,
+                    uniqueExerciseNames,
+                    _recordsMap.length,
+                  ),
+                ),
+                // Notes section
+                if (widget.workout.notes?.isNotEmpty ?? false)
+                  SliverToBoxAdapter(
+                    child: _buildNotesSection(),
+                  ),
+                // Empty state (only in view mode)
+                if (displayItems.isEmpty && !_isEditMode)
+                  const SliverFillRemaining(
+                    child: Center(
+                      child: Text('No exercises in this workout'),
+                    ),
+                  ),
+                // Edit mode: use reorderable list with add/remove
+                if (_isEditMode) ...[
+                  if (_isReorderMode)
+                    SliverReorderableList(
+                      itemCount: _exerciseGroups.length,
+                      onReorder: _reorderExercises,
+                      itemBuilder: (context, index) {
+                        final group = _exerciseGroups[index];
+                        return ReorderableDragStartListener(
+                          key: ValueKey(
+                              'reorder_${group.name}_${group.sequence}'),
+                          index: index,
+                          child: _buildReorderableExerciseTile(
+                            index,
+                            colorScheme,
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _buildEditableExerciseCard(
+                          index,
+                          colorScheme,
+                        ),
+                        childCount: _exerciseGroups.length,
+                      ),
+                    ),
+                  // Add Exercise button at the end
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _addExercise,
+                          borderRadius: brSm,
+                          child: Container(
+                            padding:
+                                const EdgeInsets.symmetric(vertical: space16),
+                            decoration: BoxDecoration(
+                              borderRadius: brSm,
+                              border: Border.all(
+                                color:
+                                    colorScheme.primary.withValues(alpha: 0.4),
+                                width: 1.5,
+                              ),
+                              gradient: LinearGradient(
+                                colors: [
+                                  colorScheme.primaryContainer
+                                      .withValues(alpha: 0.3),
+                                  colorScheme.secondaryContainer
+                                      .withValues(alpha: 0.2),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.add_circle,
+                                  color: colorScheme.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Add Exercise',
+                                  style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ] else ...[
-                // View mode: display items (exercises with optional superset styling)
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final item = displayItems[index];
+                ] else ...[
+                  // View mode: display items (exercises with optional superset styling)
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final item = displayItems[index];
 
-                      // All items are exercises now, some with superset metadata
-                      return _buildExerciseGroup(
-                        item['name'] as String,
-                        item['sets'] as List<GymSet>,
-                        showImages,
-                        _recordsMap,
-                        supersetIndex: item['supersetIndex'] as int?,
-                        supersetPosition: item['supersetPosition'] as int?,
-                        isFirstInSuperset:
-                            item['isFirstInSuperset'] as bool? ?? false,
-                        isLastInSuperset:
-                            item['isLastInSuperset'] as bool? ?? false,
-                      );
-                    },
-                    childCount: displayItems.length,
+                        // All items are exercises now, some with superset metadata
+                        return _buildExerciseGroup(
+                          item['name'] as String,
+                          item['sets'] as List<GymSet>,
+                          showImages,
+                          _recordsMap,
+                          supersetIndex: item['supersetIndex'] as int?,
+                          supersetPosition: item['supersetPosition'] as int?,
+                          isFirstInSuperset:
+                              item['isFirstInSuperset'] as bool? ?? false,
+                          isLastInSuperset:
+                              item['isLastInSuperset'] as bool? ?? false,
+                        );
+                      },
+                      childCount: displayItems.length,
+                    ),
                   ),
-                ),
+                ],
+                // Bottom padding for navigation bar + active workout bar + timer
+                const SliverPadding(padding: EdgeInsets.only(bottom: 260)),
               ],
-              // Bottom padding for navigation bar + active workout bar + timer
-              const SliverPadding(padding: EdgeInsets.only(bottom: 260)),
-            ],
-          );
-        },
-      ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -1068,7 +1192,10 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                           Flexible(
                             child: Text(
                               currentWorkout.name ?? 'Workout',
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
                               maxLines: 1,
@@ -1086,9 +1213,10 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                     )
                   : Text(
                       currentWorkout.name ?? 'Workout',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1146,8 +1274,12 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     );
   }
 
-  Widget _buildStatsSection(List<GymSet> sets, double totalVolume,
-      int exerciseCount, int recordCount,) {
+  Widget _buildStatsSection(
+    List<GymSet> sets,
+    double totalVolume,
+    int exerciseCount,
+    int recordCount,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final duration = currentWorkout.endTime != null
         ? currentWorkout.endTime!.difference(currentWorkout.startTime)
@@ -1217,8 +1349,12 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     );
   }
 
-  Widget _buildStatItem(IconData icon, String value, String label,
-      {bool isHighlighted = false,}) {
+  Widget _buildStatItem(
+    IconData icon,
+    String value,
+    String label, {
+    bool isHighlighted = false,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
@@ -1384,7 +1520,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                color:
+                    colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               ),
               child: Row(
                 children: [
@@ -1428,158 +1565,251 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
               ),
             ),
           ),
-          // Sets list using SetRow
-          if (sets.isNotEmpty)
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: sets.length,
-              itemBuilder: (context, setIndex) {
-                // Calculate display index
-                final warmupCount = sets.take(setIndex).where((s) => s.isWarmup).length;
-                final dropSetCount = sets.take(setIndex).where((s) => s.isDropSet).length;
-                final displayIndex = sets[setIndex].isWarmup
-                    ? setIndex + 1 - dropSetCount
-                    : sets[setIndex].isDropSet
-                        ? setIndex + 1 - warmupCount
-                        : setIndex - warmupCount - dropSetCount + 1;
+          if (group.cardio)
+            ..._buildEditableCardioBouts(exerciseIndex, colorScheme)
+          else ...[
+            // Sets list using SetRow
+            if (sets.isNotEmpty)
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: sets.length,
+                itemBuilder: (context, setIndex) {
+                  // Calculate display index
+                  final warmupCount =
+                      sets.take(setIndex).where((s) => s.isWarmup).length;
+                  final dropSetCount =
+                      sets.take(setIndex).where((s) => s.isDropSet).length;
+                  final displayIndex = sets[setIndex].isWarmup
+                      ? setIndex + 1 - dropSetCount
+                      : sets[setIndex].isDropSet
+                          ? setIndex + 1 - warmupCount
+                          : setIndex - warmupCount - dropSetCount + 1;
 
-                return SetRow(
-                  key: ValueKey('edit_set_${sets[setIndex].savedSetId ?? setIndex}'),
-                  index: displayIndex,
-                  setData: sets[setIndex],
-                  unit: group.unit,
-                  records: sets[setIndex].records,
-                  onWeightChanged: (value) => _updateSetWeight(exerciseIndex, setIndex, value),
-                  onRepsChanged: (value) => _updateSetReps(exerciseIndex, setIndex, value),
-                  onToggle: () {}, // No toggle in edit mode - sets are completed
-                  onDelete: () => _deleteSetFromExercise(exerciseIndex, setIndex),
-                  onTypeChanged: (isWarmup, isDropSet) =>
-                      _changeSetType(exerciseIndex, setIndex, isWarmup, isDropSet),
-                );
-              },
-            ),
-          // Add set buttons row
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: [
-                // Add Warmup button
-                Expanded(
-                  child: InkWell(
-                    onTap: () => _addSetToExercise(exerciseIndex, isWarmup: true),
-                    borderRadius: brSm,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: colorScheme.tertiary.withValues(alpha: 0.5),
-                        ),
-                        borderRadius: brSm,
-                        color: colorScheme.tertiaryContainer.withValues(alpha: 0.2),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.whatshot_outlined,
-                            size: 14,
-                            color: colorScheme.tertiary,
+                  return SetRow(
+                    key: ValueKey(
+                        'edit_set_${sets[setIndex].savedSetId ?? setIndex}'),
+                    index: displayIndex,
+                    setData: sets[setIndex],
+                    unit: group.unit,
+                    records: sets[setIndex].records,
+                    onWeightChanged: (value) =>
+                        _updateSetWeight(exerciseIndex, setIndex, value),
+                    onRepsChanged: (value) =>
+                        _updateSetReps(exerciseIndex, setIndex, value),
+                    onToggle:
+                        () {}, // No toggle in edit mode - sets are completed
+                    onDelete: () =>
+                        _deleteSetFromExercise(exerciseIndex, setIndex),
+                    onTypeChanged: (isWarmup, isDropSet) => _changeSetType(
+                        exerciseIndex, setIndex, isWarmup, isDropSet),
+                  );
+                },
+              ),
+            // Add set buttons row
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  // Add Warmup button
+                  Expanded(
+                    child: InkWell(
+                      onTap: () =>
+                          _addSetToExercise(exerciseIndex, isWarmup: true),
+                      borderRadius: brSm,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: colorScheme.tertiary.withValues(alpha: 0.5),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Warmup',
-                            style: TextStyle(
+                          borderRadius: brSm,
+                          color: colorScheme.tertiaryContainer
+                              .withValues(alpha: 0.2),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.whatshot_outlined,
+                              size: 14,
                               color: colorScheme.tertiary,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 11,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              'Warmup',
+                              style: TextStyle(
+                                color: colorScheme.tertiary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                // Add Drop Set button
-                Expanded(
-                  child: InkWell(
-                    onTap: () => _addSetToExercise(exerciseIndex, isDropSet: true),
-                    borderRadius: brSm,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: colorScheme.secondary.withValues(alpha: 0.5),
-                        ),
-                        borderRadius: brSm,
-                        color: colorScheme.secondaryContainer.withValues(alpha: 0.2),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.trending_down,
-                            size: 14,
-                            color: colorScheme.secondary,
+                  const SizedBox(width: 6),
+                  // Add Drop Set button
+                  Expanded(
+                    child: InkWell(
+                      onTap: () =>
+                          _addSetToExercise(exerciseIndex, isDropSet: true),
+                      borderRadius: brSm,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: colorScheme.secondary.withValues(alpha: 0.5),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Drop',
-                            style: TextStyle(
+                          borderRadius: brSm,
+                          color: colorScheme.secondaryContainer
+                              .withValues(alpha: 0.2),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.trending_down,
+                              size: 14,
                               color: colorScheme.secondary,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 11,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              'Drop',
+                              style: TextStyle(
+                                color: colorScheme.secondary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                // Add Working Set button
-                Expanded(
-                  child: InkWell(
-                    onTap: () => _addSetToExercise(exerciseIndex),
-                    borderRadius: brSm,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: colorScheme.primary.withValues(alpha: 0.5),
+                  const SizedBox(width: 6),
+                  // Add Working Set button
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => _addSetToExercise(exerciseIndex),
+                      borderRadius: brSm,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: colorScheme.primary.withValues(alpha: 0.5),
+                          ),
+                          borderRadius: brSm,
+                          color: colorScheme.primaryContainer
+                              .withValues(alpha: 0.2),
                         ),
-                        borderRadius: brSm,
-                        color: colorScheme.primaryContainer.withValues(alpha: 0.2),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.add,
-                            size: 14,
-                            color: colorScheme.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Working',
-                            style: TextStyle(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.add,
+                              size: 14,
                               color: colorScheme.primary,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 11,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              'Working',
+                              style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildEditableCardioBouts(
+    int exerciseIndex,
+    ColorScheme colorScheme,
+  ) {
+    final group = _exerciseGroups[exerciseIndex];
+    final sets = group.editableSets;
+    return [
+      for (int setIndex = 0; setIndex < sets.length; setIndex++)
+        CardioBout(
+          key: ValueKey('edit_bout_${sets[setIndex].savedSetId ?? setIndex}'),
+          index: setIndex + 1,
+          setData: sets[setIndex],
+          unit: group.unit,
+          records: sets[setIndex].records,
+          onDurationChanged: (value) {
+            setState(() {
+              final speed =
+                  cardioSpeed(sets[setIndex].distance, sets[setIndex].duration);
+              sets[setIndex].duration = value;
+              if (speed > 0) sets[setIndex].distance = speed * value / 60;
+            });
+            _updateCardioSet(exerciseIndex, setIndex);
+          },
+          onDistanceChanged: (value) {
+            setState(() => sets[setIndex].distance = value);
+            _updateCardioSet(exerciseIndex, setIndex);
+          },
+          onSpeedChanged: (value) {
+            setState(() {
+              sets[setIndex].distance = value * sets[setIndex].duration / 60;
+            });
+            _updateCardioSet(exerciseIndex, setIndex);
+          },
+          onInclineChanged: (value) {
+            setState(() => sets[setIndex].incline = value);
+            _updateCardioSet(exerciseIndex, setIndex);
+          },
+          onToggle: () {},
+          onDelete: () => _deleteSetFromExercise(exerciseIndex, setIndex),
+        ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: InkWell(
+          onTap: () => _addSetToExercise(exerciseIndex),
+          borderRadius: brSm,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.7),
+              ),
+              borderRadius: brSm,
+              color:
+                  colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.add, size: 14, color: colorScheme.primary),
+                const SizedBox(width: 4),
+                Text(
+                  'Add bout',
+                  style: TextStyle(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 11,
                   ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
-    );
+    ];
   }
 
   Widget _buildExerciseGroup(
@@ -1667,8 +1897,12 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
           final setRecords = recordsMap[set.id] ?? {};
           if (set.dropSet) {
             dropSetNumber++;
-            return _buildSetTile(set, dropSetNumber,
-                isDropSet: true, records: setRecords,);
+            return _buildSetTile(
+              set,
+              dropSetNumber,
+              isDropSet: true,
+              records: setRecords,
+            );
           } else if (!set.warmup) {
             workingSetNumber++;
             return _buildSetTile(set, workingSetNumber, records: setRecords);
@@ -1775,8 +2009,11 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         subtitle: exerciseNotes?.isNotEmpty ?? false
             ? Row(
                 children: [
-                  Icon(Icons.note,
-                      size: 14, color: Theme.of(context).colorScheme.primary,),
+                  Icon(
+                    Icons.note,
+                    size: 14,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   const SizedBox(width: 4),
                   Text('${sets.length} sets'),
                 ],
@@ -1861,23 +2098,22 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     );
   }
 
-  Widget _buildSetTile(GymSet set, int setNumber,
-      {bool isDropSet = false, Set<RecordType> records = const {},}) {
+  Widget _buildSetTile(
+    GymSet set,
+    int setNumber, {
+    bool isDropSet = false,
+    Set<RecordType> records = const {},
+  }) {
     final reps = toString(set.reps);
     final weight = toString(set.weight);
-    final duration = formatDurationMinutes(set.duration);
-    final distance = toString(set.distance);
     final colorScheme = Theme.of(context).colorScheme;
     final isWarmup = set.warmup;
     final hasRecords = records.isNotEmpty;
 
     String subtitle;
     if (set.cardio) {
-      String incline = '';
-      if (set.incline != null && set.incline! > 0) {
-        incline = ' @ ${set.incline}%';
-      }
-      subtitle = '$distance ${set.unit} / $duration$incline';
+      final cardioUnit = context.read<SettingsState>().value.cardioUnit;
+      subtitle = formatCardioSummary(set, cardioUnit, includeSpeed: true);
     } else {
       subtitle = '$weight ${set.unit} x $reps';
     }
@@ -1896,9 +2132,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                       ? context.jl.pr.withValues(alpha: 0.2)
                       : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
-          border: hasRecords
-              ? Border.all(color: context.jl.pr, width: 1.5)
-              : null,
+          border:
+              hasRecords ? Border.all(color: context.jl.pr, width: 1.5) : null,
         ),
         child: Center(
           child: isWarmup
@@ -1936,7 +2171,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                       : hasRecords
                           ? TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: colorScheme.onSurface,)
+                              color: colorScheme.onSurface,
+                            )
                           : null,
                 ),
               ),
@@ -1963,6 +2199,22 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                       break;
                     case RecordType.bestWeight:
                       label = 'Weight Record';
+                      color = colorScheme.secondary;
+                      break;
+                    case RecordType.bestDuration:
+                      label = 'Time Record';
+                      color = colorScheme.primary;
+                      break;
+                    case RecordType.bestDistance:
+                      label = 'Distance Record';
+                      color = colorScheme.tertiary;
+                      break;
+                    case RecordType.bestSpeed:
+                      label = 'Speed Record';
+                      color = context.jl.pr;
+                      break;
+                    case RecordType.bestIncline:
+                      label = 'Incline Record';
                       color = colorScheme.secondary;
                       break;
                   }
@@ -2002,7 +2254,9 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   }
 
   Future<void> _showViewExerciseMenu(
-      BuildContext parentContext, String exerciseName,) async {
+    BuildContext parentContext,
+    String exerciseName,
+  ) async {
     final colorScheme = Theme.of(parentContext).colorScheme;
 
     await showModalBottomSheet(
@@ -2056,7 +2310,9 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   }
 
   Future<void> _jumpToGraph(
-      BuildContext parentContext, String exerciseName,) async {
+    BuildContext parentContext,
+    String exerciseName,
+  ) async {
     // Get the exercise data to determine if it's cardio or strength
     final exerciseData = await (db.gymSets.select()
           ..where((tbl) => tbl.name.equals(exerciseName))
@@ -2342,12 +2598,13 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     );
 
     if (saved ?? false) {
-      await (db.workouts.update()
-            ..where((w) => w.id.equals(widget.workout.id)))
-          .write(WorkoutsCompanion(
-        startTime: Value(editStart),
-        endTime: Value(editEnd),
-      ),);
+      await (db.workouts.update()..where((w) => w.id.equals(widget.workout.id)))
+          .write(
+        WorkoutsCompanion(
+          startTime: Value(editStart),
+          endTime: Value(editEnd),
+        ),
+      );
       await _reloadWorkout();
       setState(() {
         _hasUnsavedChanges = true;
@@ -2404,18 +2661,22 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
 
   Future<void> _updateSelfie(String imagePath) async {
     await (db.workouts.update()..where((w) => w.id.equals(widget.workout.id)))
-        .write(WorkoutsCompanion(
-      selfieImagePath: Value(imagePath),
-    ),);
+        .write(
+      WorkoutsCompanion(
+        selfieImagePath: Value(imagePath),
+      ),
+    );
 
     await _reloadWorkout();
   }
 
   Future<void> _removeSelfie() async {
     await (db.workouts.update()..where((w) => w.id.equals(widget.workout.id)))
-        .write(const WorkoutsCompanion(
-      selfieImagePath: Value(null),
-    ),);
+        .write(
+      const WorkoutsCompanion(
+        selfieImagePath: Value(null),
+      ),
+    );
 
     await _reloadWorkout();
   }

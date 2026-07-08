@@ -6,16 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
-import '../animated_fab.dart';
 import '../database/database.dart';
 import '../main.dart';
 import '../plan/plan_state.dart';
 import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
 import '../utils.dart';
+import '../utils/cardio_format.dart';
+import '../widgets/sticky_form_action.dart';
 
 class EditGraphPage extends StatefulWidget {
-
   const EditGraphPage({required this.name, super.key});
   final String name;
 
@@ -33,6 +33,7 @@ class _EditGraphPageState extends State<EditGraphPage> {
   final key = GlobalKey<FormState>();
 
   String? exerciseType;
+  String cardioMetric = cardioMetricDuration;
   String? image;
   String? category;
 
@@ -48,12 +49,14 @@ class _EditGraphPageState extends State<EditGraphPage> {
     'Hamstrings',
     'Glutes',
     'Calves',
+    'Cardio',
   ];
 
   final List<({String value, String label, IconData icon})> exerciseTypes = [
     (value: 'free_weight', label: 'Free Weight', icon: Icons.fitness_center),
     (value: 'machine', label: 'Machine', icon: Icons.settings),
     (value: 'cable', label: 'Cable', icon: Icons.cable),
+    (value: 'cardio', label: 'Cardio', icon: Icons.directions_run),
   ];
 
   @override
@@ -61,7 +64,6 @@ class _EditGraphPageState extends State<EditGraphPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text('Update ${widget.name}'),
         elevation: 0,
@@ -115,8 +117,8 @@ class _EditGraphPageState extends State<EditGraphPage> {
                 Text(
                   'Rest Timer',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                 ),
                 const SizedBox(height: space12),
                 Card(
@@ -182,87 +184,97 @@ class _EditGraphPageState extends State<EditGraphPage> {
                 Text(
                   'Exercise Type',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                 ),
                 const SizedBox(height: space12),
 
                 // Compact Exercise Type Selection
-                Row(
-                  children: exerciseTypes
-                      .map(
-                        (type) => Expanded(
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: space4),
-                            child: InkWell(
-                              onTap: () {
-                                setState(() {
-                                  exerciseType = type.value;
-                                });
-                              },
-                              borderRadius: brMd,
-                              child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                decoration: BoxDecoration(
-                                  gradient: exerciseType == type.value
-                                      ? LinearGradient(
-                                          colors: [
-                                            colorScheme.primaryContainer,
-                                            colorScheme.primaryContainer
-                                                .withValues(alpha: 0.7),
-                                          ],
-                                        )
-                                      : null,
-                                  color: exerciseType != type.value
-                                      ? colorScheme.surfaceContainerHighest
-                                          .withValues(alpha: 0.5)
-                                      : null,
-                                  borderRadius: brMd,
-                                  border: Border.all(
-                                    color: exerciseType == type.value
-                                        ? colorScheme.primary
-                                        : Colors.transparent,
-                                    width: 2,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final typeWidth = constraints.maxWidth / 3;
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: exerciseTypes
+                            .map(
+                              (type) => SizedBox(
+                                width: typeWidth,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: space4,
                                   ),
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      type.icon,
-                                      color: exerciseType == type.value
-                                          ? colorScheme.primary
-                                          : colorScheme.onSurfaceVariant,
-                                      size: 32,
-                                    ),
-                                    const SizedBox(height: space8),
-                                    Text(
-                                      type.label,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: exerciseType == type.value
-                                            ? FontWeight.bold
-                                            : FontWeight.w500,
-                                        color: exerciseType == type.value
-                                            ? colorScheme.onPrimaryContainer
-                                            : colorScheme.onSurfaceVariant,
+                                  child: InkWell(
+                                    borderRadius: brMd,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        gradient: exerciseType == type.value
+                                            ? LinearGradient(
+                                                colors: [
+                                                  colorScheme.primaryContainer,
+                                                  colorScheme.primaryContainer
+                                                      .withValues(alpha: 0.7),
+                                                ],
+                                              )
+                                            : null,
+                                        color: exerciseType != type.value
+                                            ? colorScheme
+                                                .surfaceContainerHighest
+                                                .withValues(alpha: 0.5)
+                                            : null,
+                                        borderRadius: brMd,
+                                        border: Border.all(
+                                          color: exerciseType == type.value
+                                              ? colorScheme.primary
+                                              : Colors.transparent,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            type.icon,
+                                            color: exerciseType == type.value
+                                                ? colorScheme.primary
+                                                : colorScheme.onSurfaceVariant,
+                                            size: 32,
+                                          ),
+                                          const SizedBox(height: space8),
+                                          Text(
+                                            type.label,
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight:
+                                                  exerciseType == type.value
+                                                      ? FontWeight.bold
+                                                      : FontWeight.w500,
+                                              color: exerciseType == type.value
+                                                  ? colorScheme
+                                                      .onPrimaryContainer
+                                                  : colorScheme
+                                                      .onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
+                            )
+                            .toList(),
+                      ),
+                    );
+                  },
                 ),
 
-                // Brand Name (only for machines)
-                if (exerciseType == 'machine') ...[
+                // Brand Name (machines and cardio machines)
+                if (exerciseType == 'machine' || exerciseType == 'cardio') ...[
                   const SizedBox(height: space24),
                   Card(
                     elevation: 2,
@@ -289,6 +301,45 @@ class _EditGraphPageState extends State<EditGraphPage> {
                   ),
                 ],
 
+                if (exerciseType == 'cardio') ...[
+                  const SizedBox(height: space24),
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: brMd,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: space16,
+                        vertical: space4,
+                      ),
+                      child: DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          labelText: 'Primary Measurement',
+                          border: InputBorder.none,
+                          icon: Icon(
+                            Icons.speed_outlined,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        initialValue: cardioMetric,
+                        items: cardioMetricLabels.entries
+                            .map(
+                              (entry) => DropdownMenuItem(
+                                value: entry.key,
+                                child: Text(entry.value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setState(() => cardioMetric = value);
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: space24),
 
                 // Bodypart
@@ -301,9 +352,10 @@ class _EditGraphPageState extends State<EditGraphPage> {
                       children: [
                         Text(
                           'Bodypart',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                         ),
                         const SizedBox(height: space12),
                         Card(
@@ -389,9 +441,10 @@ class _EditGraphPageState extends State<EditGraphPage> {
                       children: [
                         Text(
                           'Exercise Image',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                         ),
                         const SizedBox(height: space12),
                         if (image == null)
@@ -421,9 +474,12 @@ class _EditGraphPageState extends State<EditGraphPage> {
                                     const SizedBox(height: space8),
                                     Text(
                                       'Add Image',
-                                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -493,14 +549,13 @@ class _EditGraphPageState extends State<EditGraphPage> {
                   },
                   selector: (context, settings) => settings.value.showImages,
                 ),
-
-                const SizedBox(height: space32 * 3), // Space for FAB
+                const SizedBox(height: space24),
               ],
             ),
           ),
         ),
       ),
-      floatingActionButton: AnimatedFab(
+      bottomNavigationBar: StickyFormAction(
         onPressed: save,
         label: const Text('Update'),
         icon: const Icon(Icons.sync),
@@ -527,14 +582,20 @@ class _EditGraphPageState extends State<EditGraphPage> {
         seconds: int.tryParse(seconds.text) ?? 0,
       );
 
+    final isCardio = exerciseType == 'cardio';
+    final savedCategory = isCardio
+        ? ((category?.isNotEmpty ?? false) ? category : 'Cardio')
+        : category;
+
     await (db.gymSets.update()..where((tbl) => tbl.name.equals(widget.name)))
         .write(
       GymSetsCompanion(
         name: name.text.isEmpty ? const Value.absent() : Value(name.text),
         restMs: Value(duration?.inMilliseconds),
         image: Value(image),
-        category: Value.absentIfNull(category),
+        category: Value.absentIfNull(savedCategory),
         exerciseType: Value.absentIfNull(exerciseType),
+        cardioMetric: Value(isCardio ? cardioMetric : null),
         brandName:
             Value(brandNameCtrl.text.isEmpty ? null : brandNameCtrl.text),
         notes: Value(notesCtrl.text.isEmpty ? null : notesCtrl.text),
@@ -572,8 +633,9 @@ class _EditGraphPageState extends State<EditGraphPage> {
         .then(
           (gymSet) => setState(() {
             image = gymSet.image;
-            category = gymSet.category;
-            exerciseType = gymSet.exerciseType;
+            exerciseType = gymSet.cardio ? 'cardio' : gymSet.exerciseType;
+            category = gymSet.category ?? (gymSet.cardio ? 'Cardio' : null);
+            cardioMetric = gymSet.cardioMetric ?? cardioMetricDuration;
             brandNameCtrl.text = gymSet.brandName ?? '';
             notesCtrl.text = gymSet.notes ?? '';
 

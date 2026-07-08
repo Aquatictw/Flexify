@@ -9,7 +9,7 @@ import '../database/database.dart';
 import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
 import '../utils.dart';
-import '../utils/duration_format.dart';
+import '../utils/cardio_format.dart';
 import '../widgets/depth_ember_reveal.dart';
 import 'edit_set_page.dart';
 
@@ -119,14 +119,8 @@ class _HistoryListState extends State<HistoryList> {
     final bool showDivider = previousGymSet != null &&
         !isSameDay(gymSet.created, previousGymSet.created);
 
-    final duration = formatDurationMinutes(gymSet.duration);
-    final distance = toString(gymSet.distance);
     final reps = toString(gymSet.reps);
     final weight = toString(gymSet.weight);
-    String incline = '';
-    if (gymSet.incline != null && gymSet.incline! > 0) {
-      incline = '@ ${gymSet.incline}%';
-    }
 
     Widget? leading = SizedBox(
       height: 24,
@@ -181,13 +175,10 @@ class _HistoryListState extends State<HistoryList> {
       child: leading,
     );
 
-    String trailing = '$weight ${gymSet.unit} x $reps';
-    if (gymSet.cardio &&
-        (gymSet.unit == 'kg' || gymSet.unit == 'lb' || gymSet.unit == 'stone'))
-      trailing = '$weight ${gymSet.unit} / $duration $incline';
-    else if (gymSet.cardio &&
-        (gymSet.unit == 'km' || gymSet.unit == 'mi' || gymSet.unit == 'kcal'))
-      trailing = '$distance ${gymSet.unit} / $duration $incline';
+    final cardioUnit = context.read<SettingsState>().value.cardioUnit;
+    final trailing = gymSet.cardio
+        ? formatCardioSummary(gymSet, cardioUnit, includeSpeed: true)
+        : '$weight ${gymSet.unit} x $reps';
 
     return RevealBlock(
       index: index,
