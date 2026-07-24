@@ -228,6 +228,32 @@ String dashboardShell({
     line-height: 1;
   }
   .theme-toggle:hover { background: var(--surface-strong); transform: translateY(-1px); }
+  .palette-wrap { position: relative; }
+  .palette-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 120;
+    padding: 0.6rem;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+  }
+  .palette-panel.open { display: grid; }
+  .swatch {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    outline-offset: 2px;
+  }
+  .swatch.active { border-color: var(--text); }
   .overlay {
     display: none;
     position: fixed;
@@ -896,6 +922,10 @@ $extraHead
     </div>
     <div class="header-actions">
       $savePicker
+      <div class="palette-wrap">
+        <button class="theme-toggle" onclick="togglePalette(event)" id="paletteBtn" title="Accent color">&#127912;</button>
+        <div class="palette-panel" id="palettePanel"></div>
+      </div>
       <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">&#9790;</button>
     </div>
   </div>
@@ -915,12 +945,56 @@ function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('overlay').classList.toggle('show');
 }
+// accent, hover per palette; dim is accent + 0x29 alpha (~0.16)
+const PALETTES = [
+  ['Lime', '#9fc46d', '#b8d982'],
+  ['Emerald', '#4fbf8b', '#6fd6a5'],
+  ['Teal', '#45b6c2', '#63cdd8'],
+  ['Sky', '#5aa9e6', '#7bbef0'],
+  ['Indigo', '#7c83ff', '#9aa0ff'],
+  ['Violet', '#a97bff', '#c09cff'],
+  ['Magenta', '#e06bce', '#ec8cdb'],
+  ['Rose', '#f26d8b', '#f78ca3'],
+  ['Red', '#e0645a', '#eb837a'],
+  ['Amber', '#e0a54e', '#ecbd74'],
+  ['Gold', '#d8c24a', '#e6d36e'],
+  ['Slate', '#9aa5b1', '#b4bdc7'],
+];
+function applyPalette(i) {
+  const p = PALETTES[i] || PALETTES[0];
+  const s = document.documentElement.style;
+  s.setProperty('--accent', p[1]);
+  s.setProperty('--accent-hover', p[2]);
+  s.setProperty('--accent-dim', p[1] + '29');
+  s.setProperty('--green', p[1]);
+  localStorage.setItem('palette', i);
+  document.querySelectorAll('.swatch').forEach((el, idx) =>
+    el.classList.toggle('active', idx === i));
+}
+function togglePalette(e) {
+  e.stopPropagation();
+  document.getElementById('palettePanel').classList.toggle('open');
+}
+document.addEventListener('click', () =>
+  document.getElementById('palettePanel').classList.remove('open'));
 (function() {
   const saved = localStorage.getItem('theme');
   if (saved === 'light') {
     document.documentElement.classList.add('light');
     document.getElementById('themeBtn').innerHTML = '&#9728;';
   }
+  const panel = document.getElementById('palettePanel');
+  panel.addEventListener('click', (e) => e.stopPropagation());
+  PALETTES.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.className = 'swatch';
+    b.style.background = p[1];
+    b.title = p[0];
+    b.onclick = () => applyPalette(i);
+    panel.appendChild(b);
+  });
+  const savedPalette = parseInt(localStorage.getItem('palette') || '0', 10);
+  applyPalette(savedPalette); // runs before chart scripts, so charts read the chosen --accent
 })();
 </script>
 $extraScripts
