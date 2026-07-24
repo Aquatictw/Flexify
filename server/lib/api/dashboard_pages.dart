@@ -960,6 +960,12 @@ const PALETTES = [
   ['Gold', '#d8c24a', '#e6d36e'],
   ['Slate', '#9aa5b1', '#b4bdc7'],
 ];
+function accentRgba(a) {
+  const c = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#9fc46d';
+  const h = c.replace('#', '');
+  const n = parseInt(h.length === 3 ? h.split('').map(x => x + x).join('') : h, 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
 function applyPalette(i) {
   const p = PALETTES[i] || PALETTES[0];
   const s = document.documentElement.style;
@@ -1241,7 +1247,7 @@ $chartsHtml''';
         labels: [$volumeLabels],
         datasets: [{
           data: [$volumeData],
-          backgroundColor: 'rgba(159,196,109,0.68)',
+          backgroundColor: accentRgba(0.68),
           borderColor: accentColor,
           borderWidth: 1,
           borderRadius: 4
@@ -1325,13 +1331,13 @@ String _buildHeatmapSvg(Map<String, int> trainingDays) {
       } else if (maxSets > 0) {
         final intensity = sets / maxSets;
         if (intensity < 0.25) {
-          fill = 'rgba(159,196,109,0.28)';
+          fill = 'color-mix(in srgb, var(--accent) 28%, transparent)';
         } else if (intensity < 0.5) {
-          fill = 'rgba(159,196,109,0.46)';
+          fill = 'color-mix(in srgb, var(--accent) 46%, transparent)';
         } else if (intensity < 0.75) {
-          fill = 'rgba(159,196,109,0.68)';
+          fill = 'color-mix(in srgb, var(--accent) 68%, transparent)';
         } else {
-          fill = 'rgba(159,196,109,1)';
+          fill = 'var(--accent)';
         }
       } else {
         fill = 'var(--surface-elevated)';
@@ -2082,10 +2088,10 @@ $hero
     backgroundColor: function(context) {
       const chart = context.chart;
       const {ctx, chartArea} = chart;
-      if (!chartArea) return 'rgba(159,196,109,0.1)';
+      if (!chartArea) return accentRgba(0.1);
       const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-      gradient.addColorStop(0, 'rgba(159,196,109,0.3)');
-      gradient.addColorStop(1, 'rgba(159,196,109,0.02)');
+      gradient.addColorStop(0, accentRgba(0.3));
+      gradient.addColorStop(1, accentRgba(0.02));
       return gradient;
     }
   }];
@@ -2097,7 +2103,7 @@ $hero
     datasets.push({
       label: 'Trend',
       data: trendValues,
-      borderColor: 'rgba(159,196,109,0.5)',
+      borderColor: accentRgba(0.5),
       borderWidth: 2,
       borderDash: [5, 5],
       pointRadius: 0,
@@ -3289,10 +3295,10 @@ var bwChart;
             backgroundColor: function(context) {
               const chart = context.chart;
               const {ctx, chartArea} = chart;
-              if (!chartArea) return 'rgba(159,196,109,0.1)';
+              if (!chartArea) return accentRgba(0.1);
               const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-              gradient.addColorStop(0, 'rgba(159,196,109,0.3)');
-              gradient.addColorStop(1, 'rgba(159,196,109,0.02)');
+              gradient.addColorStop(0, accentRgba(0.3));
+              gradient.addColorStop(1, accentRgba(0.02));
               return gradient;
             }
           },
