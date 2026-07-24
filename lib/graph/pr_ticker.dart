@@ -2,9 +2,12 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../database/database.dart';
+import '../database/query_helpers.dart';
 import '../main.dart';
 import '../records/records_service.dart';
 import '../theme/tokens.dart';
+import '../utils/duration_format.dart';
 import '../utils.dart' as utils;
 import 'graph_tile.dart';
 
@@ -16,18 +19,20 @@ class _PrEvent {
     required this.value,
     required this.unit,
     required this.created,
+    required this.cardio,
   });
   final RecordType type;
   final String exerciseName;
   final double value;
   final String unit;
   final DateTime created;
+  final bool cardio;
 }
 
 /// Horizontally-scrolling strip of recent personal records (last 30 days).
 ///
-/// Self-loading, one-shot on mount. Reuses [getSetRecords] from
-/// `records_service.dart` for the actual PR math instead of reimplementing it.
+/// Self-loading, one-shot on mount. Reuses the shared strength and cardio
+/// record calculators instead of reimplementing PR math here.
 class RecentPrTicker extends StatefulWidget {
   const RecentPrTicker({required this.tabCtrl, super.key});
   final TabController tabCtrl;
@@ -57,22 +62,39 @@ class _RecentPrTickerState extends State<RecentPrTicker> {
             (s) =>
                 s.created.isBiggerOrEqualValue(cutoff) &
                 s.hidden.equals(false) &
-                s.warmup.equals(false) &
-                s.cardio.equals(false),
+                s.warmup.equals(false),
           )
           ..orderBy([(s) => OrderingTerm.desc(s.created)]))
         .get();
+
+    // Cardio record detection needs the full history for each exercise.
+    // Batch once per exercise rather than issuing a history query per bout.
+    final cardioSetsByExercise = <String, List<GymSet>>{};
+    for (final set in recentSets.where((s) => s.cardio)) {
+      cardioSetsByExercise.putIfAbsent(set.name, () => []).add(set);
+    }
+    final cardioRecords = <int, Set<RecordType>>{};
+    for (final entry in cardioSetsByExercise.entries) {
+      cardioRecords.addAll(
+        await QueryHelpers.batchLoadSetRecords(
+          exerciseName: entry.key,
+          sets: entry.value,
+        ),
+      );
+    }
 
     final events = <_PrEvent>[];
     for (final set in recentSets) {
       if (events.length >= _maxEvents) break;
 
-      final records = await getSetRecords(
-        setId: set.id,
-        exerciseName: set.name,
-        weight: set.weight,
-        reps: set.reps,
-      );
+      final records = set.cardio
+          ? cardioRecords[set.id] ?? const <RecordType>{}
+          : await getSetRecords(
+              setId: set.id,
+              exerciseName: set.name,
+              weight: set.weight,
+              reps: set.reps,
+            );
       if (records.isEmpty) continue;
 
       for (final type in records) {
@@ -83,9 +105,10 @@ class _RecentPrTickerState extends State<RecentPrTicker> {
           RecordType.bestDuration => set.duration,
           RecordType.bestDistance => set.distance,
           RecordType.bestSpeed =>
-            set.duration > 0 ? set.distance / set.duration * 60 : 0.0,
+            calculateCardioSpeed(set.distance, set.duration),
           RecordType.bestIncline => (set.incline ?? 0).toDouble(),
         };
+        if (set.cardio && value <= 0) continue;
         events.add(
           _PrEvent(
             type: type,
@@ -93,6 +116,7 @@ class _RecentPrTickerState extends State<RecentPrTicker> {
             value: value,
             unit: set.unit,
             created: set.created,
+            cardio: set.cardio,
           ),
         );
       }
@@ -173,6 +197,14 @@ class _PrChip extends StatelessWidget {
         RecordType.bestIncline => 'INCL',
       };
 
+  String get _valueLabel => switch (event.type) {
+        RecordType.bestDuration => formatDurationMinutes(event.value),
+        RecordType.bestSpeed =>
+          '${utils.toString(event.value)} ${event.unit}/h',
+        RecordType.bestIncline => '${utils.toString(event.value)}%',
+        _ => '${utils.toString(event.value)} ${event.unit}',
+      };
+
   @override
   Widget build(BuildContext context) {
     final pr = context.jl.pr;
@@ -186,7 +218,7 @@ class _PrChip extends StatelessWidget {
           context,
           name: event.exerciseName,
           unit: event.unit,
-          cardio: false,
+          cardio: event.cardio,
           tabCtrl: tabCtrl,
         ),
         child: Container(
@@ -225,8 +257,7 @@ class _PrChip extends StatelessWidget {
                   ),
                   const SizedBox(height: 1),
                   Text(
-                    '${utils.toString(event.value)} ${event.unit} · '
-                    '${timeago.format(event.created)}',
+                    '$_valueLabel · ${timeago.format(event.created)}',
                     style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                     overflow: TextOverflow.ellipsis,
                   ),

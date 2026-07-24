@@ -45,6 +45,7 @@ class _CardioPageState extends State<CardioPage> {
   Period period = Period.months3;
   DateTime lastTap = DateTime(0);
   int? selectedIndex;
+  CardioRecords? records;
   String? brandName;
   String? category;
 
@@ -53,6 +54,7 @@ class _CardioPageState extends State<CardioPage> {
     super.initState();
     widget.tabCtrl?.addListener(_onTabChanged);
     setData();
+    _loadRecords();
     _loadBrandName();
     _loadCategory();
   }
@@ -69,6 +71,17 @@ class _CardioPageState extends State<CardioPage> {
     if (widget.tabCtrl!.index ==
         settings.tabs.split(',').indexOf('GraphsPage')) {
       setData();
+      _loadRecords();
+    }
+  }
+
+  Future<void> _loadRecords() async {
+    final cardioRecords = await getCardioRecords(
+      name: widget.name,
+      targetUnit: target,
+    );
+    if (mounted) {
+      setState(() => records = cardioRecords);
     }
   }
 
@@ -199,7 +212,10 @@ class _CardioPageState extends State<CardioPage> {
                   ),
                 ),
               );
-              Timer(kThemeAnimationDuration, setData);
+              Timer(kThemeAnimationDuration, () {
+                setData();
+                _loadRecords();
+              });
             },
             icon: const Icon(Icons.history),
             tooltip: 'History',
@@ -218,8 +234,8 @@ class _CardioPageState extends State<CardioPage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(space16, space16, space16, 80),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(space16, space16, space16, 150),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -346,6 +362,150 @@ class _CardioPageState extends State<CardioPage> {
                       ],
                     ),
             ),
+
+            const SizedBox(height: space24),
+
+            if (records != null) _buildRecordsSection(colorScheme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecordsSection(ColorScheme colorScheme) {
+    final formatter = NumberFormat('#,###.##');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.emoji_events, color: context.jl.pr, size: 20),
+            const SizedBox(width: space8),
+            Text(
+              'Personal Records',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ],
+        ),
+        const SizedBox(height: space12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildRecordCard(
+                colorScheme: colorScheme,
+                icon: Icons.speed,
+                label: 'Best Speed',
+                value: '${formatter.format(records!.bestSpeed)} $target/h',
+                date: records!.bestSpeedDate,
+                color: colorScheme.primary,
+                workoutId: records!.bestSpeedWorkoutId,
+              ),
+            ),
+            const SizedBox(width: space8),
+            Expanded(
+              child: _buildRecordCard(
+                colorScheme: colorScheme,
+                icon: Icons.route,
+                label: 'Best Distance',
+                value: '${formatter.format(records!.bestDistance)} $target',
+                date: records!.bestDistanceDate,
+                color: colorScheme.tertiary,
+                workoutId: records!.bestDistanceWorkoutId,
+              ),
+            ),
+            const SizedBox(width: space8),
+            Expanded(
+              child: _buildRecordCard(
+                colorScheme: colorScheme,
+                icon: Icons.timer_outlined,
+                label: 'Best Duration',
+                value: formatDurationMinutes(records!.bestDuration),
+                date: records!.bestDurationDate,
+                color: colorScheme.secondary,
+                workoutId: records!.bestDurationWorkoutId,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecordCard({
+    required ColorScheme colorScheme,
+    required IconData icon,
+    required String label,
+    required String value,
+    required DateTime? date,
+    required Color color,
+    int? workoutId,
+  }) {
+    return InkWell(
+      onTap: workoutId != null
+          ? () async {
+              final workout = await (db.workouts.select()
+                    ..where((w) => w.id.equals(workoutId)))
+                  .getSingleOrNull();
+
+              if (workout != null && mounted) {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => WorkoutDetailPage(workout: workout),
+                  ),
+                );
+                Timer(kThemeAnimationDuration, () {
+                  setData();
+                  _loadRecords();
+                });
+              }
+            }
+          : null,
+      borderRadius: brMd,
+      child: Container(
+        padding: const EdgeInsets.all(space12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: brMd,
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 16, color: color),
+                const SizedBox(width: space4),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: space8),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.titleSmall,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (date != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                DateFormat('MMM d, yyyy').format(date),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.7,
+                      ),
+                      fontSize: 9,
+                    ),
+              ),
+            ],
           ],
         ),
       ),
@@ -549,7 +709,10 @@ class _CardioPageState extends State<CardioPage> {
         builder: (context) => WorkoutDetailPage(workout: workout),
       ),
     );
-    Timer(kThemeAnimationDuration, setData);
+    Timer(kThemeAnimationDuration, () {
+      setData();
+      _loadRecords();
+    });
   }
 
   Future<void> setData() async {

@@ -131,7 +131,10 @@ class QueryHelpers {
     // Get all historical sets for this exercise to compare against
     final allSetsForExercise = await (db.gymSets.select()
           ..where(
-            (tbl) => tbl.name.equals(exerciseName) & tbl.hidden.equals(false),
+            (tbl) =>
+                tbl.name.equals(exerciseName) &
+                tbl.hidden.equals(false) &
+                tbl.warmup.equals(false),
           )
           ..orderBy([
             (u) => OrderingTerm(expression: u.created, mode: OrderingMode.desc),
@@ -140,7 +143,7 @@ class QueryHelpers {
 
     // For each set, determine records by comparing against historical data
     for (final set in sets) {
-      if (set.hidden) {
+      if (set.hidden || set.warmup) {
         records[set.id] = {};
         continue;
       }

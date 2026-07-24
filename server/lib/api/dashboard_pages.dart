@@ -769,7 +769,10 @@ String dashboardShell({
     border: 1px solid var(--border);
     border-radius: 8px;
     background: color-mix(in srgb, var(--surface-elevated) 80%, transparent);
+    color: inherit;
+    text-decoration: none;
   }
+  a.hero-stat:hover { border-color: var(--accent); transform: translateY(-1px); }
   .hero-stat span {
     display: block;
     color: var(--text-muted);
@@ -782,6 +785,12 @@ String dashboardShell({
     display: block;
     margin-top: 0.2rem;
     font-size: 1.08rem;
+  }
+  .hero-stat small {
+    display: block;
+    margin-top: 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.72rem;
   }
   .chart-panel { min-height: 360px; }
   .chart-panel canvas { max-height: 420px; }
@@ -1449,11 +1458,27 @@ Response exerciseDetailHandler(
     return Response.ok(html, headers: {'content-type': 'text/html'});
   }
 
-  final metric = request.url.queryParameters['metric'] ?? 'bestWeight';
+  final requestedMetric = request.url.queryParameters['metric'];
   final period = request.url.queryParameters['period'] ?? 'all';
 
   final records = dashboardService.getExerciseRecords(exerciseName);
-  final repRecords = dashboardService.getRepRecords(exerciseName);
+  final isCardio = records['isCardio'] as bool? ?? false;
+  const cardioMetrics = {
+    'speed',
+    'distance',
+    'duration',
+    'incline',
+    'inclineAdjustedSpeed',
+  };
+  const strengthMetrics = {'bestWeight', 'oneRepMax', 'volume'};
+  final metric = isCardio
+      ? (cardioMetrics.contains(requestedMetric) ? requestedMetric! : 'speed')
+      : (strengthMetrics.contains(requestedMetric)
+          ? requestedMetric!
+          : 'bestWeight');
+  final repRecords = isCardio
+      ? {'exerciseName': exerciseName, 'records': <Map<String, dynamic>>[]}
+      : dashboardService.getRepRecords(exerciseName);
   final workoutHistory = dashboardService.getExerciseWorkoutHistory(
     exerciseName,
     limit: 24,
@@ -1517,8 +1542,73 @@ Response exerciseDetailHandler(
       ? workoutHistory.first['unit'] as String?
       : null;
 
+  String cardioRecordCard({
+    required String label,
+    required String value,
+    required int? created,
+    required int? workoutId,
+  }) {
+    final date = created == null ? 'No dated record' : _formatDate(created);
+    final workoutHref = workoutId == null
+        ? null
+        : _dashboardHref(
+            '/dashboard/workout/$workoutId',
+            apiKey,
+            selectedBackup,
+          );
+    final openTag = workoutHref == null
+        ? '<div class="hero-stat">'
+        : '<a class="hero-stat" href="$workoutHref">';
+    final closeTag = workoutHref == null ? '</div>' : '</a>';
+    return '''
+$openTag
+  <span>${_escapeHtml(label)}</span>
+  <strong>${_escapeHtml(value)}</strong>
+  <small>${_escapeHtml(date)}</small>
+$closeTag''';
+  }
+
   String hero;
-  if (hasRecords) {
+  if (hasRecords && isCardio) {
+    final cardioUnit = records['cardioUnit'] as String? ?? unit ?? 'km';
+    final bestSpeed = (records['bestSpeed'] as num?)?.toDouble() ?? 0;
+    final bestDistance = (records['bestDistance'] as num?)?.toDouble() ?? 0;
+    final bestDuration = (records['bestDuration'] as num?)?.toDouble() ?? 0;
+    final speedRecord = cardioRecordCard(
+      label: 'Best speed',
+      value: '${_formatCardioNumber(bestSpeed)} $cardioUnit/h',
+      created: records['bestSpeedDate'] as int?,
+      workoutId: records['bestSpeedWorkoutId'] as int?,
+    );
+    final distanceRecord = cardioRecordCard(
+      label: 'Best distance',
+      value: '${_formatCardioNumber(bestDistance)} $cardioUnit',
+      created: records['bestDistanceDate'] as int?,
+      workoutId: records['bestDistanceWorkoutId'] as int?,
+    );
+    final durationRecord = cardioRecordCard(
+      label: 'Best duration',
+      value: _formatCardioDuration(bestDuration),
+      created: records['bestDurationDate'] as int?,
+      workoutId: records['bestDurationWorkoutId'] as int?,
+    );
+    hero = '''
+<section class="exercise-hero">
+  <div>
+    <h2>${_escapeHtml(exerciseName)}</h2>
+    <div class="hero-meta">
+      ${category != null && category.isNotEmpty ? '<span class="chip">${_escapeHtml(category)}</span>' : ''}
+      <span class="chip neutral">${_escapeHtml(cardioUnit)}</span>
+      <span class="chip neutral">${workoutHistory.length} recent workouts</span>
+    </div>
+  </div>
+  <div class="hero-meta">
+    $speedRecord
+    $distanceRecord
+    $durationRecord
+  </div>
+</section>''';
+  } else if (hasRecords) {
     final bestWeight = records['bestWeight'] as double;
     final best1RM = records['best1RM'] as double;
     final bestVolume = records['bestVolume'] as double;
@@ -1543,7 +1633,7 @@ Response exerciseDetailHandler(
 <section class="exercise-hero">
   <div>
     <h2>${_escapeHtml(exerciseName)}</h2>
-    <div class="hero-meta"><span class="chip neutral">No recorded sets</span></div>
+    <div class="hero-meta"><span class="chip neutral">No recorded ${isCardio ? 'bouts' : 'sets'}</span></div>
   </div>
 </section>
 <div class="empty-state">
@@ -1575,11 +1665,19 @@ Response exerciseDetailHandler(
 <div class="segmented">$periodButtons</div>''';
 
   // Metric selector
-  const metrics = [
-    ('bestWeight', 'Best Weight'),
-    ('oneRepMax', 'Est. 1RM'),
-    ('volume', 'Volume'),
-  ];
+  final metrics = isCardio
+      ? const [
+          ('speed', 'Speed'),
+          ('distance', 'Distance'),
+          ('duration', 'Duration'),
+          ('incline', 'Incline'),
+          ('inclineAdjustedSpeed', 'Adj. Speed'),
+        ]
+      : const [
+          ('bestWeight', 'Best Weight'),
+          ('oneRepMax', 'Est. 1RM'),
+          ('volume', 'Volume'),
+        ];
   final metricButtons = StringBuffer();
   for (final (value, label) in metrics) {
     final isActive = value == metric;
@@ -1596,6 +1694,11 @@ Response exerciseDetailHandler(
   final metricLabel = switch (metric) {
     'oneRepMax' => 'Est. 1RM',
     'volume' => 'Volume',
+    'speed' => 'Speed',
+    'distance' => 'Distance',
+    'duration' => 'Duration',
+    'incline' => 'Incline',
+    'inclineAdjustedSpeed' => 'Adjusted Speed',
     _ => 'Best Weight',
   };
 
@@ -1622,6 +1725,11 @@ Response exerciseDetailHandler(
         'value': p['value'],
         'weight': p['weight'],
         'reps': p['reps'],
+        'distance': p['distance'],
+        'duration': p['duration'],
+        'speed': p['speed'],
+        'incline': p['incline'],
+        'isCardio': p['isCardio'] == true,
         'unit': p['unit'],
         'workoutId': workoutId,
         'workoutUrl': workoutId is int
@@ -1649,7 +1757,7 @@ Response exerciseDetailHandler(
   <div class="panel-header">
     <div>
       <h3 class="panel-title">$metricLabel progress</h3>
-      <p class="panel-kicker">Daily bests; click a point to open the workout</p>
+      <p class="panel-kicker">${isCardio ? 'Daily summaries' : 'Daily bests'}; click a point to open the workout</p>
     </div>
   </div>
   <div class="control-row">
@@ -1677,16 +1785,50 @@ Response exerciseDetailHandler(
     final last = workoutHistory.first;
     final lastStart = last['startTime'] as int?;
     final lastDate = lastStart != null ? _formatDate(lastStart) : 'Unknown';
-    final bestRecent = workoutHistory.reduce((a, b) {
-      final aValue = ((a['bestEstimated1RM'] as num?)?.toDouble() ?? 0);
-      final bValue = ((b['bestEstimated1RM'] as num?)?.toDouble() ?? 0);
-      return aValue >= bValue ? a : b;
-    });
-    final bestSet = bestRecent['bestSet'] as Map<String, dynamic>?;
-    final bestSetText = bestSet == null
-        ? 'n/a'
-        : '${_formatNumber(bestSet['weight'] as num)} ${_escapeHtml((bestSet['unit'] ?? '').toString())} x ${_formatNumber(bestSet['reps'] as num)}';
-    insightPanel = '''
+    if (isCardio) {
+      final cardioUnit = records['cardioUnit'] as String? ?? unit ?? 'km';
+      final recentDistance = workoutHistory.fold<double>(
+        0,
+        (sum, item) => sum + ((item['totalDistance'] as num?)?.toDouble() ?? 0),
+      );
+      final recentDuration = workoutHistory.fold<double>(
+        0,
+        (sum, item) => sum + ((item['totalDuration'] as num?)?.toDouble() ?? 0),
+      );
+      final fastestRecent = workoutHistory.fold<double>(
+        0,
+        (best, item) {
+          final speed = ((item['speed'] as num?)?.toDouble() ?? 0);
+          return speed > best ? speed : best;
+        },
+      );
+      insightPanel = '''
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <h3 class="panel-title">Exercise data</h3>
+      <p class="panel-kicker">Recent workout-level summary</p>
+    </div>
+  </div>
+  <div class="insight-list">
+    <div class="insight-row"><span>Last trained</span><strong>$lastDate</strong></div>
+    <div class="insight-row"><span>Recent bouts</span><strong>$recentSetCount</strong></div>
+    <div class="insight-row"><span>Recent distance</span><strong>${_formatCardioNumber(recentDistance)} ${_escapeHtml(cardioUnit)}</strong></div>
+    <div class="insight-row"><span>Recent duration</span><strong>${_formatCardioDuration(recentDuration)}</strong></div>
+    <div class="insight-row"><span>Fastest recent speed</span><strong>${_formatCardioNumber(fastestRecent)} ${_escapeHtml(cardioUnit)}/h</strong></div>
+  </div>
+</div>''';
+    } else {
+      final bestRecent = workoutHistory.reduce((a, b) {
+        final aValue = ((a['bestEstimated1RM'] as num?)?.toDouble() ?? 0);
+        final bValue = ((b['bestEstimated1RM'] as num?)?.toDouble() ?? 0);
+        return aValue >= bValue ? a : b;
+      });
+      final bestSet = bestRecent['bestSet'] as Map<String, dynamic>?;
+      final bestSetText = bestSet == null
+          ? 'n/a'
+          : '${_formatNumber(bestSet['weight'] as num)} ${_escapeHtml((bestSet['unit'] ?? '').toString())} x ${_formatNumber(bestSet['reps'] as num)}';
+      insightPanel = '''
 <div class="panel">
   <div class="panel-header">
     <div>
@@ -1702,6 +1844,7 @@ Response exerciseDetailHandler(
     <div class="insight-row"><span>Best recent est. 1RM</span><strong>${_formatNumber((bestRecent['bestEstimated1RM'] as num?) ?? 0)}</strong></div>
   </div>
 </div>''';
+    }
   }
 
   String workoutHistorySection;
@@ -1715,14 +1858,34 @@ Response exerciseDetailHandler(
       final date = startTime != null ? _formatDate(startTime) : 'Unknown';
       final workoutName = entry['workoutName'] as String? ?? 'Workout';
       final setCount = entry['setCount'] as int;
-      final totalVolume = (entry['totalVolume'] as num).toDouble();
-      final bestWeight = entry['bestWeight'] as double?;
-      final best1RM = entry['bestEstimated1RM'] as double?;
-      final bestSet = entry['bestSet'] as Map<String, dynamic>?;
-      final bestSetText = bestSet == null
-          ? 'No best set'
-          : '${_formatNumber(bestSet['weight'] as num)} ${_escapeHtml((bestSet['unit'] ?? '').toString())} x ${_formatNumber(bestSet['reps'] as num)}';
-      rows.write('''
+      if (isCardio) {
+        final cardioUnit = records['cardioUnit'] as String? ?? unit ?? 'km';
+        final distance = (entry['totalDistance'] as num?)?.toDouble() ?? 0;
+        final duration = (entry['totalDuration'] as num?)?.toDouble() ?? 0;
+        final speed = (entry['speed'] as num?)?.toDouble() ?? 0;
+        final incline = (entry['averageIncline'] as num?)?.toDouble();
+        rows.write('''
+<a class="history-entry" href="${_dashboardHref('/dashboard/workout/$workoutId', apiKey, selectedBackup)}">
+  <div class="history-date">$date</div>
+  <div>
+    <div class="history-title">${_escapeHtml(workoutName)}</div>
+    <div class="history-sub">${_formatCardioDuration(duration)} &middot; ${_formatCardioNumber(distance)} ${_escapeHtml(cardioUnit)} &middot; ${_formatCardioNumber(speed)} ${_escapeHtml(cardioUnit)}/h${incline == null ? '' : ' &middot; ${_formatCardioNumber(incline)}%'}</div>
+  </div>
+  <div class="history-metrics">
+    <span class="chip">$setCount ${setCount == 1 ? 'bout' : 'bouts'}</span>
+    <span class="chip neutral">${_formatCardioNumber(distance)} ${_escapeHtml(cardioUnit)}</span>
+    <span class="chip neutral">${_formatCardioDuration(duration)}</span>
+  </div>
+</a>''');
+      } else {
+        final totalVolume = (entry['totalVolume'] as num).toDouble();
+        final bestWeight = entry['bestWeight'] as double?;
+        final best1RM = entry['bestEstimated1RM'] as double?;
+        final bestSet = entry['bestSet'] as Map<String, dynamic>?;
+        final bestSetText = bestSet == null
+            ? 'No best set'
+            : '${_formatNumber(bestSet['weight'] as num)} ${_escapeHtml((bestSet['unit'] ?? '').toString())} x ${_formatNumber(bestSet['reps'] as num)}';
+        rows.write('''
 <a class="history-entry" href="${_dashboardHref('/dashboard/workout/$workoutId', apiKey, selectedBackup)}">
   <div class="history-date">$date</div>
   <div>
@@ -1736,6 +1899,7 @@ Response exerciseDetailHandler(
     ${best1RM != null ? '<span class="chip neutral">${_formatNumber(best1RM)} e1RM</span>' : ''}
   </div>
 </a>''');
+      }
     }
     workoutHistorySection = '''
 <div class="panel" style="margin-top:1.25rem">
@@ -1821,6 +1985,12 @@ $hero
   const formatValue = value => Number(value).toLocaleString(undefined, {
     maximumFractionDigits: 2
   });
+  const formatCardioDuration = value => {
+    const totalSeconds = Math.floor(Number(value) * 60);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = String(totalSeconds % 60).padStart(2, '0');
+    return minutes + ':' + seconds;
+  };
 
   const datasets = [{
     label: 'Progress',
@@ -1895,11 +2065,22 @@ $hero
             callbacks: {
               label: function(context) {
                 const point = progressData[context.dataIndex];
+                if (point.isCardio && metricLabel === 'Duration') {
+                  return metricLabel + ': ' + formatCardioDuration(point.value);
+                }
                 const unit = point.unit ? ' ' + point.unit : '';
                 return metricLabel + ': ' + formatValue(point.value) + unit;
               },
               afterLabel: function(context) {
                 const point = progressData[context.dataIndex];
+                if (point.isCardio) {
+                  return [
+                    'Distance: ' + formatValue(point.distance) + ' ${_escapeJs(records['cardioUnit'] as String? ?? 'km')}',
+                    'Duration: ' + formatCardioDuration(point.duration),
+                    'Speed: ' + formatValue(point.speed) + ' ${_escapeJs(records['cardioUnit'] as String? ?? 'km')}/h',
+                    'Incline: ' + formatValue(point.incline) + '%'
+                  ];
+                }
                 const unit = point.unit ? ' ' + point.unit : '';
                 return 'Set: ' + formatValue(point.weight) + unit + ' x ' + formatValue(point.reps);
               },
@@ -1947,6 +2128,22 @@ String _formatVolume(num value) {
   if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(1)}M';
   if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}K';
   return v.toStringAsFixed(0);
+}
+
+/// Format fractional cardio minutes as M:SS, matching the app.
+String _formatCardioDuration(num minutes) {
+  final value = minutes.toDouble();
+  final wholeMinutes = value.floor();
+  final seconds = ((value * 60) % 60).floor().toString().padLeft(2, '0');
+  return '$wholeMinutes:$seconds';
+}
+
+/// Format cardio values with up to two decimal places, matching the app.
+String _formatCardioNumber(num value) {
+  return value
+      .toDouble()
+      .toStringAsFixed(2)
+      .replaceFirst(RegExp(r'\.?0+$'), '');
 }
 
 /// History page handler with paginated workout list.
@@ -2157,6 +2354,7 @@ Response workoutDetailHandler(
   final detail = dashboardService.getWorkoutDetail(workoutId);
   final workout = detail['workout'] as Map<String, dynamic>?;
   final sets = detail['sets'] as List<Map<String, dynamic>>;
+  final cardioUnit = detail['cardioUnit'] as String? ?? 'km';
 
   if (workout == null) {
     final html = dashboardShell(
@@ -2246,9 +2444,11 @@ Response workoutDetailHandler(
   double totalVolume = 0;
   for (final s in sets) {
     exerciseNames.add(s['name'] as String);
-    final weight = (s['weight'] as num?)?.toDouble() ?? 0;
-    final reps = (s['reps'] as num?)?.toDouble() ?? 0;
-    totalVolume += weight * reps;
+    if (s['cardio'] != true) {
+      final weight = (s['weight'] as num?)?.toDouble() ?? 0;
+      final reps = (s['reps'] as num?)?.toDouble() ?? 0;
+      totalVolume += weight * reps;
+    }
   }
 
   // Stats row
@@ -2292,26 +2492,33 @@ Response workoutDetailHandler(
       final exerciseName = entry.key;
       final exerciseSets = entry.value;
       final category = categoryByExercise[exerciseName];
+      final isCardio = exerciseSets.any((set) => set['cardio'] == true);
+      final exerciseCardioUnit =
+          exerciseSets.first['cardioUnit'] as String? ?? cardioUnit;
 
       // Find best set (highest weight * reps)
       var bestVolume = 0.0;
       var bestIdx = -1;
-      for (var i = 0; i < exerciseSets.length; i++) {
-        final w = (exerciseSets[i]['weight'] as num?)?.toDouble() ?? 0;
-        final r = (exerciseSets[i]['reps'] as num?)?.toDouble() ?? 0;
-        final vol = w * r;
-        if (vol > bestVolume) {
-          bestVolume = vol;
-          bestIdx = i;
+      if (!isCardio) {
+        for (var i = 0; i < exerciseSets.length; i++) {
+          final w = (exerciseSets[i]['weight'] as num?)?.toDouble() ?? 0;
+          final r = (exerciseSets[i]['reps'] as num?)?.toDouble() ?? 0;
+          final vol = w * r;
+          if (vol > bestVolume) {
+            bestVolume = vol;
+            bestIdx = i;
+          }
         }
       }
 
       // Check if any set is a warmup or drop set
       var hasSetType = false;
-      for (final s in exerciseSets) {
-        if (s['warmup'] == true || s['dropSet'] == true) {
-          hasSetType = true;
-          break;
+      if (!isCardio) {
+        for (final s in exerciseSets) {
+          if (s['warmup'] == true || s['dropSet'] == true) {
+            hasSetType = true;
+            break;
+          }
         }
       }
 
@@ -2322,31 +2529,61 @@ Response workoutDetailHandler(
       }
       sections.write('</h3>');
 
-      // Set table
+      // Exercise table
       sections.write('<table class="data-table">');
-      sections.write('<thead><tr><th>Set</th><th>Weight</th><th>Reps</th>');
-      if (hasSetType) sections.write('<th>Type</th>');
-      sections.write('</tr></thead><tbody>');
+      if (isCardio) {
+        final escapedCardioUnit = _escapeHtml(exerciseCardioUnit);
+        sections.write(
+          '<thead><tr><th>Bout</th><th>Time</th><th>Distance</th><th>Speed</th><th>Incline</th></tr></thead><tbody>',
+        );
 
-      for (var i = 0; i < exerciseSets.length; i++) {
-        final s = exerciseSets[i];
-        final weight = (s['weight'] as num?)?.toDouble() ?? 0;
-        final reps = (s['reps'] as num?)?.toInt() ?? 0;
-        final unit = s['unit'] as String? ?? '';
-        final isWarmup = s['warmup'] == true;
-        final isDropSet = s['dropSet'] == true;
-        final isBest = i == bestIdx;
+        for (var i = 0; i < exerciseSets.length; i++) {
+          final s = exerciseSets[i];
+          final duration = (s['duration'] as num?)?.toDouble() ?? 0;
+          final distance = (s['distance'] as num?)?.toDouble() ?? 0;
+          final incline = s['incline'] as num?;
+          final speed = duration > 0 ? distance / duration * 60 : null;
 
-        sections.write('<tr${isBest ? ' class="best"' : ''}>');
-        sections.write('<td>${i + 1}</td>');
-        sections
-            .write('<td>${_formatNumber(weight)} ${_escapeHtml(unit)}</td>');
-        sections.write('<td>$reps</td>');
-        if (hasSetType) {
-          final typeLabel = isWarmup ? 'Warmup' : (isDropSet ? 'Drop Set' : '');
-          sections.write('<td class="muted">${_escapeHtml(typeLabel)}</td>');
+          sections.write('<tr>');
+          sections.write('<td>${i + 1}</td>');
+          sections.write('<td>${_formatCardioDuration(duration)}</td>');
+          sections.write(
+            '<td>${_formatCardioNumber(distance)} $escapedCardioUnit</td>',
+          );
+          sections.write(
+            '<td>${speed == null ? '&mdash;' : '${_formatCardioNumber(speed)} $escapedCardioUnit/h'}</td>',
+          );
+          sections.write(
+            '<td>${incline == null ? '&mdash;' : '${_formatCardioNumber(incline)}%'}</td>',
+          );
+          sections.write('</tr>');
         }
-        sections.write('</tr>');
+      } else {
+        sections.write('<thead><tr><th>Set</th><th>Weight</th><th>Reps</th>');
+        if (hasSetType) sections.write('<th>Type</th>');
+        sections.write('</tr></thead><tbody>');
+
+        for (var i = 0; i < exerciseSets.length; i++) {
+          final s = exerciseSets[i];
+          final weight = (s['weight'] as num?)?.toDouble() ?? 0;
+          final reps = (s['reps'] as num?)?.toInt() ?? 0;
+          final unit = s['unit'] as String? ?? '';
+          final isWarmup = s['warmup'] == true;
+          final isDropSet = s['dropSet'] == true;
+          final isBest = i == bestIdx;
+
+          sections.write('<tr${isBest ? ' class="best"' : ''}>');
+          sections.write('<td>${i + 1}</td>');
+          sections
+              .write('<td>${_formatNumber(weight)} ${_escapeHtml(unit)}</td>');
+          sections.write('<td>$reps</td>');
+          if (hasSetType) {
+            final typeLabel =
+                isWarmup ? 'Warmup' : (isDropSet ? 'Drop Set' : '');
+            sections.write('<td class="muted">${_escapeHtml(typeLabel)}</td>');
+          }
+          sections.write('</tr>');
+        }
       }
 
       sections.write('</tbody></table>');

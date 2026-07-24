@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:sqlite3/sqlite3.dart';
 
@@ -211,10 +212,14 @@ class DashboardService {
 
   /// Get workout detail with all non-hidden sets ordered by sequence.
   ///
-  /// Returns a map with keys: workout (map or null), sets (list of maps).
+  /// Returns workout metadata, sets/bouts, and the configured cardio unit.
   Map<String, dynamic> getWorkoutDetail(int workoutId) {
     if (_db == null) {
-      return {'workout': null, 'sets': <Map<String, dynamic>>[]};
+      return {
+        'workout': null,
+        'sets': <Map<String, dynamic>>[],
+        'cardioUnit': 'km',
+      };
     }
 
     // Workout metadata
@@ -224,7 +229,11 @@ class DashboardService {
     );
 
     if (workoutResult.isEmpty) {
-      return {'workout': null, 'sets': <Map<String, dynamic>>[]};
+      return {
+        'workout': null,
+        'sets': <Map<String, dynamic>>[],
+        'cardioUnit': 'km',
+      };
     }
 
     final w = workoutResult.first;
@@ -239,44 +248,134 @@ class DashboardService {
     // Sets ordered by sequence, then set_order/created
     final setsResult = _db!.select('''
       SELECT id, name, reps, weight, unit, created, category,
-        exercise_type, warmup, drop_set, set_order, sequence
+        exercise_type, warmup, drop_set, set_order, sequence,
+        cardio, distance, duration, incline
       FROM gym_sets
       WHERE workout_id = ? AND hidden = 0 AND sequence >= 0
       ORDER BY sequence, COALESCE(set_order, created)
     ''', [workoutId]);
+    final cardioUnit = _getCardioUnit();
 
-    final sets = setsResult
-        .map((row) => {
-              'id': row['id'],
-              'name': row['name'],
-              'reps': row['reps'],
-              'weight': row['weight'],
-              'unit': row['unit'],
-              'created': row['created'],
-              'category': row['category'],
-              'exerciseType': row['exercise_type'],
-              'warmup': row['warmup'] == 1,
-              'dropSet': row['drop_set'] == 1,
-              'setOrder': row['set_order'],
-              'sequence': row['sequence'],
-            })
-        .toList();
+    final sets = setsResult.map((row) {
+      final isCardio = row['cardio'] == 1;
+      final rowCardioUnit = _getCardioUnit(
+        fallback: row['unit'] as String?,
+      );
+      return {
+        'id': row['id'],
+        'name': row['name'],
+        'reps': row['reps'],
+        'weight': row['weight'],
+        'unit': row['unit'],
+        'created': row['created'],
+        'category': row['category'],
+        'exerciseType': row['exercise_type'],
+        'warmup': row['warmup'] == 1,
+        'dropSet': row['drop_set'] == 1,
+        'setOrder': row['set_order'],
+        'sequence': row['sequence'],
+        'cardio': isCardio,
+        'cardioUnit': rowCardioUnit,
+        'distance': isCardio
+            ? _convertCardioDistance(
+                (row['distance'] as num?)?.toDouble() ?? 0,
+                from: row['unit'] as String?,
+                to: rowCardioUnit,
+              )
+            : row['distance'],
+        'duration': row['duration'],
+        'incline': row['incline'],
+      };
+    }).toList();
 
-    return {'workout': workout, 'sets': sets};
+    return {
+      'workout': workout,
+      'sets': sets,
+      'cardioUnit': cardioUnit,
+    };
   }
 
   /// Get personal records for a specific exercise.
   ///
-  /// Returns a map with keys: exerciseName, bestWeight, best1RM, bestVolume,
-  /// hasRecords. Uses Brzycki formula for 1RM estimation.
+  /// Returns strength records for weight exercises, or normalized
+  /// speed/distance/duration records for cardio exercises.
   Map<String, dynamic> getExerciseRecords(String exerciseName) {
     if (_db == null) {
       return {
         'exerciseName': exerciseName,
+        'isCardio': false,
         'bestWeight': null,
         'best1RM': null,
         'bestVolume': null,
         'hasRecords': false,
+      };
+    }
+
+    final exercise = _db!.select('''
+      SELECT cardio, unit
+      FROM gym_sets
+      WHERE name = ? AND hidden = 0
+      ORDER BY created DESC, id DESC
+      LIMIT 1
+    ''', [exerciseName]);
+    final isCardio =
+        exercise.isNotEmpty && (exercise.first['cardio'] as int? ?? 0) == 1;
+
+    if (isCardio) {
+      final targetUnit = _getCardioUnit(
+        fallback: exercise.first['unit'] as String?,
+      );
+      final sets = _db!.select('''
+        SELECT distance, duration, unit, created, workout_id
+        FROM gym_sets
+        WHERE name = ? AND hidden = 0 AND warmup = 0 AND cardio = 1
+        ORDER BY created ASC, id ASC
+      ''', [exerciseName]);
+
+      Map<String, dynamic>? speedSet;
+      Map<String, dynamic>? distanceSet;
+      Map<String, dynamic>? durationSet;
+      var bestSpeed = 0.0;
+      var bestDistance = 0.0;
+      var bestDuration = 0.0;
+
+      for (final row in sets) {
+        final distance = _convertCardioDistance(
+          (row['distance'] as num?)?.toDouble() ?? 0,
+          from: row['unit'] as String?,
+          to: targetUnit,
+        );
+        final duration = (row['duration'] as num?)?.toDouble() ?? 0;
+        final speed = duration > 0 ? distance / duration * 60 : 0.0;
+
+        if (distanceSet == null || distance > bestDistance) {
+          bestDistance = distance;
+          distanceSet = row;
+        }
+        if (durationSet == null || duration > bestDuration) {
+          bestDuration = duration;
+          durationSet = row;
+        }
+        if (duration > 0 && (speedSet == null || speed > bestSpeed)) {
+          bestSpeed = speed;
+          speedSet = row;
+        }
+      }
+
+      return {
+        'exerciseName': exerciseName,
+        'isCardio': true,
+        'cardioUnit': targetUnit,
+        'bestSpeed': bestSpeed,
+        'bestDistance': bestDistance,
+        'bestDuration': bestDuration,
+        'bestSpeedDate': speedSet?['created'],
+        'bestDistanceDate': distanceSet?['created'],
+        'bestDurationDate': durationSet?['created'],
+        'bestSpeedWorkoutId': speedSet?['workout_id'],
+        'bestDistanceWorkoutId': distanceSet?['workout_id'],
+        'bestDurationWorkoutId': durationSet?['workout_id'],
+        'hasRecords': sets.isNotEmpty,
       };
     }
 
@@ -294,6 +393,7 @@ class DashboardService {
 
     return {
       'exerciseName': exerciseName,
+      'isCardio': false,
       'bestWeight': hasRecords ? (row['best_weight'] as num).toDouble() : null,
       'best1RM': hasRecords ? (row['best_1rm'] as num).toDouble() : null,
       'bestVolume': hasRecords ? (row['best_volume'] as num).toDouble() : null,
@@ -339,17 +439,108 @@ class DashboardService {
 
   /// Get recent per-workout history for a specific exercise.
   ///
-  /// Returns a list of maps with workout date/metadata, set count, volume,
-  /// best weight, best estimated 1RM, and the best set for that workout.
+  /// Returns per-workout summaries. Cardio summaries contain bout count,
+  /// total distance/duration, average incline, and derived speed.
   List<Map<String, dynamic>> getExerciseWorkoutHistory(
     String exerciseName, {
     int limit = 20,
   }) {
     if (_db == null || limit <= 0) return [];
 
+    final exercise = _db!.select('''
+      SELECT cardio, unit
+      FROM gym_sets
+      WHERE name = ? AND hidden = 0
+      ORDER BY created DESC, id DESC
+      LIMIT 1
+    ''', [exerciseName]);
+    final isCardio =
+        exercise.isNotEmpty && (exercise.first['cardio'] as int? ?? 0) == 1;
     final categoryExpr =
         _hasColumn('gym_sets', 'category') ? 'gs.category' : 'NULL';
     final unitExpr = _hasColumn('gym_sets', 'unit') ? 'gs.unit' : 'NULL';
+
+    if (isCardio) {
+      final targetUnit = _getCardioUnit(
+        fallback: exercise.first['unit'] as String?,
+      );
+      final inclineExpr =
+          _hasColumn('gym_sets', 'incline') ? 'gs.incline' : 'NULL';
+      final result = _db!.select('''
+        SELECT gs.id, gs.distance, gs.duration, $inclineExpr as incline,
+          $unitExpr as unit, gs.created, $categoryExpr as category,
+          w.id as workout_id, w.name as workout_name,
+          w.start_time, w.end_time, DATE(w.start_time, 'unixepoch') as workout_date
+        FROM gym_sets gs
+        INNER JOIN workouts w ON w.id = gs.workout_id
+        WHERE gs.name = ? AND gs.hidden = 0 AND gs.sequence >= 0
+          AND gs.cardio = 1
+        ORDER BY w.start_time DESC, gs.created DESC, gs.id DESC
+      ''', [exerciseName]);
+
+      final history = <Map<String, dynamic>>[];
+      Map<String, dynamic>? current;
+      int? currentWorkoutId;
+
+      for (final row in result) {
+        final workoutId = row['workout_id'] as int;
+        if (workoutId != currentWorkoutId) {
+          if (history.length >= limit) break;
+          currentWorkoutId = workoutId;
+          current = {
+            'date': row['workout_date'],
+            'workoutId': workoutId,
+            'workoutName': row['workout_name'],
+            'startTime': row['start_time'],
+            'endTime': row['end_time'],
+            'setCount': 0,
+            'totalDistance': 0.0,
+            'totalDuration': 0.0,
+            'speed': 0.0,
+            'averageIncline': null,
+            'inclineTotal': 0.0,
+            'inclineCount': 0,
+            'category': row['category'],
+            'unit': targetUnit,
+            'isCardio': true,
+          };
+          history.add(current);
+        }
+
+        final distance = _convertCardioDistance(
+          (row['distance'] as num?)?.toDouble() ?? 0,
+          from: row['unit'] as String?,
+          to: targetUnit,
+        );
+        final duration = (row['duration'] as num?)?.toDouble() ?? 0;
+        final incline = (row['incline'] as num?)?.toDouble();
+
+        current!['setCount'] = (current['setCount'] as int) + 1;
+        current['totalDistance'] =
+            (current['totalDistance'] as double) + distance;
+        current['totalDuration'] =
+            (current['totalDuration'] as double) + duration;
+        if ((current['totalDuration'] as double) > 0) {
+          current['speed'] = (current['totalDistance'] as double) /
+              (current['totalDuration'] as double) *
+              60;
+        }
+        if (incline != null) {
+          current['inclineTotal'] =
+              (current['inclineTotal'] as double) + incline;
+          current['inclineCount'] = (current['inclineCount'] as int) + 1;
+          current['averageIncline'] = (current['inclineTotal'] as double) /
+              (current['inclineCount'] as int);
+        }
+        current['category'] ??= row['category'];
+      }
+
+      for (final entry in history) {
+        entry.remove('inclineTotal');
+        entry.remove('inclineCount');
+      }
+      return history;
+    }
 
     final result = _db!.select('''
       SELECT gs.id, gs.weight, gs.reps, $unitExpr as unit, gs.created,
@@ -386,6 +577,7 @@ class DashboardService {
           'bestSet': null,
           'category': row['category'],
           'unit': row['unit'],
+          'isCardio': false,
         };
         history.add(current);
       }
@@ -559,9 +751,8 @@ class DashboardService {
 
   /// Get exercise progress over time for line chart.
   ///
-  /// Returns a list of daily-best data points with keys: created, value,
-  /// weight, reps, unit, workoutId. Metric can be 'bestWeight', 'oneRepMax',
-  /// or 'volume'.
+  /// Returns daily strength bests or cardio summaries. Cardio metrics are
+  /// speed, distance, duration, incline, and incline-adjusted speed.
   List<Map<String, dynamic>> getExerciseProgress(
     String exerciseName, {
     String metric = 'bestWeight',
@@ -570,6 +761,96 @@ class DashboardService {
     if (_db == null) return [];
 
     final startEpochSeconds = _periodToEpoch(period);
+    final exercise = _db!.select('''
+      SELECT cardio, unit
+      FROM gym_sets
+      WHERE name = ? AND hidden = 0
+      ORDER BY created DESC, id DESC
+      LIMIT 1
+    ''', [exerciseName]);
+    final isCardio =
+        exercise.isNotEmpty && (exercise.first['cardio'] as int? ?? 0) == 1;
+
+    if (isCardio) {
+      final targetUnit = _getCardioUnit(
+        fallback: exercise.first['unit'] as String?,
+      );
+      final inclineExpr =
+          _hasColumn('gym_sets', 'incline') ? 'incline' : 'NULL';
+      final result = _db!.select('''
+        SELECT created, distance, duration, $inclineExpr as incline,
+          unit, workout_id, DATE(created, 'unixepoch') as day
+        FROM gym_sets
+        WHERE name = ? AND hidden = 0 AND cardio = 1 AND created >= ?
+        ORDER BY created ASC, id ASC
+      ''', [exerciseName, startEpochSeconds]);
+
+      final daily = <String, Map<String, dynamic>>{};
+      for (final row in result) {
+        final day = row['day'] as String;
+        final point = daily.putIfAbsent(
+          day,
+          () => {
+            'created': row['created'],
+            'distance': 0.0,
+            'duration': 0.0,
+            'inclineTotal': 0.0,
+            'inclineCount': 0,
+            'workoutId': row['workout_id'],
+          },
+        );
+        point['created'] = row['created'];
+        point['workoutId'] = row['workout_id'];
+        point['distance'] = (point['distance'] as double) +
+            _convertCardioDistance(
+              (row['distance'] as num?)?.toDouble() ?? 0,
+              from: row['unit'] as String?,
+              to: targetUnit,
+            );
+        point['duration'] = (point['duration'] as double) +
+            ((row['duration'] as num?)?.toDouble() ?? 0);
+        final incline = (row['incline'] as num?)?.toDouble();
+        if (incline != null) {
+          point['inclineTotal'] = (point['inclineTotal'] as double) + incline;
+          point['inclineCount'] = (point['inclineCount'] as int) + 1;
+        }
+      }
+
+      return daily.values.map((point) {
+        final distance = point['distance'] as double;
+        final duration = point['duration'] as double;
+        final inclineCount = point['inclineCount'] as int;
+        final incline = inclineCount > 0
+            ? (point['inclineTotal'] as double) / inclineCount
+            : 0.0;
+        final speed = duration > 0 ? distance / duration * 60 : 0.0;
+        final value = switch (metric) {
+          'distance' => distance,
+          'duration' => duration,
+          'incline' => incline,
+          'inclineAdjustedSpeed' => speed * math.pow(1.1, incline),
+          _ => speed,
+        };
+        final unit = switch (metric) {
+          'distance' => targetUnit,
+          'duration' => 'min',
+          'incline' => '%',
+          _ => '$targetUnit/h',
+        };
+
+        return <String, dynamic>{
+          'created': point['created'],
+          'value': value,
+          'distance': distance,
+          'duration': duration,
+          'speed': speed,
+          'incline': incline,
+          'unit': unit,
+          'workoutId': point['workoutId'],
+          'isCardio': true,
+        };
+      }).toList();
+    }
 
     String metricExpr;
     switch (metric) {
@@ -605,6 +886,7 @@ class DashboardService {
           'reps': row['reps'] as num,
           'unit': row['unit'] as String,
           'workoutId': row['workout_id'],
+          'isCardio': false,
         };
       }
     }
@@ -915,5 +1197,41 @@ class DashboardService {
 
     final result = _db!.select('PRAGMA table_info($tableName)');
     return result.any((row) => row['name'] == columnName);
+  }
+
+  String _getCardioUnit({String? fallback}) {
+    const supportedUnits = {'m', 'km', 'mi', 'kcal'};
+    var unit = supportedUnits.contains(fallback) ? fallback! : 'km';
+    if (_hasColumn('settings', 'cardio_unit')) {
+      final settings = _db!.select('''
+        SELECT cardio_unit
+        FROM settings
+        ORDER BY id DESC
+        LIMIT 1
+      ''');
+      if (settings.isNotEmpty) {
+        final savedUnit = settings.first['cardio_unit'] as String?;
+        if (supportedUnits.contains(savedUnit)) unit = savedUnit!;
+      }
+    }
+    return unit;
+  }
+
+  double _convertCardioDistance(
+    double value, {
+    required String? from,
+    required String to,
+  }) {
+    if (from == null || from == to) return value;
+
+    const metersPerUnit = <String, double>{
+      'm': 1,
+      'km': 1000,
+      'mi': 1609.34,
+    };
+    final fromMeters = metersPerUnit[from];
+    final toMeters = metersPerUnit[to];
+    if (fromMeters == null || toMeters == null) return value;
+    return value * fromMeters / toMeters;
   }
 }

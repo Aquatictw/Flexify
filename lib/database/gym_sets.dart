@@ -106,6 +106,105 @@ Future<List<CardioData>> getCardioData({
   return list;
 }
 
+/// All-time records for a cardio exercise.
+typedef CardioRecords = ({
+  double bestSpeed,
+  double bestDistance,
+  double bestDuration,
+  DateTime? bestSpeedDate,
+  DateTime? bestDistanceDate,
+  DateTime? bestDurationDate,
+  int? bestSpeedWorkoutId,
+  int? bestDistanceWorkoutId,
+  int? bestDurationWorkoutId,
+});
+
+/// Get the all-time speed, distance, and duration records for a cardio
+/// exercise. Distances are normalized before comparison so records remain
+/// correct when an exercise has entries stored in different units.
+Future<CardioRecords?> getCardioRecords({
+  required String name,
+  required String targetUnit,
+}) async {
+  final sets = await (db.gymSets.select()
+        ..where(
+          (set) =>
+              set.name.equals(name) &
+              set.cardio.equals(true) &
+              set.hidden.equals(false) &
+              set.warmup.equals(false),
+        )
+        ..orderBy([
+          (set) => OrderingTerm(
+                expression: set.created,
+                mode: OrderingMode.asc,
+              ),
+        ]))
+      .get();
+
+  if (sets.isEmpty) return null;
+
+  GymSet? speedSet;
+  GymSet? distanceSet;
+  GymSet? durationSet;
+  var bestSpeed = 0.0;
+  var bestDistance = 0.0;
+  var bestDuration = 0.0;
+
+  for (final set in sets) {
+    final distance = _convertCardioDistance(
+      set.distance,
+      from: set.unit,
+      to: targetUnit,
+    );
+    final hasSpeed = set.duration > 0;
+    final speed = hasSpeed ? distance / set.duration * 60 : 0.0;
+
+    if (distanceSet == null || distance > bestDistance) {
+      bestDistance = distance;
+      distanceSet = set;
+    }
+    if (durationSet == null || set.duration > bestDuration) {
+      bestDuration = set.duration;
+      durationSet = set;
+    }
+    if (hasSpeed && (speedSet == null || speed > bestSpeed)) {
+      bestSpeed = speed;
+      speedSet = set;
+    }
+  }
+
+  return (
+    bestSpeed: bestSpeed,
+    bestDistance: bestDistance,
+    bestDuration: bestDuration,
+    bestSpeedDate: speedSet?.created,
+    bestDistanceDate: distanceSet?.created,
+    bestDurationDate: durationSet?.created,
+    bestSpeedWorkoutId: speedSet?.workoutId,
+    bestDistanceWorkoutId: distanceSet?.workoutId,
+    bestDurationWorkoutId: durationSet?.workoutId,
+  );
+}
+
+double _convertCardioDistance(
+  double value, {
+  required String from,
+  required String to,
+}) {
+  if (from == to || to == 'last-entry') return value;
+
+  const metersPerUnit = <String, double>{
+    'm': 1,
+    'km': 1000,
+    'mi': 1609.34,
+  };
+  final fromMeters = metersPerUnit[from];
+  final toMeters = metersPerUnit[to];
+  if (fromMeters == null || toMeters == null) return value;
+  return value * fromMeters / toMeters;
+}
+
 Expression<String> getCreated(Period groupBy) {
   // For all new period types, group by day to show individual data points
   return const CustomExpression<String>(
