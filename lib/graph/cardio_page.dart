@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../constants.dart';
 import '../database/database.dart';
 import '../database/gym_sets.dart';
+import '../utils/cardio_format.dart';
 import '../utils/duration_format.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
@@ -397,6 +398,7 @@ class _CardioPageState extends State<CardioPage> {
                 icon: Icons.speed,
                 label: 'Best Speed',
                 value: '${formatter.format(records!.bestSpeed)} $target/h',
+                subValue: formatPaceFromSpeed(records!.bestSpeed, target),
                 date: records!.bestSpeedDate,
                 color: colorScheme.primary,
                 workoutId: records!.bestSpeedWorkoutId,
@@ -440,6 +442,7 @@ class _CardioPageState extends State<CardioPage> {
     required DateTime? date,
     required Color color,
     int? workoutId,
+    String subValue = '',
   }) {
     return InkWell(
       onTap: workoutId != null
@@ -494,6 +497,18 @@ class _CardioPageState extends State<CardioPage> {
               style: Theme.of(context).textTheme.titleSmall,
               overflow: TextOverflow.ellipsis,
             ),
+            if (subValue.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                subValue,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.75,
+                      ),
+                    ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
             if (date != null) ...[
               const SizedBox(height: 2),
               Text(

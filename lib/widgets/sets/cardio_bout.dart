@@ -82,6 +82,19 @@ class CardioBout extends StatelessWidget {
       ...metrics.where((metric) => metric.metric != primary),
     ];
 
+    final paceStr = formatCardioPace(setData.distance, setData.duration, unit);
+    final paceField = paceStr.isEmpty
+        ? null
+        : _MetricField(
+            metric: 'pace',
+            label: 'Pace',
+            value: paceStr.substring(0, paceStr.indexOf(' ')),
+            suffix: 'min/$unit',
+            parse: (_) => null,
+            onChanged: (_) {},
+            readOnly: true,
+          );
+
     return Dismissible(
       key: Key('dismissible_bout_${setData.savedSetId ?? index}'),
       direction: DismissDirection.endToStart,
@@ -166,7 +179,10 @@ class CardioBout extends StatelessWidget {
                 return Wrap(
                   spacing: space8,
                   runSpacing: space8,
-                  children: ordered.skip(1).map((field) {
+                  children: [
+                    ...ordered.skip(1),
+                    if (paceField != null) paceField,
+                  ].map((field) {
                     return SizedBox(
                       width: itemWidth,
                       child: field.build(
@@ -230,6 +246,7 @@ class _MetricField {
     required this.onChanged,
     this.onCleared,
     this.formatAsDuration = false,
+    this.readOnly = false,
   });
 
   final String metric;
@@ -240,6 +257,7 @@ class _MetricField {
   final ValueChanged<double> onChanged;
   final VoidCallback? onCleared;
   final bool formatAsDuration;
+  final bool readOnly;
 
   Widget build(
     BuildContext context, {
@@ -258,6 +276,7 @@ class _MetricField {
       completed: completed,
       accentColor: accentColor,
       featured: featured,
+      readOnly: readOnly,
     );
   }
 }
@@ -274,6 +293,7 @@ class _SyncedNumberField extends StatefulWidget {
     this.onCleared,
     this.formatAsDuration = false,
     this.featured = false,
+    this.readOnly = false,
   });
 
   final String label;
@@ -286,6 +306,7 @@ class _SyncedNumberField extends StatefulWidget {
   final bool completed;
   final Color accentColor;
   final bool featured;
+  final bool readOnly;
 
   @override
   State<_SyncedNumberField> createState() => _SyncedNumberFieldState();
@@ -320,12 +341,15 @@ class _SyncedNumberFieldState extends State<_SyncedNumberField> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Stack(
+    final field = Stack(
       alignment: Alignment.center,
       children: [
         TextField(
           controller: _controller,
           focusNode: _focusNode,
+          readOnly: widget.readOnly,
+          showCursor: !widget.readOnly,
+          enableInteractiveSelection: !widget.readOnly,
           keyboardType: widget.formatAsDuration
               ? TextInputType.number
               : const TextInputType.numberWithOptions(decimal: true),
@@ -414,5 +438,7 @@ class _SyncedNumberFieldState extends State<_SyncedNumberField> {
         ),
       ],
     );
+    if (!widget.readOnly) return field;
+    return Opacity(opacity: 0.55, child: IgnorePointer(child: field));
   }
 }
