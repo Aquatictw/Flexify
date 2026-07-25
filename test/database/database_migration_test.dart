@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:drift/native.dart';
 import 'package:drift_dev/api/migrations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jackedlog/database/database.dart';
@@ -87,8 +88,7 @@ void main() {
     });
 
     test('fresh install creates v67 schema correctly', () async {
-      TestWidgetsFlutterBinding.ensureInitialized();
-      final db = AppDatabase();
+      final db = AppDatabase(NativeDatabase.memory());
 
       // Insert default data
       await insertMinimalSettings(db);
@@ -228,54 +228,24 @@ void main() {
     });
 
     test('v57 to v61 migration adds set_order and fixes sequences', () async {
-      final connection = await verifier.startAt(57);
-      final db = AppDatabase(connection.executor);
+      final schema = await verifier.schemaAt(57);
 
-      await insertMinimalSettings(db);
+      // Seed through the raw v57 database: AppDatabase migrates on its first
+      // query, so anything inserted through it would arrive too late for the
+      // v57→v61 normalization to see.
+      schema.rawDatabase.execute(
+        "INSERT INTO workouts (id, start_time, end_time, name) "
+        "VALUES (1, 1000, 2000, 'Test Workout')",
+      );
+      for (var i = 0; i < 3; i++) {
+        schema.rawDatabase.execute(
+          'INSERT INTO gym_sets (name, reps, weight, unit, created, '
+          'workout_id, sequence) '
+          "VALUES ('Bench Press', 10, 100, 'kg', ${1000 + i}, 1, $i)",
+        );
+      }
 
-      // Create a workout with sets to test sequence normalization
-      final workoutId = await db.into(db.workouts).insert(
-            WorkoutsCompanion.insert(
-              startTime: DateTime.now().subtract(const Duration(hours: 1)),
-              endTime: Value(DateTime.now()),
-              name: const Value('Test Workout'),
-            ),
-          );
-
-      // Insert sets with old pattern (each set has different sequence)
-      await db.into(db.gymSets).insert(
-            GymSetsCompanion.insert(
-              name: 'Bench Press',
-              reps: 10,
-              weight: 100,
-              unit: 'kg',
-              created: DateTime.now().subtract(const Duration(minutes: 5)),
-              workoutId: Value(workoutId),
-              sequence: const Value(0),
-            ),
-          );
-      await db.into(db.gymSets).insert(
-            GymSetsCompanion.insert(
-              name: 'Bench Press',
-              reps: 10,
-              weight: 100,
-              unit: 'kg',
-              created: DateTime.now().subtract(const Duration(minutes: 4)),
-              workoutId: Value(workoutId),
-              sequence: const Value(1),
-            ),
-          );
-      await db.into(db.gymSets).insert(
-            GymSetsCompanion.insert(
-              name: 'Bench Press',
-              reps: 10,
-              weight: 100,
-              unit: 'kg',
-              created: DateTime.now().subtract(const Duration(minutes: 3)),
-              workoutId: Value(workoutId),
-              sequence: const Value(2),
-            ),
-          );
+      final db = AppDatabase(schema.newConnection());
 
       // Migrate to v61 (includes sequence normalization fix)
       try {
@@ -311,39 +281,38 @@ void main() {
       expect(setOrders, equals([0, 1, 2]),
           reason: 'set_order should be 0, 1, 2');
 
-      // Verify Spotify columns exist
-      expect(columns, contains('spotify_access_token'));
-      expect(columns, contains('spotify_refresh_token'));
-      expect(columns, contains('spotify_token_expiry'));
+      // Verify Spotify columns exist — they live on settings, not gym_sets
+      final settingsColumns = (await db
+              .customSelect('PRAGMA table_info(settings)')
+              .get())
+          .map((row) => row.read<String>('name'))
+          .toList();
+      expect(settingsColumns, contains('spotify_access_token'));
+      expect(settingsColumns, contains('spotify_refresh_token'));
+      expect(settingsColumns, contains('spotify_token_expiry'));
 
       await db.close();
     });
 
     test('full migration path: v31 to v61', () async {
-      final connection = await verifier.startAt(31);
-      final db = AppDatabase(connection.executor);
+      final schema = await verifier.schemaAt(31);
+
+      // Seed through the raw v31 database: AppDatabase migrates on its first
+      // query, so data inserted through it would never go through the
+      // migration this test is about.
+      schema.rawDatabase.execute(
+        "INSERT INTO plans (id, days, exercises, title) "
+        "VALUES (1, 'Monday,Wednesday,Friday', 'Bench Press,Squat', 'Test Plan')",
+      );
+      schema.rawDatabase.execute(
+        'INSERT INTO gym_sets (name, reps, weight, unit, created) '
+        "VALUES ('Bench Press', 10, 100, 'kg', 1000)",
+      );
+      const planId = 1;
+
+      final db = AppDatabase(schema.newConnection());
 
       await insertMinimalSettings(db);
-
-      // Create test data at v31 using raw insertable to match v31 schema
-      // v31 schema has 'exercises' column which doesn't exist in current schema
-      final planId = await db.into(db.plans).insert(
-            RawValuesInsertable({
-              'days': const Variable('Monday,Wednesday,Friday'),
-              'exercises': const Variable('Bench Press,Squat'),
-              'title': const Variable('Test Plan'),
-            }),
-          );
-
-      await db.into(db.gymSets).insert(
-            GymSetsCompanion.insert(
-              name: 'Bench Press',
-              reps: 10,
-              weight: 100,
-              unit: 'kg',
-              created: DateTime.now(),
-            ),
-          );
 
       // Migrate all the way to v61
       try {

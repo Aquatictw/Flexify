@@ -174,8 +174,14 @@ class AppDatabase extends _$AppDatabase {
           await m.database.customUpdate(
             'UPDATE settings SET group_history = 1, show_units = 0, show_body_weight = 0, rep_estimation = 1',
           );
+        }
 
-          // v47→48: Create workouts table and add workout_id to gym_sets
+        // from48To52: Consolidates v48-v51 changes
+        // Runs when migrating FROM a version <=51 TO a version >=52
+        if (from < 52 && to >= 52) {
+          // Create workouts table and add workout_id to gym_sets. The v48
+          // schema snapshot has neither, so this must run for databases
+          // sitting at v48-v51 too — not only for pre-v48 ones.
           await m.database.customStatement('''
             CREATE TABLE IF NOT EXISTS workouts (
               id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -197,11 +203,7 @@ class AppDatabase extends _$AppDatabase {
               'CREATE INDEX IF NOT EXISTS gym_sets_workout_id ON gym_sets(workout_id)',
             ),
           );
-        }
 
-        // from48To52: Consolidates v48-v51 changes
-        // Runs when migrating FROM a version <=51 TO a version >=52
-        if (from < 52 && to >= 52) {
           // v48→49: Add sequence column to gym_sets
           await m.database
               .customStatement(
@@ -560,6 +562,35 @@ class AppDatabase extends _$AppDatabase {
                 'ALTER TABLE gym_sets ADD COLUMN cardio_metric TEXT',
               )
               .catchError((e) {});
+        }
+
+        // Columns above were added with plain `ADD COLUMN <type>`, so rows
+        // that predate them hold NULL while the Dart table declares them
+        // NOT NULL — reading such a row throws on the null check. Backfill
+        // unconditionally: cheap, idempotent, and it also repairs databases
+        // migrated by earlier builds.
+        const nonNullBackfills = {
+          'gym_sets': {'sequence': '0', 'warmup': '0', 'drop_set': '0'},
+          'plan_exercises': {'sequence': '0'},
+          'settings': {
+            'peek_graph': '0',
+            'notifications': '1',
+            'show_categories': '1',
+            'show_notes': '1',
+            'show_global_progress': '1',
+            'scrollable_tabs': '1',
+            'custom_color_seed': '4284955319',
+          },
+        };
+        for (final table in nonNullBackfills.entries) {
+          for (final column in table.value.entries) {
+            await m.database
+                .customStatement(
+                  'UPDATE ${table.key} SET ${column.key} = ${column.value} '
+                  'WHERE ${column.key} IS NULL',
+                )
+                .catchError((e) {});
+          }
         }
       },
       beforeOpen: (details) async {

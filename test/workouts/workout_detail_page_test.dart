@@ -65,7 +65,9 @@ void main() {
     expect(find.text('End Date'), findsOneWidget);
     expect(find.text('2026 Jan 15'), findsOneWidget);
 
+    // Tear the tree down inside the test so drift's stream-cleanup timers run
+    // before the binding checks for pending timers.
     await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
+    await tester.pumpAndSettle();
   });
 }

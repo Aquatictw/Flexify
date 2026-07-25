@@ -1,0 +1,3 @@
+# A wedged test should not cost the whole suite ten minutes; nothing here
+# legitimately runs longer than a couple of seconds.
+timeout: 30s

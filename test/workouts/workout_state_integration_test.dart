@@ -103,9 +103,11 @@ void main() {
             ..where((w) => w.id.equals(workout!.id)))
           .getSingle();
       expect(stoppedWorkout.endTime, isNotNull);
+      // Same-millisecond start/stop is legitimate here, so only assert the
+      // end time never precedes the start.
       expect(
-        stoppedWorkout.startTime.isBefore(stoppedWorkout.endTime!),
-        isTrue,
+        stoppedWorkout.endTime!.isBefore(stoppedWorkout.startTime),
+        isFalse,
       );
 
       // Verify sets persist after workout stops

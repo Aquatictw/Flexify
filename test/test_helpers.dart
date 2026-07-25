@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jackedlog/database/database.dart';
+import 'package:jackedlog/main.dart' as app;
 import 'package:jackedlog/spotify/spotify_service.dart';
 import 'package:jackedlog/spotify/spotify_web_api_service.dart';
 import 'package:mockito/annotations.dart';
@@ -14,9 +15,13 @@ void main() {} // Empty: mocks generated via: dart run build_runner build
 ///
 /// Returns a fresh database instance that automatically cleans up after tests.
 /// No manual cleanup required - in-memory databases are garbage collected.
+///
+/// Also points the global `db` at it: production code (WorkoutState and
+/// friends) reads that global, and without this it would fall through to the
+/// real on-device database via path_provider.
 Future<AppDatabase> createTestDatabase() async {
   // Use in-memory database that gets cleaned up automatically
-  return AppDatabase(NativeDatabase.memory());
+  return app.db = AppDatabase(NativeDatabase.memory());
 }
 
 /// Create test GymSet with sensible defaults

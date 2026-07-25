@@ -1,12 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jackedlog/spotify/spotify_state.dart';
 
+import '../test_helpers.dart';
+
 /// Tests for SpotifyState with mocked services
 ///
 /// Note: Due to SpotifyState using private service instances (_service, _webApiService),
 /// these tests primarily validate the error handling logic and state management behavior
 /// documented in the implementation. Full integration tests would require dependency injection.
 void main() {
+  // SpotifyState reaches for platform channels and the global database while
+  // initializing.
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(createTestDatabase);
+
   group('SpotifyState Error Handling Logic', () {
     late SpotifyState state;
 
@@ -288,10 +295,11 @@ void main() {
       //
       // Ensures timer cleanup before disposal
 
-      state.startPolling();
+      // Own instance: the shared one is disposed by tearDown.
+      final polling = SpotifyState()..startPolling();
 
       // Dispose should stop polling without error
-      expect(() => state.dispose(), returnsNormally);
+      expect(polling.dispose, returnsNormally);
     });
 
     test('Web API called every 5 polling ticks', () {
