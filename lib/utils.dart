@@ -60,3 +60,9 @@ String toString(double value) {
   if (str.endsWith('.00')) return str.substring(0, str.length - 3);
   return str;
 }
+
+/// Decode budget, in device pixels, for an image drawn at [logical] logical
+/// pixels. Pass as `cacheWidth`/`cacheHeight` so a camera-resolution photo
+/// isn't decoded at full size for a list thumbnail.
+int decodePx(BuildContext context, double logical) =>
+    (logical * MediaQuery.devicePixelRatioOf(context)).round();

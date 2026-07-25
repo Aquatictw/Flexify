@@ -138,6 +138,10 @@ class _HistoryListState extends State<HistoryList> {
         onTap: () => widget.onSelect(gymSet.id),
         child: Image.file(
           File(gymSet.image!),
+          // Sized by the ListTile's leading slot; 96lp of decode is well above
+          // any row height, so layout is unchanged and the full-res decode goes
+          // away.
+          cacheHeight: decodePx(context, 96),
           errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
         ),
       );

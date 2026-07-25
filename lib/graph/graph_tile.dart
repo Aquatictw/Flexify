@@ -10,6 +10,7 @@ import '../database/gym_sets.dart';
 import '../main.dart';
 import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
+import '../utils.dart';
 import 'cardio_page.dart';
 import 'strength_page.dart';
 
@@ -151,6 +152,9 @@ class GraphTile extends StatelessWidget {
             File(exercise.image!),
             width: 40,
             height: 40,
+            // One dimension only — passing both distorts the aspect ratio and
+            // breaks the cover crop. 2x the box keeps the cropped side sharp.
+            cacheWidth: decodePx(context, 80),
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Container(
               width: 40,

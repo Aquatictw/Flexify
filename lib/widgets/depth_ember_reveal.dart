@@ -22,8 +22,10 @@ const _inDuration = Duration(milliseconds: 520);
 const _outDuration = Duration(milliseconds: 215);
 
 /// Hosts the tab pages and plays the depth+ember reveal when [controller]'s
-/// index changes. All pages stay built (state preserved) like an IndexedStack;
-/// only the active and the outgoing page are painted.
+/// index changes. A page is created on its first visit and kept alive from
+/// then on (state preserved, like an IndexedStack); never-visited tabs are not
+/// inflated at all, so their streams/timers/media never start. Only the active
+/// and the outgoing page are painted.
 class DepthEmberTabView extends StatefulWidget {
   const DepthEmberTabView({
     required this.controller,
@@ -48,10 +50,15 @@ class _DepthEmberTabViewState extends State<DepthEmberTabView>
   int _index = 0;
   int? _leaving;
 
+  /// Indices visited at least once. A page enters the tree on first visit and
+  /// never leaves it, so its wrapper subtree stays shape-stable afterwards.
+  final _visited = <int>{};
+
   @override
   void initState() {
     super.initState();
     _index = widget.controller.index;
+    _visited.add(_index);
     // Start revealed: the first tab is active but never gets a _onTab forward,
     // so at value 0 its RevealBlocks would hold everything at opacity 0 until
     // the first tab switch. Later switches re-run forward(from: 0) as normal.
@@ -68,6 +75,10 @@ class _DepthEmberTabViewState extends State<DepthEmberTabView>
       widget.controller.addListener(_onTab);
       _index = widget.controller.index;
       _leaving = null;
+      // Tab set changed: indices now mean different pages.
+      _visited
+        ..clear()
+        ..add(_index);
     }
   }
 
@@ -77,6 +88,7 @@ class _DepthEmberTabViewState extends State<DepthEmberTabView>
     setState(() {
       _leaving = _index;
       _index = next;
+      _visited.add(next);
     });
     _in.forward(from: 0);
     _out.forward(from: 0);
@@ -118,6 +130,10 @@ class _DepthEmberTabViewState extends State<DepthEmberTabView>
   }
 
   Widget _layer(int i, double pageP, bool reduceMotion) {
+    // Never visited: hold the Stack slot but don't inflate the page. Nothing
+    // in it has run initState, so no streams, timers or media are alive.
+    if (!_visited.contains(i)) return const SizedBox.shrink();
+
     final active = i == _index;
     final leaving = i == _leaving;
     final visible = active || leaving;

@@ -21,21 +21,48 @@ class MusicPage extends StatefulWidget {
   State<MusicPage> createState() => _MusicPageState();
 }
 
-class _MusicPageState extends State<MusicPage> {
+class _MusicPageState extends State<MusicPage> with WidgetsBindingObserver {
+  bool _resumed = true;
+
   @override
   void initState() {
     super.initState();
-    // Start polling when page initializes if already connected
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final spotifyState = context.read<SpotifyState>();
-      if (spotifyState.connectionStatus == ConnectionStatus.connected) {
-        spotifyState.startPolling();
-      }
-    });
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The tab host offstages hidden pages and disables their TickerMode, so
+    // that flag is our "Music is visible" signal. Reading it here also
+    // subscribes us to changes.
+    _syncPolling(visible: TickerMode.of(context));
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _resumed = state == AppLifecycleState.resumed;
+    if (mounted) _syncPolling(visible: TickerMode.of(context));
+  }
+
+  /// Poll only while Music is on screen, the app is foregrounded, and Spotify
+  /// is actually connected. Idempotent — safe to call on every rebuild.
+  void _syncPolling({required bool visible}) {
+    final spotifyState = context.read<SpotifyState>();
+    final shouldPoll = visible &&
+        _resumed &&
+        spotifyState.connectionStatus == ConnectionStatus.connected;
+    if (shouldPoll == spotifyState.isPolling) return;
+    if (shouldPoll) {
+      spotifyState.startPolling();
+    } else {
+      spotifyState.stopPolling();
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     // Stop polling when page is disposed
     context.read<SpotifyState>().stopPolling();
     super.dispose();

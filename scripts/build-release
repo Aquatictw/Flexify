@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Build the shippable Android artifacts: one APK per ABI (direct download) and
+# an App Bundle (stores do the ABI targeting). Prints a size table so package
+# growth is visible release over release.
+#
+#   ./scripts/build-release                 splits + bundle
+#   ./scripts/build-release --universal     also build the fat compatibility APK
+#
+# A universal APK carries all three native stacks (~3x the per-device size) and
+# is not a normal release output — only pass --universal when someone
+# explicitly needs a single install-anywhere file.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+universal=0
+[[ "${1:-}" == "--universal" ]] && universal=1
+
+flutter build apk --release --split-per-abi
+flutter build appbundle --release
+[[ $universal -eq 1 ]] && flutter build apk --release
+
+echo
+echo "Artifacts:"
+for f in build/app/outputs/flutter-apk/app-*-release.apk \
+         build/app/outputs/bundle/release/*.aab \
+         $([[ $universal -eq 1 ]] && echo build/app/outputs/flutter-apk/app-release.apk); do
+  [[ -f "$f" ]] || continue
+  printf '  %8.2f MiB  %s\n' "$(bc -l <<<"$(stat -c%s "$f")/1048576")" "$f"
+done
+
+# Guard the whole point of the exercise: a split APK must carry exactly one ABI.
+echo
+echo "Native ABIs per split:"
+for f in build/app/outputs/flutter-apk/app-*-release.apk; do
+  [[ -f "$f" && "$f" != *app-release.apk ]] || continue
+  abis=$(unzip -Z1 "$f" 'lib/*' | cut -d/ -f2 | sort -u | tr '\n' ' ')
+  echo "  $(basename "$f"): $abis"
+  [[ $(wc -w <<<"$abis") -eq 1 ]] || { echo "  ERROR: expected a single ABI"; exit 1; }
+done

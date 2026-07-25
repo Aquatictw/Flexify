@@ -7,7 +7,6 @@ import '../database/database.dart';
 import '../main.dart';
 
 class WorkoutState extends ChangeNotifier {
-
   WorkoutState() {
     // Initialize asynchronously with error handling
     _loadActiveWorkout().catchError((error) {
@@ -35,6 +34,26 @@ class WorkoutState extends ChangeNotifier {
   void setTabController(TabController controller, int plansIndex) {
     _tabController = controller;
     _plansTabIndex = plansIndex;
+  }
+
+  /// Switch to the Plans tab and wait for its nested navigator to be mounted.
+  ///
+  /// Plans is created on first visit, so the key can still be null (or its
+  /// state not yet attached) when a caller wants to push onto it — poll rather
+  /// than capture it up front.
+  Future<NavigatorState?> openPlansNavigator() async {
+    final controller = _tabController;
+    if (controller != null &&
+        _plansTabIndex >= 0 &&
+        controller.index != _plansTabIndex) {
+      controller.animateTo(_plansTabIndex);
+    }
+    for (var attempts = 0; attempts < 20; attempts++) {
+      final state = _plansNavigatorKey?.currentState;
+      if (state != null) return state;
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    return _plansNavigatorKey?.currentState;
   }
 
   Future<void> _loadActiveWorkout() async {
@@ -94,10 +113,12 @@ class WorkoutState extends ChangeNotifier {
     if (_activeWorkout == null) return;
 
     await (db.workouts.update()..where((w) => w.id.equals(_activeWorkout!.id)))
-        .write(WorkoutsCompanion(
-      endTime: Value(DateTime.now().toLocal()),
-      selfieImagePath: Value(selfieImagePath),
-    ),);
+        .write(
+      WorkoutsCompanion(
+        endTime: Value(DateTime.now().toLocal()),
+        selfieImagePath: Value(selfieImagePath),
+      ),
+    );
 
     _activeWorkout = null;
     _activePlan = null;
@@ -163,11 +184,12 @@ class WorkoutState extends ChangeNotifier {
     final newStartTime = DateTime.now().toLocal().subtract(originalDuration);
 
     // Update the workout with new startTime and cleared endTime
-    await (db.workouts.update()..where((w) => w.id.equals(workout.id)))
-        .write(WorkoutsCompanion(
-      startTime: Value(newStartTime),
-      endTime: const Value(null),
-    ),);
+    await (db.workouts.update()..where((w) => w.id.equals(workout.id))).write(
+      WorkoutsCompanion(
+        startTime: Value(newStartTime),
+        endTime: const Value(null),
+      ),
+    );
 
     // Load the updated workout
     final updatedWorkout = await (db.workouts.select()

@@ -30,7 +30,15 @@ class _RestTimerBarState extends State<RestTimerBar>
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    _startUpdateTimer();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // TimerState notifies on start/stop/adjust/native tick. Remaining time is
+    // derived from the wall clock, so we only need to poll while a timer is
+    // actually counting down — an idle bar does no periodic work at all.
+    _syncUpdateTimer();
   }
 
   @override
@@ -40,31 +48,51 @@ class _RestTimerBarState extends State<RestTimerBar>
     super.dispose();
   }
 
-  void _startUpdateTimer() {
-    _updateTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      if (mounted) {
-        final timerState = context.read<TimerState>();
-        final newRemaining = timerState.timer.getRemaining();
-        final newTotal = timerState.timer.getDuration();
+  /// Run the 100 ms poll only while there is time left on the clock.
+  void _syncUpdateTimer() {
+    final timerState = context.read<TimerState>();
+    final running = timerState.timer.getDuration() != Duration.zero &&
+        timerState.timer.getRemaining().inMilliseconds > 0;
 
-        if (_remaining != newRemaining || _total != newTotal) {
-          setState(() {
-            _remaining = newRemaining;
-            _total = newTotal;
-          });
+    if (running == (_updateTimer != null)) return;
+    if (!running) {
+      _updateTimer?.cancel();
+      _updateTimer = null;
+      return;
+    }
+    _updateTimer =
+        Timer.periodic(const Duration(milliseconds: 100), (_) => _tick());
+  }
 
-          // Pulse animation when timer is about to end
-          if (newRemaining.inSeconds <= 5 &&
-              newRemaining.inSeconds > 0 &&
-              !_pulseController.isAnimating) {
-            _pulseController.repeat(reverse: true);
-          } else if (newRemaining.inSeconds > 5) {
-            _pulseController.stop();
-            _pulseController.reset();
-          }
-        }
-      }
+  void _tick() {
+    if (!mounted) return;
+    final timerState = context.read<TimerState>();
+    final newRemaining = timerState.timer.getRemaining();
+    final newTotal = timerState.timer.getDuration();
+
+    if (_remaining == newRemaining && _total == newTotal) return;
+
+    setState(() {
+      _remaining = newRemaining;
+      _total = newTotal;
     });
+
+    // Pulse animation when timer is about to end
+    if (newRemaining.inSeconds <= 5 &&
+        newRemaining.inSeconds > 0 &&
+        !_pulseController.isAnimating) {
+      _pulseController.repeat(reverse: true);
+    } else if (newRemaining.inSeconds > 5) {
+      _pulseController.stop();
+      _pulseController.reset();
+    }
+
+    // Countdown finished (or was cleared): stop polling until the next start.
+    // Rescheduled rather than cancelled inline so the timer callback isn't
+    // cancelling the timer it is running inside.
+    if (newTotal == Duration.zero || newRemaining.inMilliseconds <= 0) {
+      scheduleMicrotask(_syncUpdateTimer);
+    }
   }
 
   String _formatDuration(Duration duration) {
@@ -166,7 +194,10 @@ class _RestTimerBarState extends State<RestTimerBar>
                         // Timer display
                         Text(
                           _formatDuration(remaining),
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
                             fontSize: 22,
                             color: isUrgent
                                 ? colorScheme.onErrorContainer
@@ -242,7 +273,6 @@ class _RestTimerBarState extends State<RestTimerBar>
 }
 
 class _MiniCircularProgress extends StatelessWidget {
-
   const _MiniCircularProgress({
     required this.progress,
     required this.isUrgent,
@@ -309,7 +339,6 @@ class _MiniCircularProgress extends StatelessWidget {
 }
 
 class _TimeAdjustButton extends StatelessWidget {
-
   const _TimeAdjustButton({
     required this.label,
     required this.onPressed,
@@ -332,7 +361,9 @@ class _TimeAdjustButton extends StatelessWidget {
         borderRadius: brSm,
         child: Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: space8, vertical: space4,),
+            horizontal: space8,
+            vertical: space4,
+          ),
           decoration: BoxDecoration(
             color: (isUrgent ? colorScheme.error : colorScheme.tertiary)
                 .withValues(alpha: 0.15),
@@ -345,11 +376,11 @@ class _TimeAdjustButton extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontSize: 13,
-              color: isUrgent
-                  ? colorScheme.onErrorContainer
-                  : colorScheme.onTertiaryContainer,
-            ),
+                  fontSize: 13,
+                  color: isUrgent
+                      ? colorScheme.onErrorContainer
+                      : colorScheme.onTertiaryContainer,
+                ),
           ),
         ),
       ),
@@ -358,7 +389,6 @@ class _TimeAdjustButton extends StatelessWidget {
 }
 
 class _CompactActionButton extends StatelessWidget {
-
   const _CompactActionButton({
     required this.icon,
     required this.label,
@@ -394,7 +424,9 @@ class _CompactActionButton extends StatelessWidget {
         borderRadius: brSm,
         child: Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: space8, vertical: space4,),
+            horizontal: space8,
+            vertical: space4,
+          ),
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: brSm,

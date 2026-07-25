@@ -31,9 +31,8 @@ class _AuthPromptState extends State<AuthPrompt> {
       if (!mounted) return;
 
       if (success) {
-        // Connection successful - SpotifyState will update and UI will rebuild
-        // Start polling for player state
-        spotifyState.startPolling();
+        // Connection successful - SpotifyState will update and UI will rebuild.
+        // MusicPage starts polling off the status change.
         toast('Connected to Spotify successfully');
       } else {
         // Connection failed but no exception - show generic error

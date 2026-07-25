@@ -1841,6 +1841,8 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
           File(firstSet.image!),
           width: 40,
           height: 40,
+          // 2x the box, single dimension so the cover crop keeps its aspect.
+          cacheWidth: decodePx(context, 80),
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) =>
               _buildInitialBadge(exerciseName),
@@ -2376,31 +2378,21 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
 
     if (!context.mounted) return;
 
-    // Navigate to the Plans tab and then to the workout page
-    final tabController = workoutState.tabController;
-    final plansTabIndex = workoutState.plansTabIndex;
-
-    if (tabController != null && tabController.index != plansTabIndex) {
-      tabController.animateTo(plansTabIndex);
-      // Wait for tab animation
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
+    // Navigate to the Plans tab and then to the workout page. Plans is created
+    // on first visit, so wait for its navigator instead of a fixed delay.
+    final plansNavigator = await workoutState.openPlansNavigator();
 
     if (!context.mounted) return;
 
-    // Navigate to the workout execution page
-    final plansNavigatorKey = workoutState.plansNavigatorKey;
-    if (plansNavigatorKey?.currentState != null) {
-      // Push the workout page (keeping Plans page in back stack)
-      plansNavigatorKey!.currentState!.push(
-        MaterialPageRoute(
-          builder: (context) => StartPlanPage(plan: plan),
-          settings: RouteSettings(
-            name: 'StartPlanPage_${plan!.id}',
-          ),
+    // Push the workout page (keeping Plans page in back stack)
+    plansNavigator?.push(
+      MaterialPageRoute(
+        builder: (context) => StartPlanPage(plan: plan),
+        settings: RouteSettings(
+          name: 'StartPlanPage_${plan!.id}',
         ),
-      );
-    }
+      ),
+    );
 
     // Pop the detail page
     if (context.mounted) {

@@ -127,6 +127,8 @@ class _HistoryCollapsedState extends State<HistoryCollapsed> {
                 onTap: () => widget.onSelect(gymSet.id),
                 child: Image.file(
                   File(gymSet.image!),
+                  // See history_list.dart — decode budget, not a layout change.
+                  cacheHeight: decodePx(context, 96),
                   errorBuilder: (context, error, stackTrace) =>
                       const Icon(Icons.error),
                 ),

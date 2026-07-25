@@ -196,6 +196,9 @@ class SpotifyState extends ChangeNotifier {
     }
   }
 
+  /// Whether the 1 Hz player-state poll is currently running.
+  bool get isPolling => _pollingTimer != null;
+
   /// Start polling for player state updates
   /// Should be called when MusicPage becomes visible
   void startPolling() {

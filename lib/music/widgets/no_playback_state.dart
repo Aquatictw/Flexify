@@ -7,11 +7,11 @@ import '../../theme/tokens.dart';
 /// Widget displayed when user is authenticated but no Spotify playback is active.
 /// Shows placeholder UI with disabled controls and an "Open Spotify" button.
 class NoPlaybackState extends StatefulWidget {
-
   const NoPlaybackState({
     super.key,
     this.onRefresh,
   });
+
   /// Callback triggered when playback state should be refreshed
   final VoidCallback? onRefresh;
 
@@ -25,11 +25,14 @@ class _NoPlaybackStateState extends State<NoPlaybackState> {
   @override
   void initState() {
     super.initState();
-    // Auto-refresh every 2 seconds to detect when playback starts
-    _refreshTimer = Timer.periodic(
-      const Duration(seconds: 2),
-      (_) => widget.onRefresh?.call(),
-    );
+    // Auto-refresh every 2 seconds to detect when playback starts. No callback
+    // means nothing to refresh — don't spin a timer for it.
+    if (widget.onRefresh != null) {
+      _refreshTimer = Timer.periodic(
+        const Duration(seconds: 2),
+        (_) => widget.onRefresh?.call(),
+      );
+    }
   }
 
   @override
@@ -221,7 +224,10 @@ class _NoPlaybackStateState extends State<NoPlaybackState> {
             icon: const Icon(Icons.open_in_new_rounded),
             label: const Text('Open Spotify'),
             style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: space32, vertical: space16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: space32,
+                vertical: space16,
+              ),
             ),
           ),
 

@@ -22,9 +22,11 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
   Duration _elapsed = Duration.zero;
 
   @override
-  void initState() {
-    super.initState();
-    _startTimer();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Only tick while a workout is actually running; an idle bar renders
+    // nothing, so a periodic wakeup for it is pure waste.
+    _syncTimer();
   }
 
   @override
@@ -33,15 +35,21 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
     super.dispose();
   }
 
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+  void _syncTimer() {
+    final active = context.read<WorkoutState>().activeWorkout != null;
+    if (active == (_timer != null)) return;
+    if (!active) {
+      _timer?.cancel();
+      _timer = null;
+      return;
+    }
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return; // Exit early if widget disposed
 
-      final workoutState = context.read<WorkoutState>();
-      if (workoutState.activeWorkout != null) {
+      final workout = context.read<WorkoutState>().activeWorkout;
+      if (workout != null) {
         setState(() {
-          _elapsed =
-              DateTime.now().difference(workoutState.activeWorkout!.startTime);
+          _elapsed = DateTime.now().difference(workout.startTime);
         });
       }
     });
@@ -61,19 +69,12 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
   }
 
   Future<void> _navigateToWorkout(
-    GlobalKey<NavigatorState>? navKey,
+    WorkoutState workoutState,
     Plan plan,
   ) async {
-    // Wait for navigator to be ready (up to 2 seconds)
-    int attempts = 0;
-    while (navKey?.currentState == null && attempts < 20) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      attempts++;
-    }
-
-    if (navKey?.currentState == null) return;
-
-    final navigator = navKey!.currentState!;
+    // Switches to Plans and waits for its navigator (up to 2 seconds).
+    final navigator = await workoutState.openPlansNavigator();
+    if (navigator == null) return;
 
     // Check if we're already on the StartPlanPage for this plan by popping until we find it
     bool foundTargetPage = false;
@@ -117,19 +118,7 @@ class _ActiveWorkoutBarState extends State<ActiveWorkoutBar> {
       behavior: HitTestBehavior.opaque,
       onTap: () {
         if (plan != null) {
-          final navKey = workoutState.plansNavigatorKey;
-          final tabController = workoutState.tabController;
-          final plansIndex = workoutState.plansTabIndex;
-
-          // First, switch to Plans tab if not already there
-          if (tabController != null && plansIndex >= 0) {
-            if (tabController.index != plansIndex) {
-              tabController.animateTo(plansIndex);
-            }
-          }
-
-          // Navigate to workout (will wait for navigator to be ready)
-          _navigateToWorkout(navKey, plan);
+          _navigateToWorkout(workoutState, plan);
         }
       },
       child: Container(
