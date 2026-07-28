@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../settings/settings_state.dart';
 import '../theme/tokens.dart';
 import 'fivethreeone_state.dart';
+import 'schemes.dart';
 
 /// Dialog for creating a new 5/3/1 training block
 class BlockCreationDialog extends StatefulWidget {
@@ -20,6 +21,11 @@ class _BlockCreationDialogState extends State<BlockCreationDialog> {
   late TextEditingController _deadliftController;
   late TextEditingController _pressController;
   String _unit = 'kg';
+  String _leaderSupplemental = supplementalBbb;
+
+  /// Anchors run PR Sets + FSL; kept as a field so the write path reads the
+  /// same way as the Leader choice once more anchor templates land.
+  final String _anchorSupplemental = anchorSupplementalOptions.single;
 
   @override
   void initState() {
@@ -48,6 +54,7 @@ class _BlockCreationDialogState extends State<BlockCreationDialog> {
       final last = completedBlocks.first;
       _unit = last.unit;
       setState(() {
+        _leaderSupplemental = last.leaderSupplemental;
         _squatController.text = _formatTm(last.squatTm);
         _benchController.text = _formatTm(last.benchTm);
         _deadliftController.text = _formatTm(last.deadliftTm);
@@ -98,6 +105,8 @@ class _BlockCreationDialogState extends State<BlockCreationDialog> {
           deadliftTm: deadlift,
           pressTm: press,
           unit: _unit,
+          leaderSupplemental: _leaderSupplemental,
+          anchorSupplemental: _anchorSupplemental,
         );
 
     if (mounted) Navigator.pop(context);
@@ -120,6 +129,81 @@ class _BlockCreationDialogState extends State<BlockCreationDialog> {
         isDense: true,
       ),
       onChanged: (_) => setState(() {}),
+    );
+  }
+
+  /// Leader/Anchor supplemental selection. Leaders offer BBB or FSL; the
+  /// Anchor always runs PR Sets + FSL, so it is shown as a fixed summary.
+  Widget _buildSupplementalPicker(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Supplemental Work',
+          style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          "Leaders · 5's PRO main work",
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SegmentedButton<String>(
+          segments: [
+            for (final option in leaderSupplementalOptions)
+              ButtonSegment(
+                value: option,
+                label: Text(supplementalName(option)),
+              ),
+          ],
+          selected: {_leaderSupplemental},
+          showSelectedIcon: false,
+          onSelectionChanged: (selection) {
+            setState(() => _leaderSupplemental = selection.first);
+          },
+        ),
+        const SizedBox(height: 6),
+        Text(
+          supplementalDetail(_leaderSupplemental),
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Anchor · PR Sets main work',
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(space12),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: brSm,
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.lock_outline,
+                  size: 18, color: colorScheme.onSurfaceVariant),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${supplementalName(_anchorSupplemental)} '
+                  '· ${supplementalDetail(_anchorSupplemental)}',
+                  style: textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -240,6 +324,8 @@ class _BlockCreationDialogState extends State<BlockCreationDialog> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 20),
+                    _buildSupplementalPicker(context),
                   ],
                 ),
               ),

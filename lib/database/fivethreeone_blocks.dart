@@ -21,4 +21,15 @@ class FiveThreeOneBlocks extends Table {
   IntColumn get currentWeek => integer().withDefault(const Constant(1))();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   DateTimeColumn get completed => dateTime().nullable()();
+
+  /// Supplemental template run during both Leader cycles.
+  /// Values are the `supplemental*` constants in `fivethreeone/schemes.dart`;
+  /// spelled literally here because drift inlines defaults into generated code
+  /// that does not import that file.
+  TextColumn get leaderSupplemental =>
+      text().withDefault(const Constant('bbb'))();
+
+  /// Supplemental template run during the Anchor cycle ('fsl' for now)
+  TextColumn get anchorSupplemental =>
+      text().withDefault(const Constant('fsl'))();
 }

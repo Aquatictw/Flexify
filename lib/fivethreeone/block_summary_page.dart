@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../database/database.dart';
 import '../theme/tokens.dart';
+import 'schemes.dart';
 
 /// Summary page shown after block completion or when viewing completed blocks
 class BlockSummaryPage extends StatelessWidget {
@@ -84,6 +85,68 @@ class BlockSummaryPage extends StatelessWidget {
                                   ),
                             ),
                           ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Supplemental templates this block ran
+                  Card(
+                    color: colorScheme.surfaceContainerHighest,
+                    child: Padding(
+                      padding: const EdgeInsets.all(space16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.layers_outlined,
+                                  size: 20, color: colorScheme.primary),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Supplemental',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          for (final row in [
+                            ('Leaders', block.leaderSupplemental),
+                            ('Anchor', block.anchorSupplemental),
+                          ])
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 2),
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 72,
+                                    child: Text(
+                                      row.$1,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color:
+                                                colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      '${supplementalName(row.$2)} '
+                                      '· ${supplementalDetail(row.$2)}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
                     ),

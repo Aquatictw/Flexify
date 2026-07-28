@@ -26,6 +26,27 @@ const List<bool> cycleBumpsTm = [true, true, false, true, false];
 /// Total weeks in a complete block
 const int totalBlockWeeks = 11; // 3+3+1+3+1
 
+/// Supplemental template identifiers, stored on `five_three_one_blocks`
+const String supplementalBbb = 'bbb';
+const String supplementalFsl = 'fsl';
+
+/// Supplemental templates selectable for the Leader cycles
+const List<String> leaderSupplementalOptions = [
+  supplementalBbb,
+  supplementalFsl,
+];
+
+/// Supplemental templates selectable for the Anchor cycle.
+/// Anchors run PR Sets main work; FSL is the only supplemental for now.
+const List<String> anchorSupplementalOptions = [supplementalFsl];
+
+/// The supplemental templates a block runs for its Leader and Anchor cycles
+typedef BlockSupplementals = ({String leader, String anchor});
+
+/// Templates used when a block predates per-block selection
+const BlockSupplementals defaultSupplementals =
+    (leader: supplementalBbb, anchor: supplementalFsl);
+
 /// 5's PRO scheme (Leader cycles) - all sets x5, no AMRAP
 const Map<int, List<SetScheme>> fivesProScheme = {
   1: [
@@ -119,20 +140,31 @@ List<SetScheme> getFslScheme({required int week}) {
   );
 }
 
+/// Which supplemental template applies to [cycleType], or null when the cycle
+/// runs no supplemental work (the 7th week protocols).
+String? supplementalForCycle(int cycleType, BlockSupplementals supplementals) {
+  switch (cycleType) {
+    case cycleLeader1:
+    case cycleLeader2:
+      return supplementals.leader;
+    case cycleAnchor:
+      return supplementals.anchor;
+    default:
+      return null;
+  }
+}
+
 /// Returns supplemental scheme for given cycle type and week
 List<SetScheme> getSupplementalScheme({
   required int cycleType,
   required int week,
+  required BlockSupplementals supplementals,
 }) {
-  switch (cycleType) {
-    case cycleLeader1:
-    case cycleLeader2:
+  switch (supplementalForCycle(cycleType, supplementals)) {
+    case supplementalBbb:
       return bbbScheme;
-    case cycleAnchor:
+    case supplementalFsl:
       return getFslScheme(week: week);
-    case cycleDeload:
-    case cycleTmTest:
-      return [];
     default:
       return [];
   }
@@ -155,34 +187,52 @@ String getMainSchemeName(int cycleType) {
   }
 }
 
-/// Returns the supplemental type name for display
-String getSupplementalName(int cycleType) {
-  switch (cycleType) {
-    case cycleLeader1:
-    case cycleLeader2:
+/// Compact tag for a supplemental template, e.g. 'BBB'
+String supplementalShortName(String? supplemental) {
+  switch (supplemental) {
+    case supplementalBbb:
+      return 'BBB';
+    case supplementalFsl:
+      return 'FSL';
+    default:
+      return '';
+  }
+}
+
+/// Display name for a supplemental template, e.g. 'BBB 5x10'
+String supplementalName(String? supplemental) {
+  switch (supplemental) {
+    case supplementalBbb:
       return 'BBB 5x10';
-    case cycleAnchor:
+    case supplementalFsl:
       return 'FSL 5x5';
     default:
       return '';
   }
 }
 
-/// Returns descriptive label combining main scheme + supplemental
-String getDescriptiveLabel(int cycleType) {
-  switch (cycleType) {
-    case cycleLeader1:
-    case cycleLeader2:
-      return "5's Pro BBB";
-    case cycleAnchor:
-      return 'PR Sets FSL';
-    case cycleDeload:
-      return 'Deload';
-    case cycleTmTest:
-      return 'TM Test';
+/// Loading rule for a supplemental template, e.g. '5x10 @ 60% TM'
+String supplementalDetail(String? supplemental) {
+  switch (supplemental) {
+    case supplementalBbb:
+      return '5x10 @ 60% TM';
+    case supplementalFsl:
+      return '5x5 @ FSL';
     default:
       return '';
   }
+}
+
+/// Returns the supplemental type name for display
+String getSupplementalName(int cycleType, BlockSupplementals supplementals) {
+  return supplementalName(supplementalForCycle(cycleType, supplementals));
+}
+
+/// Returns descriptive label combining main scheme + supplemental
+String getDescriptiveLabel(int cycleType, BlockSupplementals supplementals) {
+  final supplemental = supplementalForCycle(cycleType, supplementals);
+  if (supplemental == null) return getMainSchemeName(cycleType);
+  return '${getMainSchemeName(cycleType)} ${supplementalShortName(supplemental)}';
 }
 
 /// Returns a short badge string for cycle type

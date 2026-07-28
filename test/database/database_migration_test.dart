@@ -87,7 +87,7 @@ void main() {
       );
     });
 
-    test('fresh install creates v67 schema correctly', () async {
+    test('fresh install creates the current schema correctly', () async {
       final db = AppDatabase(NativeDatabase.memory());
 
       // Insert default data
@@ -100,8 +100,8 @@ void main() {
 
       expect(
         version,
-        equals(67),
-        reason: 'Fresh install should create v67 schema',
+        equals(68),
+        reason: 'Fresh install should create v68 schema',
       );
 
       // Verify all tables exist
@@ -347,6 +347,36 @@ void main() {
       final sets = await db.select(db.gymSets).get();
       expect(sets.length, equals(1));
       expect(sets[0].name, equals('Bench Press'));
+
+      await db.close();
+    });
+
+    test('v67 to v68 adds supplemental templates to existing blocks', () async {
+      final schema = await verifier.schemaAt(67);
+
+      // Seed through the raw v67 database: AppDatabase migrates on its first
+      // query, so a block inserted through it would arrive after the migration.
+      schema.rawDatabase.execute(
+        'INSERT INTO five_three_one_blocks '
+        '(id, created, squat_tm, bench_tm, deadlift_tm, press_tm, unit, '
+        'current_cycle, current_week, is_active) '
+        "VALUES (1, 1000, 100, 80, 120, 50, 'kg', 0, 1, 1)",
+      );
+
+      final db = AppDatabase(schema.newConnection());
+
+      final blocks = await db.select(db.fiveThreeOneBlocks).get();
+      expect(blocks.length, equals(1));
+      expect(
+        blocks.single.leaderSupplemental,
+        equals('bbb'),
+        reason: 'Pre-v68 blocks ran BBB during Leaders',
+      );
+      expect(
+        blocks.single.anchorSupplemental,
+        equals('fsl'),
+        reason: 'Pre-v68 blocks ran FSL during the Anchor',
+      );
 
       await db.close();
     });

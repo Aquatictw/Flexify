@@ -5319,6 +5319,22 @@ class $FiveThreeOneBlocksTable extends FiveThreeOneBlocks
   late final GeneratedColumn<DateTime> completed = GeneratedColumn<DateTime>(
       'completed', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _leaderSupplementalMeta =
+      const VerificationMeta('leaderSupplemental');
+  @override
+  late final GeneratedColumn<String> leaderSupplemental =
+      GeneratedColumn<String>('leader_supplemental', aliasedName, false,
+          type: DriftSqlType.string,
+          requiredDuringInsert: false,
+          defaultValue: const Constant('bbb'));
+  static const VerificationMeta _anchorSupplementalMeta =
+      const VerificationMeta('anchorSupplemental');
+  @override
+  late final GeneratedColumn<String> anchorSupplemental =
+      GeneratedColumn<String>('anchor_supplemental', aliasedName, false,
+          type: DriftSqlType.string,
+          requiredDuringInsert: false,
+          defaultValue: const Constant('fsl'));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -5335,7 +5351,9 @@ class $FiveThreeOneBlocksTable extends FiveThreeOneBlocks
         currentCycle,
         currentWeek,
         isActive,
-        completed
+        completed,
+        leaderSupplemental,
+        anchorSupplemental
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5432,6 +5450,18 @@ class $FiveThreeOneBlocksTable extends FiveThreeOneBlocks
       context.handle(_completedMeta,
           completed.isAcceptableOrUnknown(data['completed']!, _completedMeta));
     }
+    if (data.containsKey('leader_supplemental')) {
+      context.handle(
+          _leaderSupplementalMeta,
+          leaderSupplemental.isAcceptableOrUnknown(
+              data['leader_supplemental']!, _leaderSupplementalMeta));
+    }
+    if (data.containsKey('anchor_supplemental')) {
+      context.handle(
+          _anchorSupplementalMeta,
+          anchorSupplemental.isAcceptableOrUnknown(
+              data['anchor_supplemental']!, _anchorSupplementalMeta));
+    }
     return context;
   }
 
@@ -5471,6 +5501,10 @@ class $FiveThreeOneBlocksTable extends FiveThreeOneBlocks
           .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
       completed: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}completed']),
+      leaderSupplemental: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}leader_supplemental'])!,
+      anchorSupplemental: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}anchor_supplemental'])!,
     );
   }
 
@@ -5501,6 +5535,15 @@ class FiveThreeOneBlock extends DataClass
   final int currentWeek;
   final bool isActive;
   final DateTime? completed;
+
+  /// Supplemental template run during both Leader cycles.
+  /// Values are the `supplemental*` constants in `fivethreeone/schemes.dart`;
+  /// spelled literally here because drift inlines defaults into generated code
+  /// that does not import that file.
+  final String leaderSupplemental;
+
+  /// Supplemental template run during the Anchor cycle ('fsl' for now)
+  final String anchorSupplemental;
   const FiveThreeOneBlock(
       {required this.id,
       required this.created,
@@ -5516,7 +5559,9 @@ class FiveThreeOneBlock extends DataClass
       required this.currentCycle,
       required this.currentWeek,
       required this.isActive,
-      this.completed});
+      this.completed,
+      required this.leaderSupplemental,
+      required this.anchorSupplemental});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -5545,6 +5590,8 @@ class FiveThreeOneBlock extends DataClass
     if (!nullToAbsent || completed != null) {
       map['completed'] = Variable<DateTime>(completed);
     }
+    map['leader_supplemental'] = Variable<String>(leaderSupplemental);
+    map['anchor_supplemental'] = Variable<String>(anchorSupplemental);
     return map;
   }
 
@@ -5575,6 +5622,8 @@ class FiveThreeOneBlock extends DataClass
       completed: completed == null && nullToAbsent
           ? const Value.absent()
           : Value(completed),
+      leaderSupplemental: Value(leaderSupplemental),
+      anchorSupplemental: Value(anchorSupplemental),
     );
   }
 
@@ -5597,6 +5646,10 @@ class FiveThreeOneBlock extends DataClass
       currentWeek: serializer.fromJson<int>(json['currentWeek']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       completed: serializer.fromJson<DateTime?>(json['completed']),
+      leaderSupplemental:
+          serializer.fromJson<String>(json['leaderSupplemental']),
+      anchorSupplemental:
+          serializer.fromJson<String>(json['anchorSupplemental']),
     );
   }
   @override
@@ -5618,6 +5671,8 @@ class FiveThreeOneBlock extends DataClass
       'currentWeek': serializer.toJson<int>(currentWeek),
       'isActive': serializer.toJson<bool>(isActive),
       'completed': serializer.toJson<DateTime?>(completed),
+      'leaderSupplemental': serializer.toJson<String>(leaderSupplemental),
+      'anchorSupplemental': serializer.toJson<String>(anchorSupplemental),
     };
   }
 
@@ -5636,7 +5691,9 @@ class FiveThreeOneBlock extends DataClass
           int? currentCycle,
           int? currentWeek,
           bool? isActive,
-          Value<DateTime?> completed = const Value.absent()}) =>
+          Value<DateTime?> completed = const Value.absent(),
+          String? leaderSupplemental,
+          String? anchorSupplemental}) =>
       FiveThreeOneBlock(
         id: id ?? this.id,
         created: created ?? this.created,
@@ -5658,6 +5715,8 @@ class FiveThreeOneBlock extends DataClass
         currentWeek: currentWeek ?? this.currentWeek,
         isActive: isActive ?? this.isActive,
         completed: completed.present ? completed.value : this.completed,
+        leaderSupplemental: leaderSupplemental ?? this.leaderSupplemental,
+        anchorSupplemental: anchorSupplemental ?? this.anchorSupplemental,
       );
   FiveThreeOneBlock copyWithCompanion(FiveThreeOneBlocksCompanion data) {
     return FiveThreeOneBlock(
@@ -5688,6 +5747,12 @@ class FiveThreeOneBlock extends DataClass
           data.currentWeek.present ? data.currentWeek.value : this.currentWeek,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       completed: data.completed.present ? data.completed.value : this.completed,
+      leaderSupplemental: data.leaderSupplemental.present
+          ? data.leaderSupplemental.value
+          : this.leaderSupplemental,
+      anchorSupplemental: data.anchorSupplemental.present
+          ? data.anchorSupplemental.value
+          : this.anchorSupplemental,
     );
   }
 
@@ -5708,7 +5773,9 @@ class FiveThreeOneBlock extends DataClass
           ..write('currentCycle: $currentCycle, ')
           ..write('currentWeek: $currentWeek, ')
           ..write('isActive: $isActive, ')
-          ..write('completed: $completed')
+          ..write('completed: $completed, ')
+          ..write('leaderSupplemental: $leaderSupplemental, ')
+          ..write('anchorSupplemental: $anchorSupplemental')
           ..write(')'))
         .toString();
   }
@@ -5729,7 +5796,9 @@ class FiveThreeOneBlock extends DataClass
       currentCycle,
       currentWeek,
       isActive,
-      completed);
+      completed,
+      leaderSupplemental,
+      anchorSupplemental);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5748,7 +5817,9 @@ class FiveThreeOneBlock extends DataClass
           other.currentCycle == this.currentCycle &&
           other.currentWeek == this.currentWeek &&
           other.isActive == this.isActive &&
-          other.completed == this.completed);
+          other.completed == this.completed &&
+          other.leaderSupplemental == this.leaderSupplemental &&
+          other.anchorSupplemental == this.anchorSupplemental);
 }
 
 class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
@@ -5767,6 +5838,8 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
   final Value<int> currentWeek;
   final Value<bool> isActive;
   final Value<DateTime?> completed;
+  final Value<String> leaderSupplemental;
+  final Value<String> anchorSupplemental;
   const FiveThreeOneBlocksCompanion({
     this.id = const Value.absent(),
     this.created = const Value.absent(),
@@ -5783,6 +5856,8 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
     this.currentWeek = const Value.absent(),
     this.isActive = const Value.absent(),
     this.completed = const Value.absent(),
+    this.leaderSupplemental = const Value.absent(),
+    this.anchorSupplemental = const Value.absent(),
   });
   FiveThreeOneBlocksCompanion.insert({
     this.id = const Value.absent(),
@@ -5800,6 +5875,8 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
     this.currentWeek = const Value.absent(),
     this.isActive = const Value.absent(),
     this.completed = const Value.absent(),
+    this.leaderSupplemental = const Value.absent(),
+    this.anchorSupplemental = const Value.absent(),
   })  : created = Value(created),
         squatTm = Value(squatTm),
         benchTm = Value(benchTm),
@@ -5822,6 +5899,8 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
     Expression<int>? currentWeek,
     Expression<bool>? isActive,
     Expression<DateTime>? completed,
+    Expression<String>? leaderSupplemental,
+    Expression<String>? anchorSupplemental,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5839,6 +5918,8 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
       if (currentWeek != null) 'current_week': currentWeek,
       if (isActive != null) 'is_active': isActive,
       if (completed != null) 'completed': completed,
+      if (leaderSupplemental != null) 'leader_supplemental': leaderSupplemental,
+      if (anchorSupplemental != null) 'anchor_supplemental': anchorSupplemental,
     });
   }
 
@@ -5857,7 +5938,9 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
       Value<int>? currentCycle,
       Value<int>? currentWeek,
       Value<bool>? isActive,
-      Value<DateTime?>? completed}) {
+      Value<DateTime?>? completed,
+      Value<String>? leaderSupplemental,
+      Value<String>? anchorSupplemental}) {
     return FiveThreeOneBlocksCompanion(
       id: id ?? this.id,
       created: created ?? this.created,
@@ -5874,6 +5957,8 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
       currentWeek: currentWeek ?? this.currentWeek,
       isActive: isActive ?? this.isActive,
       completed: completed ?? this.completed,
+      leaderSupplemental: leaderSupplemental ?? this.leaderSupplemental,
+      anchorSupplemental: anchorSupplemental ?? this.anchorSupplemental,
     );
   }
 
@@ -5925,6 +6010,12 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
     if (completed.present) {
       map['completed'] = Variable<DateTime>(completed.value);
     }
+    if (leaderSupplemental.present) {
+      map['leader_supplemental'] = Variable<String>(leaderSupplemental.value);
+    }
+    if (anchorSupplemental.present) {
+      map['anchor_supplemental'] = Variable<String>(anchorSupplemental.value);
+    }
     return map;
   }
 
@@ -5945,7 +6036,9 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
           ..write('currentCycle: $currentCycle, ')
           ..write('currentWeek: $currentWeek, ')
           ..write('isActive: $isActive, ')
-          ..write('completed: $completed')
+          ..write('completed: $completed, ')
+          ..write('leaderSupplemental: $leaderSupplemental, ')
+          ..write('anchorSupplemental: $anchorSupplemental')
           ..write(')'))
         .toString();
   }
@@ -8679,6 +8772,8 @@ typedef $$FiveThreeOneBlocksTableCreateCompanionBuilder
   Value<int> currentWeek,
   Value<bool> isActive,
   Value<DateTime?> completed,
+  Value<String> leaderSupplemental,
+  Value<String> anchorSupplemental,
 });
 typedef $$FiveThreeOneBlocksTableUpdateCompanionBuilder
     = FiveThreeOneBlocksCompanion Function({
@@ -8697,6 +8792,8 @@ typedef $$FiveThreeOneBlocksTableUpdateCompanionBuilder
   Value<int> currentWeek,
   Value<bool> isActive,
   Value<DateTime?> completed,
+  Value<String> leaderSupplemental,
+  Value<String> anchorSupplemental,
 });
 
 class $$FiveThreeOneBlocksTableFilterComposer
@@ -8753,6 +8850,14 @@ class $$FiveThreeOneBlocksTableFilterComposer
 
   ColumnFilters<DateTime> get completed => $composableBuilder(
       column: $table.completed, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get leaderSupplemental => $composableBuilder(
+      column: $table.leaderSupplemental,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get anchorSupplemental => $composableBuilder(
+      column: $table.anchorSupplemental,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$FiveThreeOneBlocksTableOrderingComposer
@@ -8813,6 +8918,14 @@ class $$FiveThreeOneBlocksTableOrderingComposer
 
   ColumnOrderings<DateTime> get completed => $composableBuilder(
       column: $table.completed, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get leaderSupplemental => $composableBuilder(
+      column: $table.leaderSupplemental,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get anchorSupplemental => $composableBuilder(
+      column: $table.anchorSupplemental,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$FiveThreeOneBlocksTableAnnotationComposer
@@ -8868,6 +8981,12 @@ class $$FiveThreeOneBlocksTableAnnotationComposer
 
   GeneratedColumn<DateTime> get completed =>
       $composableBuilder(column: $table.completed, builder: (column) => column);
+
+  GeneratedColumn<String> get leaderSupplemental => $composableBuilder(
+      column: $table.leaderSupplemental, builder: (column) => column);
+
+  GeneratedColumn<String> get anchorSupplemental => $composableBuilder(
+      column: $table.anchorSupplemental, builder: (column) => column);
 }
 
 class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
@@ -8913,6 +9032,8 @@ class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
             Value<int> currentWeek = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<DateTime?> completed = const Value.absent(),
+            Value<String> leaderSupplemental = const Value.absent(),
+            Value<String> anchorSupplemental = const Value.absent(),
           }) =>
               FiveThreeOneBlocksCompanion(
             id: id,
@@ -8930,6 +9051,8 @@ class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
             currentWeek: currentWeek,
             isActive: isActive,
             completed: completed,
+            leaderSupplemental: leaderSupplemental,
+            anchorSupplemental: anchorSupplemental,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -8947,6 +9070,8 @@ class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
             Value<int> currentWeek = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<DateTime?> completed = const Value.absent(),
+            Value<String> leaderSupplemental = const Value.absent(),
+            Value<String> anchorSupplemental = const Value.absent(),
           }) =>
               FiveThreeOneBlocksCompanion.insert(
             id: id,
@@ -8964,6 +9089,8 @@ class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
             currentWeek: currentWeek,
             isActive: isActive,
             completed: completed,
+            leaderSupplemental: leaderSupplemental,
+            anchorSupplemental: anchorSupplemental,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

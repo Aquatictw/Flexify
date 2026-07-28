@@ -166,9 +166,13 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
     final blockCycleType = block.currentCycle;
     final blockWeek = block.currentWeek;
 
+    final supplementals = block.supplementals;
     final scheme = getMainScheme(cycleType: blockCycleType, week: blockWeek);
     final supplemental = getSupplementalScheme(
-        cycleType: blockCycleType, week: blockWeek);
+      cycleType: blockCycleType,
+      week: blockWeek,
+      supplementals: supplementals,
+    );
 
     return Dialog(
       child: Container(
@@ -274,7 +278,7 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
 
                     // Block position header
                     Text(
-                      '${getDescriptiveLabel(blockCycleType)} — Week $blockWeek',
+                      '${getDescriptiveLabel(blockCycleType, supplementals)} — Week $blockWeek',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -389,12 +393,28 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                         Builder(builder: (context) {
                           final weight = _calculateWeight(
                               supplemental.first.percentage);
-                          final name =
-                              getSupplementalName(blockCycleType);
-                          return Text(
-                            '$name @ ${weight.toStringAsFixed(1)} $_unit',
-                            style:
-                                Theme.of(context).textTheme.titleMedium,
+                          final template = supplementalForCycle(
+                              blockCycleType, supplementals);
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${supplementalName(template)} @ '
+                                '${weight.toStringAsFixed(1)} $_unit',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium,
+                              ),
+                              Text(
+                                supplementalDetail(template),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
                           );
                         }),
                       ],

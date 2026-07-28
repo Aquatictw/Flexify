@@ -5,6 +5,13 @@ import '../database/database.dart';
 import '../main.dart';
 import 'schemes.dart';
 
+/// Reads a block's chosen Leader/Anchor supplemental templates as the record
+/// the scheme helpers take.
+extension BlockSupplementalsX on FiveThreeOneBlock {
+  BlockSupplementals get supplementals =>
+      (leader: leaderSupplemental, anchor: anchorSupplemental);
+}
+
 class FiveThreeOneState extends ChangeNotifier {
   FiveThreeOneState() {
     _loadActiveBlock().catchError((error) {
@@ -33,7 +40,9 @@ class FiveThreeOneState extends ChangeNotifier {
         current_cycle INTEGER NOT NULL DEFAULT 0,
         current_week INTEGER NOT NULL DEFAULT 1,
         is_active INTEGER NOT NULL DEFAULT 1,
-        completed INTEGER
+        completed INTEGER,
+        leader_supplemental TEXT NOT NULL DEFAULT 'bbb',
+        anchor_supplemental TEXT NOT NULL DEFAULT 'fsl'
       )
     ''');
   }
@@ -70,11 +79,16 @@ class FiveThreeOneState extends ChangeNotifier {
         block.currentWeek >= cycleWeeks[cycleTmTest];
   }
 
+  /// Supplemental templates of the active block, or the legacy defaults
+  BlockSupplementals get supplementals =>
+      _activeBlock?.supplementals ?? defaultSupplementals;
+
   /// Human-readable position label for display
   String get positionLabel {
     if (_activeBlock == null) return '';
     final block = _activeBlock!;
-    return '${getDescriptiveLabel(block.currentCycle)} - Week ${block.currentWeek}';
+    return '${getDescriptiveLabel(block.currentCycle, block.supplementals)}'
+        ' - Week ${block.currentWeek}';
   }
 
   /// Short badge string for cycle type (L1, L2, D, A, T)
@@ -104,6 +118,8 @@ class FiveThreeOneState extends ChangeNotifier {
     required double deadliftTm,
     required double pressTm,
     required String unit,
+    required String leaderSupplemental,
+    required String anchorSupplemental,
   }) async {
     await _ensureTable();
     // Deactivate any existing active block
@@ -129,6 +145,8 @@ class FiveThreeOneState extends ChangeNotifier {
             startDeadliftTm: Value(deadliftTm),
             startPressTm: Value(pressTm),
             unit: unit,
+            leaderSupplemental: Value(leaderSupplemental),
+            anchorSupplemental: Value(anchorSupplemental),
           ),
         );
 

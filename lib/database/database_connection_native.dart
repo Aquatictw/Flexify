@@ -25,7 +25,9 @@ void _ensureTables(Database database) {
       current_cycle INTEGER NOT NULL DEFAULT 0,
       current_week INTEGER NOT NULL DEFAULT 1,
       is_active INTEGER NOT NULL DEFAULT 1,
-      completed INTEGER
+      completed INTEGER,
+      leader_supplemental TEXT NOT NULL DEFAULT 'bbb',
+      anchor_supplemental TEXT NOT NULL DEFAULT 'fsl'
     )
   ''');
 }

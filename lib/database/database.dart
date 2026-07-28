@@ -564,6 +564,22 @@ class AppDatabase extends _$AppDatabase {
               .catchError((e) {});
         }
 
+        // from67To68: Per-block supplemental template selection
+        if (from < 68 && to >= 68) {
+          await m.database
+              .customStatement(
+                'ALTER TABLE five_three_one_blocks ADD COLUMN '
+                "leader_supplemental TEXT NOT NULL DEFAULT 'bbb'",
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE five_three_one_blocks ADD COLUMN '
+                "anchor_supplemental TEXT NOT NULL DEFAULT 'fsl'",
+              )
+              .catchError((e) {});
+        }
+
         // Columns above were added with plain `ADD COLUMN <type>`, so rows
         // that predate them hold NULL while the Dart table declares them
         // NOT NULL — reading such a row throws on the null check. Backfill
@@ -580,6 +596,10 @@ class AppDatabase extends _$AppDatabase {
             'show_global_progress': '1',
             'scrollable_tabs': '1',
             'custom_color_seed': '4284955319',
+          },
+          'five_three_one_blocks': {
+            'leader_supplemental': "'bbb'",
+            'anchor_supplemental': "'fsl'",
           },
         };
         for (final table in nonNullBackfills.entries) {
@@ -620,5 +640,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 67;
+  int get schemaVersion => 68;
 }

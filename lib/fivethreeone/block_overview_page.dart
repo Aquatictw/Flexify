@@ -64,6 +64,8 @@ class BlockOverviewPage extends StatelessWidget {
       child: Column(
         children: [
           _TmCard(block: block),
+          const SizedBox(height: 10),
+          _SupplementalPills(block: block),
           const SizedBox(height: 20),
           for (int i = 0; i < cycleNames.length; i++)
             _CycleEntry(
@@ -94,6 +96,16 @@ class _CycleEntry extends StatelessWidget {
   final int currentCycle;
   final int currentWeek;
   final FiveThreeOneBlock block;
+
+  /// Main scheme plus the supplemental this block runs for the cycle, e.g.
+  /// "5's PRO · BBB 5x10". 7th week protocols have no supplemental.
+  String _schemeSubtitle() {
+    final supplemental =
+        supplementalForCycle(cycleIndex, block.supplementals);
+    final main = getMainSchemeName(cycleIndex);
+    if (supplemental == null) return main;
+    return '$main · ${supplementalName(supplemental)}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +211,7 @@ class _CycleEntry extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      getMainSchemeName(cycleIndex),
+                      _schemeSubtitle(),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
@@ -306,6 +318,35 @@ class _CycleBadge extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
       ),
+    );
+  }
+}
+
+/// Compact pills under the Training Max card naming the supplemental this
+/// block runs for each cycle, with the one in use this week called out.
+class _SupplementalPills extends StatelessWidget {
+  const _SupplementalPills({required this.block});
+
+  final FiveThreeOneBlock block;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _TemplateChip(
+          label: 'Leaders',
+          supplemental: block.leaderSupplemental,
+          // Both Leader cycles share one template, so highlight on either.
+          isCurrent: block.currentCycle == cycleLeader1 ||
+              block.currentCycle == cycleLeader2,
+        ),
+        const SizedBox(width: 6),
+        _TemplateChip(
+          label: 'Anchor',
+          supplemental: block.anchorSupplemental,
+          isCurrent: block.currentCycle == cycleAnchor,
+        ),
+      ],
     );
   }
 }
@@ -735,6 +776,21 @@ class _CompletedBlockHistory extends StatelessWidget {
                                     ),
                               ),
                               const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
+                                children: [
+                                  _TemplateChip(
+                                    label: 'Leaders',
+                                    supplemental: block.leaderSupplemental,
+                                  ),
+                                  _TemplateChip(
+                                    label: 'Anchor',
+                                    supplemental: block.anchorSupplemental,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
                               Text(
                                 'Training Max',
                                 style: Theme.of(context)
@@ -797,6 +853,47 @@ class _CompletedBlockHistory extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Compact "Leaders · BBB 5x10" pill, used on the active block page and in the
+/// completed block history. [isCurrent] marks the cycle running this week.
+class _TemplateChip extends StatelessWidget {
+  const _TemplateChip({
+    required this.label,
+    required this.supplemental,
+    this.isCurrent = false,
+  });
+
+  final String label;
+  final String supplemental;
+  final bool isCurrent;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: isCurrent
+            ? colorScheme.primaryContainer
+            : colorScheme.surfaceContainerHighest,
+        borderRadius: brSm,
+        border: Border.all(
+          color: isCurrent ? colorScheme.primary : colorScheme.outlineVariant,
+        ),
+      ),
+      child: Text(
+        '$label · ${supplementalName(supplemental)}',
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: isCurrent
+                  ? colorScheme.onPrimaryContainer
+                  : colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+      ),
     );
   }
 }
