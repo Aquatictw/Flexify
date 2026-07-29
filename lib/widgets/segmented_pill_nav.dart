@@ -74,6 +74,8 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
         return Icons.insights_rounded;
       case 'NotesPage':
         return Icons.note_rounded;
+      case 'CoachPage':
+        return Icons.psychology_rounded;
       case 'SettingsPage':
         return Icons.settings_rounded;
       default:
@@ -93,6 +95,8 @@ class _SegmentedPillNavState extends State<SegmentedPillNav>
         return 'Graphs';
       case 'NotesPage':
         return 'Notes';
+      case 'CoachPage':
+        return 'Coach';
       case 'SettingsPage':
         return 'Settings';
       default:

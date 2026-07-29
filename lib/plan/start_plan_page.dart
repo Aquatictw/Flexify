@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../coach/coach_sheet.dart';
 import '../database/database.dart';
 import '../database/query_helpers.dart';
 import '../main.dart';
@@ -463,6 +464,21 @@ class _StartPlanPageState extends State<StartPlanPage> {
                   label: const Text('Done'),
                 )
               else ...[
+                IconButton(
+                  icon: const Icon(Icons.psychology_rounded),
+                  tooltip: 'Coach',
+                  onPressed: workoutId == null
+                      ? null
+                      : () => showCoachSheet(
+                            context,
+                            workoutId: workoutId!,
+                            onSessionChanged: () {
+                              if (mounted) {
+                                setState(() => _refreshCounter++);
+                              }
+                            },
+                          ),
+                ),
                 IconButton(
                   icon: const Icon(Icons.calculate_outlined),
                   tooltip: 'Plate calculator',

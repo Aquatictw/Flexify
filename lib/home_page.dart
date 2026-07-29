@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'coach/coach_page.dart';
 import 'database/database.dart';
 import 'graph/graphs_page.dart';
 import 'main.dart';
@@ -110,6 +111,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   return GraphsPage(tabController: controller);
                 else if (tab == 'NotesPage')
                   return const NotesPage();
+                else if (tab == 'CoachPage')
+                  return const CoachPage();
                 else if (tab == 'SettingsPage')
                   return const SettingsPage();
                 else

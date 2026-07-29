@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'backup/auto_backup_service.dart';
+import 'coach/coach_state.dart';
 import 'constants.dart';
 import 'database/database.dart';
 import 'database/failed_migrations_page.dart';
@@ -13,8 +14,8 @@ import 'home_page.dart';
 import 'plan/plan_state.dart';
 import 'screens/splash_screen.dart';
 import 'settings/settings_state.dart';
-import 'theme/app_theme.dart';
 import 'spotify/spotify_state.dart';
+import 'theme/app_theme.dart';
 import 'timer/timer_state.dart';
 import 'workouts/workout_state.dart';
 
@@ -26,7 +27,8 @@ Future<void> main() async {
   Setting setting;
 
   try {
-    final settingOrNull = await (db.settings.select()..limit(1)).getSingleOrNull();
+    final settingOrNull =
+        await (db.settings.select()..limit(1)).getSingleOrNull();
 
     if (settingOrNull == null) {
       // Settings table is empty - create default settings
@@ -58,6 +60,7 @@ Widget appProviders(SettingsState state) => MultiProvider(
         ChangeNotifierProvider(create: (context) => WorkoutState()),
         ChangeNotifierProvider(create: (context) => SpotifyState()),
         ChangeNotifierProvider(create: (context) => FiveThreeOneState()),
+        ChangeNotifierProvider(create: (context) => CoachState()),
       ],
       child: const App(),
     );

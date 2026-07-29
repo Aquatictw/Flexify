@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../constants.dart';
 import 'bodyweight_entries.dart';
+import 'chat_messages.dart';
 import 'database_connection_native.dart';
 import 'defaults.dart';
 import 'fivethreeone_blocks.dart';
@@ -29,6 +30,7 @@ LazyDatabase openConnection() {
     Workouts,
     Notes,
     BodyweightEntries,
+    ChatMessages,
     FiveThreeOneBlocks,
   ],
 )
@@ -50,6 +52,12 @@ class AppDatabase extends _$AppDatabase {
           Index(
             'gym_sets',
             'CREATE INDEX IF NOT EXISTS gym_sets_workout_id ON gym_sets(workout_id)',
+          ),
+        );
+        await m.createIndex(
+          Index(
+            'chat_messages',
+            'CREATE INDEX IF NOT EXISTS chat_messages_workout_created ON chat_messages(workout_id, created)',
           ),
         );
 
@@ -634,6 +642,30 @@ class AppDatabase extends _$AppDatabase {
               .catchError((e) {});
         }
 
+        // from70To71: Coach conversation threads, persisted so a thread
+        // survives Android killing the app mid-workout. Purely additive —
+        // no existing table is touched, so exported CSVs still re-import.
+        if (from < 71 && to >= 71) {
+          await m.database
+              .customStatement(
+                'CREATE TABLE IF NOT EXISTS chat_messages ('
+                'id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, '
+                'workout_id INTEGER, '
+                'role TEXT NOT NULL, '
+                'content TEXT, '
+                'tool_calls TEXT, '
+                'tool_call_id TEXT, '
+                'created INTEGER NOT NULL)',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'CREATE INDEX IF NOT EXISTS chat_messages_workout_created '
+                'ON chat_messages(workout_id, created)',
+              )
+              .catchError((e) {});
+        }
+
         // Columns above were added with plain `ADD COLUMN <type>`, so rows
         // that predate them hold NULL while the Dart table declares them
         // NOT NULL — reading such a row throws on the null check. Backfill
@@ -696,5 +728,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 70;
+  int get schemaVersion => 71;
 }

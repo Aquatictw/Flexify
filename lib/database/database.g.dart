@@ -5259,6 +5259,394 @@ class BodyweightEntriesCompanion extends UpdateCompanion<BodyweightEntry> {
   }
 }
 
+class $ChatMessagesTable extends ChatMessages
+    with TableInfo<$ChatMessagesTable, ChatMessage> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChatMessagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _workoutIdMeta =
+      const VerificationMeta('workoutId');
+  @override
+  late final GeneratedColumn<int> workoutId = GeneratedColumn<int>(
+      'workout_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _roleMeta = const VerificationMeta('role');
+  @override
+  late final GeneratedColumn<String> role = GeneratedColumn<String>(
+      'role', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _contentMeta =
+      const VerificationMeta('content');
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+      'content', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _toolCallsMeta =
+      const VerificationMeta('toolCalls');
+  @override
+  late final GeneratedColumn<String> toolCalls = GeneratedColumn<String>(
+      'tool_calls', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _toolCallIdMeta =
+      const VerificationMeta('toolCallId');
+  @override
+  late final GeneratedColumn<String> toolCallId = GeneratedColumn<String>(
+      'tool_call_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdMeta =
+      const VerificationMeta('created');
+  @override
+  late final GeneratedColumn<DateTime> created = GeneratedColumn<DateTime>(
+      'created', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, workoutId, role, content, toolCalls, toolCallId, created];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'chat_messages';
+  @override
+  VerificationContext validateIntegrity(Insertable<ChatMessage> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('workout_id')) {
+      context.handle(_workoutIdMeta,
+          workoutId.isAcceptableOrUnknown(data['workout_id']!, _workoutIdMeta));
+    }
+    if (data.containsKey('role')) {
+      context.handle(
+          _roleMeta, role.isAcceptableOrUnknown(data['role']!, _roleMeta));
+    } else if (isInserting) {
+      context.missing(_roleMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(_contentMeta,
+          content.isAcceptableOrUnknown(data['content']!, _contentMeta));
+    }
+    if (data.containsKey('tool_calls')) {
+      context.handle(_toolCallsMeta,
+          toolCalls.isAcceptableOrUnknown(data['tool_calls']!, _toolCallsMeta));
+    }
+    if (data.containsKey('tool_call_id')) {
+      context.handle(
+          _toolCallIdMeta,
+          toolCallId.isAcceptableOrUnknown(
+              data['tool_call_id']!, _toolCallIdMeta));
+    }
+    if (data.containsKey('created')) {
+      context.handle(_createdMeta,
+          created.isAcceptableOrUnknown(data['created']!, _createdMeta));
+    } else if (isInserting) {
+      context.missing(_createdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ChatMessage map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ChatMessage(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      workoutId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}workout_id']),
+      role: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}role'])!,
+      content: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}content']),
+      toolCalls: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tool_calls']),
+      toolCallId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tool_call_id']),
+      created: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created'])!,
+    );
+  }
+
+  @override
+  $ChatMessagesTable createAlias(String alias) {
+    return $ChatMessagesTable(attachedDatabase, alias);
+  }
+}
+
+class ChatMessage extends DataClass implements Insertable<ChatMessage> {
+  final int id;
+
+  /// Null = the rolling ad-hoc thread; set = the thread for that workout.
+  final int? workoutId;
+
+  /// 'user' | 'assistant' | 'tool'
+  final String role;
+  final String? content;
+
+  /// Raw tool_calls JSON as emitted by the model, replayed verbatim.
+  final String? toolCalls;
+
+  /// tool_call_id for role='tool' rows.
+  final String? toolCallId;
+  final DateTime created;
+  const ChatMessage(
+      {required this.id,
+      this.workoutId,
+      required this.role,
+      this.content,
+      this.toolCalls,
+      this.toolCallId,
+      required this.created});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || workoutId != null) {
+      map['workout_id'] = Variable<int>(workoutId);
+    }
+    map['role'] = Variable<String>(role);
+    if (!nullToAbsent || content != null) {
+      map['content'] = Variable<String>(content);
+    }
+    if (!nullToAbsent || toolCalls != null) {
+      map['tool_calls'] = Variable<String>(toolCalls);
+    }
+    if (!nullToAbsent || toolCallId != null) {
+      map['tool_call_id'] = Variable<String>(toolCallId);
+    }
+    map['created'] = Variable<DateTime>(created);
+    return map;
+  }
+
+  ChatMessagesCompanion toCompanion(bool nullToAbsent) {
+    return ChatMessagesCompanion(
+      id: Value(id),
+      workoutId: workoutId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(workoutId),
+      role: Value(role),
+      content: content == null && nullToAbsent
+          ? const Value.absent()
+          : Value(content),
+      toolCalls: toolCalls == null && nullToAbsent
+          ? const Value.absent()
+          : Value(toolCalls),
+      toolCallId: toolCallId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(toolCallId),
+      created: Value(created),
+    );
+  }
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ChatMessage(
+      id: serializer.fromJson<int>(json['id']),
+      workoutId: serializer.fromJson<int?>(json['workoutId']),
+      role: serializer.fromJson<String>(json['role']),
+      content: serializer.fromJson<String?>(json['content']),
+      toolCalls: serializer.fromJson<String?>(json['toolCalls']),
+      toolCallId: serializer.fromJson<String?>(json['toolCallId']),
+      created: serializer.fromJson<DateTime>(json['created']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'workoutId': serializer.toJson<int?>(workoutId),
+      'role': serializer.toJson<String>(role),
+      'content': serializer.toJson<String?>(content),
+      'toolCalls': serializer.toJson<String?>(toolCalls),
+      'toolCallId': serializer.toJson<String?>(toolCallId),
+      'created': serializer.toJson<DateTime>(created),
+    };
+  }
+
+  ChatMessage copyWith(
+          {int? id,
+          Value<int?> workoutId = const Value.absent(),
+          String? role,
+          Value<String?> content = const Value.absent(),
+          Value<String?> toolCalls = const Value.absent(),
+          Value<String?> toolCallId = const Value.absent(),
+          DateTime? created}) =>
+      ChatMessage(
+        id: id ?? this.id,
+        workoutId: workoutId.present ? workoutId.value : this.workoutId,
+        role: role ?? this.role,
+        content: content.present ? content.value : this.content,
+        toolCalls: toolCalls.present ? toolCalls.value : this.toolCalls,
+        toolCallId: toolCallId.present ? toolCallId.value : this.toolCallId,
+        created: created ?? this.created,
+      );
+  ChatMessage copyWithCompanion(ChatMessagesCompanion data) {
+    return ChatMessage(
+      id: data.id.present ? data.id.value : this.id,
+      workoutId: data.workoutId.present ? data.workoutId.value : this.workoutId,
+      role: data.role.present ? data.role.value : this.role,
+      content: data.content.present ? data.content.value : this.content,
+      toolCalls: data.toolCalls.present ? data.toolCalls.value : this.toolCalls,
+      toolCallId:
+          data.toolCallId.present ? data.toolCallId.value : this.toolCallId,
+      created: data.created.present ? data.created.value : this.created,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChatMessage(')
+          ..write('id: $id, ')
+          ..write('workoutId: $workoutId, ')
+          ..write('role: $role, ')
+          ..write('content: $content, ')
+          ..write('toolCalls: $toolCalls, ')
+          ..write('toolCallId: $toolCallId, ')
+          ..write('created: $created')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, workoutId, role, content, toolCalls, toolCallId, created);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChatMessage &&
+          other.id == this.id &&
+          other.workoutId == this.workoutId &&
+          other.role == this.role &&
+          other.content == this.content &&
+          other.toolCalls == this.toolCalls &&
+          other.toolCallId == this.toolCallId &&
+          other.created == this.created);
+}
+
+class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
+  final Value<int> id;
+  final Value<int?> workoutId;
+  final Value<String> role;
+  final Value<String?> content;
+  final Value<String?> toolCalls;
+  final Value<String?> toolCallId;
+  final Value<DateTime> created;
+  const ChatMessagesCompanion({
+    this.id = const Value.absent(),
+    this.workoutId = const Value.absent(),
+    this.role = const Value.absent(),
+    this.content = const Value.absent(),
+    this.toolCalls = const Value.absent(),
+    this.toolCallId = const Value.absent(),
+    this.created = const Value.absent(),
+  });
+  ChatMessagesCompanion.insert({
+    this.id = const Value.absent(),
+    this.workoutId = const Value.absent(),
+    required String role,
+    this.content = const Value.absent(),
+    this.toolCalls = const Value.absent(),
+    this.toolCallId = const Value.absent(),
+    required DateTime created,
+  })  : role = Value(role),
+        created = Value(created);
+  static Insertable<ChatMessage> custom({
+    Expression<int>? id,
+    Expression<int>? workoutId,
+    Expression<String>? role,
+    Expression<String>? content,
+    Expression<String>? toolCalls,
+    Expression<String>? toolCallId,
+    Expression<DateTime>? created,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workoutId != null) 'workout_id': workoutId,
+      if (role != null) 'role': role,
+      if (content != null) 'content': content,
+      if (toolCalls != null) 'tool_calls': toolCalls,
+      if (toolCallId != null) 'tool_call_id': toolCallId,
+      if (created != null) 'created': created,
+    });
+  }
+
+  ChatMessagesCompanion copyWith(
+      {Value<int>? id,
+      Value<int?>? workoutId,
+      Value<String>? role,
+      Value<String?>? content,
+      Value<String?>? toolCalls,
+      Value<String?>? toolCallId,
+      Value<DateTime>? created}) {
+    return ChatMessagesCompanion(
+      id: id ?? this.id,
+      workoutId: workoutId ?? this.workoutId,
+      role: role ?? this.role,
+      content: content ?? this.content,
+      toolCalls: toolCalls ?? this.toolCalls,
+      toolCallId: toolCallId ?? this.toolCallId,
+      created: created ?? this.created,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (workoutId.present) {
+      map['workout_id'] = Variable<int>(workoutId.value);
+    }
+    if (role.present) {
+      map['role'] = Variable<String>(role.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (toolCalls.present) {
+      map['tool_calls'] = Variable<String>(toolCalls.value);
+    }
+    if (toolCallId.present) {
+      map['tool_call_id'] = Variable<String>(toolCallId.value);
+    }
+    if (created.present) {
+      map['created'] = Variable<DateTime>(created.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChatMessagesCompanion(')
+          ..write('id: $id, ')
+          ..write('workoutId: $workoutId, ')
+          ..write('role: $role, ')
+          ..write('content: $content, ')
+          ..write('toolCalls: $toolCalls, ')
+          ..write('toolCallId: $toolCallId, ')
+          ..write('created: $created')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $FiveThreeOneBlocksTable extends FiveThreeOneBlocks
     with TableInfo<$FiveThreeOneBlocksTable, FiveThreeOneBlock> {
   @override
@@ -6144,6 +6532,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $NotesTable notes = $NotesTable(this);
   late final $BodyweightEntriesTable bodyweightEntries =
       $BodyweightEntriesTable(this);
+  late final $ChatMessagesTable chatMessages = $ChatMessagesTable(this);
   late final $FiveThreeOneBlocksTable fiveThreeOneBlocks =
       $FiveThreeOneBlocksTable(this);
   @override
@@ -6159,6 +6548,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         workouts,
         notes,
         bodyweightEntries,
+        chatMessages,
         fiveThreeOneBlocks
       ];
 }
@@ -8860,6 +9250,203 @@ typedef $$BodyweightEntriesTableProcessedTableManager = ProcessedTableManager<
     ),
     BodyweightEntry,
     PrefetchHooks Function()>;
+typedef $$ChatMessagesTableCreateCompanionBuilder = ChatMessagesCompanion
+    Function({
+  Value<int> id,
+  Value<int?> workoutId,
+  required String role,
+  Value<String?> content,
+  Value<String?> toolCalls,
+  Value<String?> toolCallId,
+  required DateTime created,
+});
+typedef $$ChatMessagesTableUpdateCompanionBuilder = ChatMessagesCompanion
+    Function({
+  Value<int> id,
+  Value<int?> workoutId,
+  Value<String> role,
+  Value<String?> content,
+  Value<String?> toolCalls,
+  Value<String?> toolCallId,
+  Value<DateTime> created,
+});
+
+class $$ChatMessagesTableFilterComposer
+    extends Composer<_$AppDatabase, $ChatMessagesTable> {
+  $$ChatMessagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get workoutId => $composableBuilder(
+      column: $table.workoutId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get role => $composableBuilder(
+      column: $table.role, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get content => $composableBuilder(
+      column: $table.content, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get toolCalls => $composableBuilder(
+      column: $table.toolCalls, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get toolCallId => $composableBuilder(
+      column: $table.toolCallId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get created => $composableBuilder(
+      column: $table.created, builder: (column) => ColumnFilters(column));
+}
+
+class $$ChatMessagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ChatMessagesTable> {
+  $$ChatMessagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get workoutId => $composableBuilder(
+      column: $table.workoutId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get role => $composableBuilder(
+      column: $table.role, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get content => $composableBuilder(
+      column: $table.content, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get toolCalls => $composableBuilder(
+      column: $table.toolCalls, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get toolCallId => $composableBuilder(
+      column: $table.toolCallId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get created => $composableBuilder(
+      column: $table.created, builder: (column) => ColumnOrderings(column));
+}
+
+class $$ChatMessagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ChatMessagesTable> {
+  $$ChatMessagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get workoutId =>
+      $composableBuilder(column: $table.workoutId, builder: (column) => column);
+
+  GeneratedColumn<String> get role =>
+      $composableBuilder(column: $table.role, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get toolCalls =>
+      $composableBuilder(column: $table.toolCalls, builder: (column) => column);
+
+  GeneratedColumn<String> get toolCallId => $composableBuilder(
+      column: $table.toolCallId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get created =>
+      $composableBuilder(column: $table.created, builder: (column) => column);
+}
+
+class $$ChatMessagesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ChatMessagesTable,
+    ChatMessage,
+    $$ChatMessagesTableFilterComposer,
+    $$ChatMessagesTableOrderingComposer,
+    $$ChatMessagesTableAnnotationComposer,
+    $$ChatMessagesTableCreateCompanionBuilder,
+    $$ChatMessagesTableUpdateCompanionBuilder,
+    (
+      ChatMessage,
+      BaseReferences<_$AppDatabase, $ChatMessagesTable, ChatMessage>
+    ),
+    ChatMessage,
+    PrefetchHooks Function()> {
+  $$ChatMessagesTableTableManager(_$AppDatabase db, $ChatMessagesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChatMessagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ChatMessagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ChatMessagesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int?> workoutId = const Value.absent(),
+            Value<String> role = const Value.absent(),
+            Value<String?> content = const Value.absent(),
+            Value<String?> toolCalls = const Value.absent(),
+            Value<String?> toolCallId = const Value.absent(),
+            Value<DateTime> created = const Value.absent(),
+          }) =>
+              ChatMessagesCompanion(
+            id: id,
+            workoutId: workoutId,
+            role: role,
+            content: content,
+            toolCalls: toolCalls,
+            toolCallId: toolCallId,
+            created: created,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int?> workoutId = const Value.absent(),
+            required String role,
+            Value<String?> content = const Value.absent(),
+            Value<String?> toolCalls = const Value.absent(),
+            Value<String?> toolCallId = const Value.absent(),
+            required DateTime created,
+          }) =>
+              ChatMessagesCompanion.insert(
+            id: id,
+            workoutId: workoutId,
+            role: role,
+            content: content,
+            toolCalls: toolCalls,
+            toolCallId: toolCallId,
+            created: created,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ChatMessagesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ChatMessagesTable,
+    ChatMessage,
+    $$ChatMessagesTableFilterComposer,
+    $$ChatMessagesTableOrderingComposer,
+    $$ChatMessagesTableAnnotationComposer,
+    $$ChatMessagesTableCreateCompanionBuilder,
+    $$ChatMessagesTableUpdateCompanionBuilder,
+    (
+      ChatMessage,
+      BaseReferences<_$AppDatabase, $ChatMessagesTable, ChatMessage>
+    ),
+    ChatMessage,
+    PrefetchHooks Function()>;
 typedef $$FiveThreeOneBlocksTableCreateCompanionBuilder
     = FiveThreeOneBlocksCompanion Function({
   Value<int> id,
@@ -9254,6 +9841,8 @@ class $AppDatabaseManager {
       $$NotesTableTableManager(_db, _db.notes);
   $$BodyweightEntriesTableTableManager get bodyweightEntries =>
       $$BodyweightEntriesTableTableManager(_db, _db.bodyweightEntries);
+  $$ChatMessagesTableTableManager get chatMessages =>
+      $$ChatMessagesTableTableManager(_db, _db.chatMessages);
   $$FiveThreeOneBlocksTableTableManager get fiveThreeOneBlocks =>
       $$FiveThreeOneBlocksTableTableManager(_db, _db.fiveThreeOneBlocks);
 }

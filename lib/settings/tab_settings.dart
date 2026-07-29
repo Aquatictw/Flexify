@@ -29,6 +29,7 @@ class _TabSettingsState extends State<TabSettings> {
     (name: 'MusicPage', enabled: false),
     (name: 'GraphsPage', enabled: false),
     (name: 'NotesPage', enabled: false),
+    (name: 'CoachPage', enabled: false),
     (name: 'SettingsPage', enabled: false),
   ];
 
@@ -170,6 +171,26 @@ class _TabSettingsState extends State<TabSettings> {
                           Icon(Icons.note),
                           SizedBox(width: space8),
                           Text('Notes'),
+                        ],
+                      ),
+                      trailing: ReorderableDragStartListener(
+                        index: index,
+                        child: const Icon(Icons.drag_handle),
+                      ),
+                    );
+                  } else if (tab.name == 'CoachPage') {
+                    return ListTile(
+                      key: Key(tab.name),
+                      onTap: () => setTab(tab.name, !tab.enabled),
+                      leading: Switch(
+                        value: tab.enabled,
+                        onChanged: (value) => setTab(tab.name, value),
+                      ),
+                      title: const material.Row(
+                        children: [
+                          Icon(Icons.psychology_rounded),
+                          SizedBox(width: space8),
+                          Text('Coach'),
                         ],
                       ),
                       trailing: ReorderableDragStartListener(

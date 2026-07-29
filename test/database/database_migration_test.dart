@@ -13,7 +13,7 @@ import 'package:jackedlog/database/schema.dart';
 /// transform schemas and preserve data.
 ///
 /// After migration consolidation, we maintain strategic schema versions:
-/// v31, v48, v52, v57, v61, v67
+/// v31, v48, v52, v57, v61, v67, v71
 
 /// Helper to insert minimal Settings record for migration testing.
 Future<void> insertMinimalSettings(AppDatabase db) async {
@@ -44,7 +44,7 @@ void main() {
 
   setUpAll(() {
     // Verify only the consolidated schema files exist
-    final schemaFiles = [31, 48, 52, 57, 61, 67];
+    final schemaFiles = [31, 48, 52, 57, 61, 67, 71];
     for (final version in schemaFiles) {
       final schemaFile = File('drift_schemas/db/drift_schema_v$version.json');
       expect(
@@ -70,7 +70,7 @@ void main() {
   });
 
   group('Consolidated Migration Tests', () {
-    test('verifies only 6 strategic schema versions exist', () {
+    test('verifies only 7 strategic schema versions exist', () {
       final schemaDir = Directory('drift_schemas/db');
       final schemaFiles = schemaDir
           .listSync()
@@ -81,9 +81,9 @@ void main() {
 
       expect(
         schemaFiles.length,
-        equals(6),
+        equals(7),
         reason:
-            'Should have exactly 6 schema files (v31, v48, v52, v57, v61, v67)',
+            'Should have exactly 7 schema files (v31, v48, v52, v57, v61, v67, v71)',
       );
     });
 
@@ -100,8 +100,8 @@ void main() {
 
       expect(
         version,
-        equals(70),
-        reason: 'Fresh install should create v70 schema',
+        equals(71),
+        reason: 'Fresh install should create v71 schema',
       );
 
       // Verify all tables exist
@@ -121,6 +121,7 @@ void main() {
       expect(tables, contains('workouts'));
       expect(tables, contains('notes'));
       expect(tables, contains('bodyweight_entries'));
+      expect(tables, contains('chat_messages'));
 
       await db.close();
     });
@@ -444,6 +445,44 @@ void main() {
         equals(['Bench Press']),
         reason: 'The duplicate Bench Press row should be dropped',
       );
+
+      await db.close();
+    });
+
+    test('v70 to v71 adds chat_messages without touching gym_sets', () async {
+      final schema = await verifier.schemaAt(67);
+
+      // Seed through the raw pre-v71 database: AppDatabase migrates on its
+      // first query, so rows inserted through it would arrive after the
+      // migration.
+      schema.rawDatabase.execute(
+        'INSERT INTO gym_sets (name, reps, weight, unit, created) '
+        "VALUES ('Bench Press', 5, 100, 'kg', 1000)",
+      );
+
+      final db = AppDatabase(schema.newConnection());
+
+      final tables = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type='table' "
+            "AND name='chat_messages'",
+          )
+          .get();
+      expect(tables.length, equals(1), reason: 'chat_messages should exist');
+
+      await db.into(db.chatMessages).insert(
+            ChatMessagesCompanion.insert(
+              role: 'user',
+              created: DateTime.fromMillisecondsSinceEpoch(1000),
+            ),
+          );
+      final messages = await db.select(db.chatMessages).get();
+      expect(messages.single.workoutId, isNull, reason: 'ad-hoc thread');
+
+      // Existing data untouched by an additive migration.
+      final sets = await db.select(db.gymSets).get();
+      expect(sets.length, equals(1));
+      expect(sets.single.name, equals('Bench Press'));
 
       await db.close();
     });
