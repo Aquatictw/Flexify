@@ -33,15 +33,6 @@ class SetRow extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              margin: const EdgeInsets.only(top: space12, bottom: space8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                borderRadius: brPill,
-              ),
-            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: space16, vertical: space8),
               child: Text(

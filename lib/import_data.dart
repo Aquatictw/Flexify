@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'database/database.dart';
+import 'database/exercise_names.dart';
 import 'fivethreeone/fivethreeone_state.dart';
 import 'main.dart';
 import 'settings/settings_state.dart';
@@ -261,7 +262,7 @@ class ImportData extends StatelessWidget {
 
         return GymSetsCompanion(
           id: Value(int.tryParse(row[0]?.toString() ?? '0') ?? 0),
-          name: Value(row[1]?.toString() ?? ''),
+          name: Value(normalizeExerciseName(row[1]?.toString() ?? '')),
           reps: reps,
           weight: weight,
           unit: Value(row[4]?.toString() ?? ''),

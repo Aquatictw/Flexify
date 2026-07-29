@@ -230,6 +230,11 @@ class _CycleEntry extends StatelessWidget {
   List<Widget> _buildWeekIndicators(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final maxWeeks = cycleWeeks[cycleIndex];
+
+    // A single-week cycle (the 7th Week Protocols) would render one dot reading
+    // "Week 1" — the cycle name above it already says everything.
+    if (isSingleWeekCycle(cycleIndex)) return [];
+
     final widgets = <Widget>[const SizedBox(height: 8)];
 
     for (int w = 1; w <= maxWeeks; w++) {
@@ -564,6 +569,51 @@ class _CompleteWeekButton extends StatelessWidget {
 
   final FiveThreeOneBlock block;
 
+  /// Ask before moving every TM by one bump step. [bump] raises them when
+  /// completing a cycle; going back a week lowers them again.
+  Future<bool> _confirmTmShift(BuildContext context,
+      {required bool bump}) async {
+    final lower = bump ? tmBumpLower : -tmBumpLower;
+    final upper = bump ? tmBumpUpper : -tmBumpUpper;
+
+    Widget row(String label, double tm, double by) => Text(
+        '$label: $tm → ${(tm + by).toStringAsFixed(1)} ${block.unit}');
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(bump ? 'Bump Training Max?' : 'Lower Training Max?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!bump)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text(
+                    'This week bumped your training maxes. Undo that bump?'),
+              ),
+            row('Squat', block.squatTm, lower),
+            row('Bench', block.benchTm, upper),
+            row('Deadlift', block.deadliftTm, lower),
+            row('OHP', block.pressTm, upper),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Skip'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(bump ? 'Bump TMs' : 'Lower TMs'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
   Widget _buildCompleteButton(BuildContext context, FiveThreeOneState state,
       bool isComplete, String label,
       {bool fullWidth = false}) {
@@ -593,41 +643,10 @@ class _CompleteWeekButton extends StatelessWidget {
         if (!context.mounted) return;
 
         final state = context.read<FiveThreeOneState>();
-        if (state.needsTmBump) {
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Bump Training Max?'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                      'Squat: ${block.squatTm} \u2192 ${(block.squatTm + 4.5).toStringAsFixed(1)} ${block.unit}'),
-                  Text(
-                      'Bench: ${block.benchTm} \u2192 ${(block.benchTm + 2.2).toStringAsFixed(1)} ${block.unit}'),
-                  Text(
-                      'Deadlift: ${block.deadliftTm} \u2192 ${(block.deadliftTm + 4.5).toStringAsFixed(1)} ${block.unit}'),
-                  Text(
-                      'OHP: ${block.pressTm} \u2192 ${(block.pressTm + 2.2).toStringAsFixed(1)} ${block.unit}'),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Skip'),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Bump TMs'),
-                ),
-              ],
-            ),
-          );
-          if (confirmed == true) {
-            await state.bumpTms();
-          }
+        if (state.needsTmBump && await _confirmTmShift(context, bump: true)) {
+          await state.bumpTms();
         }
+        if (!context.mounted) return;
 
         if (isComplete) {
           // Capture block reference before advancing (which deactivates it)
@@ -672,9 +691,14 @@ class _CompleteWeekButton extends StatelessWidget {
             ],
           ),
         );
-        if (confirmed == true) {
-          await context.read<FiveThreeOneState>().goBackWeek();
+        if (confirmed != true) return;
+        if (!context.mounted) return;
+
+        final state = context.read<FiveThreeOneState>();
+        if (state.needsTmUnbump && await _confirmTmShift(context, bump: false)) {
+          await state.unbumpTms();
         }
+        await state.goBackWeek();
       },
       icon: const Icon(Icons.undo),
       label: const Text('Back', maxLines: 1, softWrap: false),

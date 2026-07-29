@@ -49,9 +49,6 @@ repo-wide grep sweeps.
 
 The app is tested on a physical Android phone over adb.
 
-- Verify UI and behavior changes by running on the phone (`flutter run -v`)
-  and looking at the screen — prefer this over writing or running tests
-  unless tests are explicitly requested.
 - To see the current screen, run `./scripts/adb-screenshot` — it captures the
   phone display to `.screenshots/screen.png` (gitignored) and prints the
   absolute path. Then Read that path to view the image. Use it whenever a

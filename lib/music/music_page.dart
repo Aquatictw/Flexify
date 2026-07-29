@@ -120,7 +120,7 @@ class _MusicPageState extends State<MusicPage> with WidgetsBindingObserver {
                       RevealBlock(
                         child: _buildAlbumArt(context, spotifyState),
                       ),
-                      const SizedBox(height: space32),
+                      const SizedBox(height: space16),
 
                       // Track metadata group (title, artist, album, context)
                       RevealBlock(
@@ -144,7 +144,7 @@ class _MusicPageState extends State<MusicPage> with WidgetsBindingObserver {
                           ],
                         ),
                       ),
-                      const SizedBox(height: space24),
+                      const SizedBox(height: space8),
 
                       // Seek bar with position/duration
                       const RevealBlock(

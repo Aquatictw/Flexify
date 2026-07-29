@@ -580,6 +580,60 @@ class AppDatabase extends _$AppDatabase {
               .catchError((e) {});
         }
 
+        // from68To69: 5/3/1 auto-fill toggle, and the "Barbell bench press"
+        // rename to "Bench Press"
+        if (from < 69 && to >= 69) {
+          await m.database
+              .customStatement(
+                'ALTER TABLE settings ADD COLUMN fivethreeone_autofill '
+                'INTEGER NOT NULL DEFAULT 1',
+              )
+              .catchError((e) {});
+          // COLLATE NOCASE because the seed shipped 'Barbell bench press'
+          // while hand-entered rows read 'Barbell Bench Press'.
+          await m.database
+              .customStatement(
+                "UPDATE gym_sets SET name = 'Bench Press' "
+                "WHERE name COLLATE NOCASE = 'Barbell bench press'",
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                "UPDATE plan_exercises SET exercise = 'Bench Press' "
+                "WHERE exercise COLLATE NOCASE = 'Barbell bench press'",
+              )
+              .catchError((e) {});
+          // A plan that already listed a separate 'Bench Press' now lists it
+          // twice — keep the earliest row.
+          await m.database
+              .customStatement(
+                "DELETE FROM plan_exercises WHERE exercise = 'Bench Press' "
+                'AND id NOT IN (SELECT MIN(id) FROM plan_exercises '
+                "WHERE exercise = 'Bench Press' GROUP BY plan_id)",
+              )
+              .catchError((e) {});
+        }
+
+        // from69To70: Track applied 5/3/1 TM bumps so they can be undone
+        if (from < 70 && to >= 70) {
+          await m.database
+              .customStatement(
+                'ALTER TABLE five_three_one_blocks ADD COLUMN '
+                'tm_bumps INTEGER NOT NULL DEFAULT 0',
+              )
+              .catchError((e) {});
+          // Blocks migrated from before the counter existed: assume every bump
+          // their position implies was taken, which is the common case.
+          await m.database
+              .customStatement(
+                'UPDATE five_three_one_blocks SET tm_bumps = '
+                'CASE WHEN current_cycle >= 4 THEN 3 '
+                'WHEN current_cycle = 3 THEN 2 '
+                'WHEN current_cycle >= 1 THEN current_cycle ELSE 0 END',
+              )
+              .catchError((e) {});
+        }
+
         // Columns above were added with plain `ADD COLUMN <type>`, so rows
         // that predate them hold NULL while the Dart table declares them
         // NOT NULL — reading such a row throws on the null check. Backfill
@@ -596,10 +650,12 @@ class AppDatabase extends _$AppDatabase {
             'show_global_progress': '1',
             'scrollable_tabs': '1',
             'custom_color_seed': '4284955319',
+            'fivethreeone_autofill': '1',
           },
           'five_three_one_blocks': {
             'leader_supplemental': "'bbb'",
             'anchor_supplemental': "'fsl'",
+            'tm_bumps': '0',
           },
         };
         for (final table in nonNullBackfills.entries) {
@@ -640,5 +696,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 68;
+  int get schemaVersion => 70;
 }

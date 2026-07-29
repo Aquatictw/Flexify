@@ -23,6 +23,23 @@ const List<int> cycleWeeks = [3, 3, 1, 3, 1];
 /// Whether TM bumps after completing this cycle
 const List<bool> cycleBumpsTm = [true, true, false, true, false];
 
+/// TM bump step for the lower-body lifts (squat, deadlift)
+const double tmBumpLower = 4.5;
+
+/// TM bump step for the upper-body lifts (bench, press)
+const double tmBumpUpper = 2.2;
+
+/// How many TM bumps a block sitting at [cycle] can have applied so far.
+/// A bump lands when the last week of a bumping cycle is completed, so every
+/// bumping cycle strictly before [cycle] contributes one.
+int bumpsThroughCycle(int cycle) {
+  var count = 0;
+  for (var c = 0; c < cycle && c < cycleBumpsTm.length; c++) {
+    if (cycleBumpsTm[c]) count++;
+  }
+  return count;
+}
+
 /// Total weeks in a complete block
 const int totalBlockWeeks = 11; // 3+3+1+3+1
 
@@ -233,6 +250,27 @@ String getDescriptiveLabel(int cycleType, BlockSupplementals supplementals) {
   final supplemental = supplementalForCycle(cycleType, supplementals);
   if (supplemental == null) return getMainSchemeName(cycleType);
   return '${getMainSchemeName(cycleType)} ${supplementalShortName(supplemental)}';
+}
+
+/// Whether [cycleType] runs a single week, which makes a "Week 1" label pure
+/// noise. True for both 7th Week Protocols (Deload and TM Test).
+bool isSingleWeekCycle(int cycleType) => cycleWeeks[cycleType] == 1;
+
+/// 'Week 2', or an empty string for the single-week 7th Week Protocols.
+String weekLabel(int cycleType, int week) =>
+    isSingleWeekCycle(cycleType) ? '' : 'Week $week';
+
+/// Where the block currently sits, e.g. "5's PRO BBB — Week 2". Single-week
+/// cycles drop the week suffix and read just "Deload".
+String cyclePositionLabel(
+  int cycleType,
+  int week,
+  BlockSupplementals supplementals, {
+  String separator = ' — ',
+}) {
+  final label = getDescriptiveLabel(cycleType, supplementals);
+  final suffix = weekLabel(cycleType, week);
+  return suffix.isEmpty ? label : '$label$separator$suffix';
 }
 
 /// Returns a short badge string for cycle type

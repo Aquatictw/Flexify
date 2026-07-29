@@ -4,7 +4,7 @@ import 'database.dart';
 const defaultExercises = [
   ('Arnold press', 'Shoulders'),
   ('Back extension', 'Back'),
-  ('Barbell bench press', 'Chest'),
+  ('Bench Press', 'Chest'),
   ('Barbell biceps curl', 'Arms'),
   ('Barbell bent-over row', 'Back'),
   ('Barbell shoulder press', 'Shoulders'),
@@ -78,7 +78,7 @@ const defaultPlans = [
 ];
 
 final defaultPlanExercises = [
-  ...['Barbell bench press', 'Squat', 'Lat pull-down', 'Leg press'].map(
+  ...['Bench Press', 'Squat', 'Lat pull-down', 'Leg press'].map(
     (e) => PlanExercisesCompanion.insert(
       planId: 1,
       exercise: e,

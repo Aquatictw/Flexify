@@ -55,6 +55,7 @@ flexify-release-key.keystore
 /.claude/
 notes.md
 task_plan.md
+/531forever.pdf
 .local-tools/
 /dist/
 docs/*

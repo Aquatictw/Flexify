@@ -27,7 +27,8 @@ void _ensureTables(Database database) {
       is_active INTEGER NOT NULL DEFAULT 1,
       completed INTEGER,
       leader_supplemental TEXT NOT NULL DEFAULT 'bbb',
-      anchor_supplemental TEXT NOT NULL DEFAULT 'fsl'
+      anchor_supplemental TEXT NOT NULL DEFAULT 'fsl',
+      tm_bumps INTEGER NOT NULL DEFAULT 0
     )
   ''');
 }

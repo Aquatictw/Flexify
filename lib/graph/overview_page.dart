@@ -358,16 +358,6 @@ class _OverviewPageState extends State<OverviewPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle bar
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                borderRadius: brPill,
-              ),
-            ),
             // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),

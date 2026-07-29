@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../database/database.dart';
-import '../fivethreeone/block_creation_dialog.dart';
 import '../theme/tokens.dart';
 import 'appearance_settings.dart';
 import 'data_settings.dart';
@@ -198,20 +197,6 @@ class _SettingsPageState extends State<SettingsPage>
                         ),
                         RevealBlock(
                           index: 6,
-                          child: ListTile(
-                            leading: const Icon(Icons.fitness_center),
-                            title: const Text('5/3/1 Block'),
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) =>
-                                    const BlockCreationDialog(),
-                              );
-                            },
-                          ),
-                        ),
-                        RevealBlock(
-                          index: 7,
                           child: ListTile(
                             leading: const Icon(Icons.music_note),
                             title: const Text('Spotify'),

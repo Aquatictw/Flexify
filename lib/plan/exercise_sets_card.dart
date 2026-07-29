@@ -7,6 +7,10 @@ import '../constants.dart';
 import '../database/database.dart';
 import '../database/gym_sets.dart';
 import '../database/query_helpers.dart';
+import '../fivethreeone/fivethreeone_state.dart';
+import '../fivethreeone/go_hard_notification.dart';
+import '../fivethreeone/main_lifts.dart';
+import '../fivethreeone/schemes.dart';
 import '../graph/cardio_page.dart';
 import '../graph/strength_page.dart';
 import '../main.dart';
@@ -100,6 +104,17 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     final settings = context.read<SettingsState>().value;
     final maxSets = widget.exercise.maxSets ?? settings.maxSets;
 
+    // 5/3/1 main lifts seed from the active block's training maxes instead of
+    // last session's weights, and the scheme — not maxSets — decides how many
+    // sets appear. Read off `context` before the first await.
+    final block = context.read<FiveThreeOneState>().activeBlock;
+    final prescription = settings.fivethreeoneAutofill && block != null
+        ? mainWorkPrescription(
+            block: block,
+            exerciseName: widget.exercise.exercise,
+          )
+        : null;
+
     // Use optimized query helper - replaces 3-5 separate queries with 1-2 queries
     final exerciseData = await QueryHelpers.loadExerciseData(
       exerciseName: widget.exercise.exercise,
@@ -138,6 +153,10 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
     _cardioMetric = referenceSet?.cardioMetric ?? cardioMetricDuration;
     _category = referenceSet?.category ?? (_isCardio ? 'Cardio' : null);
     _restMs = referenceSet?.restMs;
+
+    // 5/3/1 weights are calculated in the block's unit, so the whole exercise
+    // switches to it rather than mixing kg into an lb log.
+    final setUnit = prescription != null ? block!.unit : defaultUnit;
 
     // Use existing sets from helper
     final existingSets = exerciseData.existingSets;
@@ -238,15 +257,21 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
             ),
           );
         } else {
+          final setCount = prescription?.length ?? maxSets;
+
           // Create working sets based on previous working sets.
           // One transaction for all inserts: N separate commits (one fsync each)
           // was the stutter when a freshly-added exercise first expands.
           await db.transaction(() async {
-            for (int i = 0; i < maxSets; i++) {
+            for (int i = 0; i < setCount; i++) {
               double weight;
               int reps;
 
-              if (i < _previousWorkingSets.length) {
+              if (prescription != null) {
+                // 5/3/1 main work: percentage of the training max
+                weight = prescription[i].weight;
+                reps = prescription[i].reps;
+              } else if (i < _previousWorkingSets.length) {
                 // Use the value from the corresponding previous working set
                 weight = _previousWorkingSets[i].weight;
                 reps = _previousWorkingSets[i].reps.toInt();
@@ -265,7 +290,7 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                       name: widget.exercise.exercise,
                       reps: reps.toDouble(),
                       weight: weight,
-                      unit: defaultUnit,
+                      unit: setUnit,
                       created: DateTime.now().toLocal(),
                       planId: Value(widget.planId),
                       workoutId: Value(widget.workoutId),
@@ -294,15 +319,26 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
         }
         if (mounted) {
           setState(() {
-            unit = _isCardio ? settings.cardioUnit : defaultUnit;
+            unit = _isCardio ? settings.cardioUnit : setUnit;
             sets = newSets;
             _initialized = true;
           });
+          if (prescription != null && !_isCardio) {
+            showGoHardNotification(
+              context,
+              exerciseName: widget.exercise.exercise,
+              schemeLabel: cyclePositionLabel(
+                block!.currentCycle,
+                block.currentWeek,
+                block.supplementals,
+              ),
+            );
+          }
         }
       } else {
         // No workout ID - memory only (shouldn't happen normally)
         setState(() {
-          unit = _isCardio ? settings.cardioUnit : defaultUnit;
+          unit = _isCardio ? settings.cardioUnit : setUnit;
           sets = _isCardio
               ? [
                   SetData(
@@ -314,8 +350,13 @@ class _ExerciseSetsCardState extends State<ExerciseSetsCard> {
                     cardioMetric: _cardioMetric,
                   ),
                 ]
-              : List.generate(maxSets, (i) {
-                  if (i < _previousWorkingSets.length) {
+              : List.generate(prescription?.length ?? maxSets, (i) {
+                  if (prescription != null) {
+                    return SetData(
+                      weight: prescription[i].weight,
+                      reps: prescription[i].reps,
+                    );
+                  } else if (i < _previousWorkingSets.length) {
                     return SetData(
                       weight: _previousWorkingSets[i].weight,
                       reps: _previousWorkingSets[i].reps.toInt(),

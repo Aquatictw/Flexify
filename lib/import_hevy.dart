@@ -15,10 +15,10 @@ import 'utils.dart';
 /// Format: 'hevy_name': ('flexify_name', 'category')
 const Map<String, (String, String)> hevyToFlexifyMapping = {
   // Chest exercises
-  'bench press (barbell)': ('Barbell bench press', 'Chest'),
+  'bench press (barbell)': ('Bench Press', 'Chest'),
   'bench press (dumbbell)': ('Dumbbell bench press', 'Chest'),
   'bench press (smith machine)': ('Bench press (Smith machine)', 'Chest'),
-  'flat bench press (barbell)': ('Barbell bench press', 'Chest'),
+  'flat bench press (barbell)': ('Bench Press', 'Chest'),
   'flat bench press (dumbbell)': ('Dumbbell bench press', 'Chest'),
   'incline bench press (barbell)': ('Incline bench press', 'Chest'),
   'incline bench press (dumbbell)': ('Incline dumbbell press', 'Chest'),

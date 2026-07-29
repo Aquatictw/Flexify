@@ -42,7 +42,8 @@ class FiveThreeOneState extends ChangeNotifier {
         is_active INTEGER NOT NULL DEFAULT 1,
         completed INTEGER,
         leader_supplemental TEXT NOT NULL DEFAULT 'bbb',
-        anchor_supplemental TEXT NOT NULL DEFAULT 'fsl'
+        anchor_supplemental TEXT NOT NULL DEFAULT 'fsl',
+        tm_bumps INTEGER NOT NULL DEFAULT 0
       )
     ''');
   }
@@ -62,6 +63,17 @@ class FiveThreeOneState extends ChangeNotifier {
     final block = _activeBlock!;
     return block.currentWeek >= cycleWeeks[block.currentCycle] &&
         cycleBumpsTm[block.currentCycle];
+  }
+
+  /// Whether going back a week would undo a TM bump that was actually applied.
+  /// True only at week 1 of the cycle right after a bumping cycle, and only if
+  /// the bump was taken rather than skipped.
+  bool get needsTmUnbump {
+    if (_activeBlock == null) return false;
+    final block = _activeBlock!;
+    if (block.currentWeek != 1 || block.currentCycle < 1) return false;
+    if (!cycleBumpsTm[block.currentCycle - 1]) return false;
+    return block.tmBumps > bumpsThroughCycle(block.currentCycle - 1);
   }
 
   /// Whether the user can go back a week (not at the very start)
@@ -87,8 +99,12 @@ class FiveThreeOneState extends ChangeNotifier {
   String get positionLabel {
     if (_activeBlock == null) return '';
     final block = _activeBlock!;
-    return '${getDescriptiveLabel(block.currentCycle, block.supplementals)}'
-        ' - Week ${block.currentWeek}';
+    return cyclePositionLabel(
+      block.currentCycle,
+      block.currentWeek,
+      block.supplementals,
+      separator: ' - ',
+    );
   }
 
   /// Short badge string for cycle type (L1, L2, D, A, T)
@@ -219,18 +235,31 @@ class FiveThreeOneState extends ChangeNotifier {
   }
 
   /// Bump training max values: +4.5 for lower body, +2.2 for upper body
-  Future<void> bumpTms() async {
+  Future<void> bumpTms() => _shiftTms(1);
+
+  /// Undo a TM bump, putting the training maxes back where they were
+  Future<void> unbumpTms() => _shiftTms(-1);
+
+  /// Move every training max by [direction] bump steps and record it, so a
+  /// bump and its undo stay in sync with the [tmBumps] counter.
+  Future<void> _shiftTms(int direction) async {
     if (_activeBlock == null) return;
     final block = _activeBlock!;
+    final lower = tmBumpLower * direction;
+    final upper = tmBumpUpper * direction;
+
+    double shift(double tm, double by) =>
+        double.parse((tm + by).toStringAsFixed(1));
 
     await (db.update(db.fiveThreeOneBlocks)
           ..where((b) => b.id.equals(block.id)))
         .write(
       FiveThreeOneBlocksCompanion(
-        squatTm: Value(double.parse((block.squatTm + 4.5).toStringAsFixed(1))),
-        benchTm: Value(double.parse((block.benchTm + 2.2).toStringAsFixed(1))),
-        deadliftTm: Value(double.parse((block.deadliftTm + 4.5).toStringAsFixed(1))),
-        pressTm: Value(double.parse((block.pressTm + 2.2).toStringAsFixed(1))),
+        squatTm: Value(shift(block.squatTm, lower)),
+        benchTm: Value(shift(block.benchTm, upper)),
+        deadliftTm: Value(shift(block.deadliftTm, lower)),
+        pressTm: Value(shift(block.pressTm, upper)),
+        tmBumps: Value(block.tmBumps + direction),
       ),
     );
 

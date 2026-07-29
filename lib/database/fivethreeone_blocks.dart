@@ -32,4 +32,9 @@ class FiveThreeOneBlocks extends Table {
   /// Supplemental template run during the Anchor cycle ('fsl' for now)
   TextColumn get anchorSupplemental =>
       text().withDefault(const Constant('fsl'))();
+
+  /// How many TM bumps have actually been applied to this block. Bumps are
+  /// skippable, so the position alone cannot tell whether one happened — this
+  /// is what makes "Back" able to undo the bump it really did apply.
+  IntColumn get tmBumps => integer().withDefault(const Constant(0))();
 }

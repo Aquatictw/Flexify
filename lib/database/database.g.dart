@@ -1705,6 +1705,16 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(1));
+  static const VerificationMeta _fivethreeoneAutofillMeta =
+      const VerificationMeta('fivethreeoneAutofill');
+  @override
+  late final GeneratedColumn<bool> fivethreeoneAutofill = GeneratedColumn<bool>(
+      'fivethreeone_autofill', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("fivethreeone_autofill" IN (0, 1))'),
+      defaultValue: const Constant(true));
   static const VerificationMeta _customColorSeedMeta =
       const VerificationMeta('customColorSeed');
   @override
@@ -1806,6 +1816,7 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         fivethreeoneDeadliftTm,
         fivethreeonePressTm,
         fivethreeoneWeek,
+        fivethreeoneAutofill,
         customColorSeed,
         lastAutoBackupTime,
         lastBackupStatus,
@@ -2060,6 +2071,12 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
           fivethreeoneWeek.isAcceptableOrUnknown(
               data['fivethreeone_week']!, _fivethreeoneWeekMeta));
     }
+    if (data.containsKey('fivethreeone_autofill')) {
+      context.handle(
+          _fivethreeoneAutofillMeta,
+          fivethreeoneAutofill.isAcceptableOrUnknown(
+              data['fivethreeone_autofill']!, _fivethreeoneAutofillMeta));
+    }
     if (data.containsKey('custom_color_seed')) {
       context.handle(
           _customColorSeedMeta,
@@ -2202,6 +2219,8 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
           DriftSqlType.double, data['${effectivePrefix}fivethreeone_press_tm']),
       fivethreeoneWeek: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}fivethreeone_week'])!,
+      fivethreeoneAutofill: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}fivethreeone_autofill'])!,
       customColorSeed: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}custom_color_seed'])!,
       lastAutoBackupTime: attachedDatabase.typeMapping.read(
@@ -2270,6 +2289,7 @@ class Setting extends DataClass implements Insertable<Setting> {
   final double? fivethreeoneDeadliftTm;
   final double? fivethreeonePressTm;
   final int fivethreeoneWeek;
+  final bool fivethreeoneAutofill;
   final int customColorSeed;
   final DateTime? lastAutoBackupTime;
   final String? lastBackupStatus;
@@ -2318,6 +2338,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       this.fivethreeoneDeadliftTm,
       this.fivethreeonePressTm,
       required this.fivethreeoneWeek,
+      required this.fivethreeoneAutofill,
       required this.customColorSeed,
       this.lastAutoBackupTime,
       this.lastBackupStatus,
@@ -2383,6 +2404,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       map['fivethreeone_press_tm'] = Variable<double>(fivethreeonePressTm);
     }
     map['fivethreeone_week'] = Variable<int>(fivethreeoneWeek);
+    map['fivethreeone_autofill'] = Variable<bool>(fivethreeoneAutofill);
     map['custom_color_seed'] = Variable<int>(customColorSeed);
     if (!nullToAbsent || lastAutoBackupTime != null) {
       map['last_auto_backup_time'] = Variable<DateTime>(lastAutoBackupTime);
@@ -2467,6 +2489,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           ? const Value.absent()
           : Value(fivethreeonePressTm),
       fivethreeoneWeek: Value(fivethreeoneWeek),
+      fivethreeoneAutofill: Value(fivethreeoneAutofill),
       customColorSeed: Value(customColorSeed),
       lastAutoBackupTime: lastAutoBackupTime == null && nullToAbsent
           ? const Value.absent()
@@ -2544,6 +2567,8 @@ class Setting extends DataClass implements Insertable<Setting> {
       fivethreeonePressTm:
           serializer.fromJson<double?>(json['fivethreeonePressTm']),
       fivethreeoneWeek: serializer.fromJson<int>(json['fivethreeoneWeek']),
+      fivethreeoneAutofill:
+          serializer.fromJson<bool>(json['fivethreeoneAutofill']),
       customColorSeed: serializer.fromJson<int>(json['customColorSeed']),
       lastAutoBackupTime:
           serializer.fromJson<DateTime?>(json['lastAutoBackupTime']),
@@ -2601,6 +2626,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           serializer.toJson<double?>(fivethreeoneDeadliftTm),
       'fivethreeonePressTm': serializer.toJson<double?>(fivethreeonePressTm),
       'fivethreeoneWeek': serializer.toJson<int>(fivethreeoneWeek),
+      'fivethreeoneAutofill': serializer.toJson<bool>(fivethreeoneAutofill),
       'customColorSeed': serializer.toJson<int>(customColorSeed),
       'lastAutoBackupTime': serializer.toJson<DateTime?>(lastAutoBackupTime),
       'lastBackupStatus': serializer.toJson<String?>(lastBackupStatus),
@@ -2652,6 +2678,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           Value<double?> fivethreeoneDeadliftTm = const Value.absent(),
           Value<double?> fivethreeonePressTm = const Value.absent(),
           int? fivethreeoneWeek,
+          bool? fivethreeoneAutofill,
           int? customColorSeed,
           Value<DateTime?> lastAutoBackupTime = const Value.absent(),
           Value<String?> lastBackupStatus = const Value.absent(),
@@ -2710,6 +2737,7 @@ class Setting extends DataClass implements Insertable<Setting> {
             ? fivethreeonePressTm.value
             : this.fivethreeonePressTm,
         fivethreeoneWeek: fivethreeoneWeek ?? this.fivethreeoneWeek,
+        fivethreeoneAutofill: fivethreeoneAutofill ?? this.fivethreeoneAutofill,
         customColorSeed: customColorSeed ?? this.customColorSeed,
         lastAutoBackupTime: lastAutoBackupTime.present
             ? lastAutoBackupTime.value
@@ -2823,6 +2851,9 @@ class Setting extends DataClass implements Insertable<Setting> {
       fivethreeoneWeek: data.fivethreeoneWeek.present
           ? data.fivethreeoneWeek.value
           : this.fivethreeoneWeek,
+      fivethreeoneAutofill: data.fivethreeoneAutofill.present
+          ? data.fivethreeoneAutofill.value
+          : this.fivethreeoneAutofill,
       customColorSeed: data.customColorSeed.present
           ? data.customColorSeed.value
           : this.customColorSeed,
@@ -2894,6 +2925,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           ..write('fivethreeoneDeadliftTm: $fivethreeoneDeadliftTm, ')
           ..write('fivethreeonePressTm: $fivethreeonePressTm, ')
           ..write('fivethreeoneWeek: $fivethreeoneWeek, ')
+          ..write('fivethreeoneAutofill: $fivethreeoneAutofill, ')
           ..write('customColorSeed: $customColorSeed, ')
           ..write('lastAutoBackupTime: $lastAutoBackupTime, ')
           ..write('lastBackupStatus: $lastBackupStatus, ')
@@ -2947,6 +2979,7 @@ class Setting extends DataClass implements Insertable<Setting> {
         fivethreeoneDeadliftTm,
         fivethreeonePressTm,
         fivethreeoneWeek,
+        fivethreeoneAutofill,
         customColorSeed,
         lastAutoBackupTime,
         lastBackupStatus,
@@ -2999,6 +3032,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           other.fivethreeoneDeadliftTm == this.fivethreeoneDeadliftTm &&
           other.fivethreeonePressTm == this.fivethreeonePressTm &&
           other.fivethreeoneWeek == this.fivethreeoneWeek &&
+          other.fivethreeoneAutofill == this.fivethreeoneAutofill &&
           other.customColorSeed == this.customColorSeed &&
           other.lastAutoBackupTime == this.lastAutoBackupTime &&
           other.lastBackupStatus == this.lastBackupStatus &&
@@ -3049,6 +3083,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<double?> fivethreeoneDeadliftTm;
   final Value<double?> fivethreeonePressTm;
   final Value<int> fivethreeoneWeek;
+  final Value<bool> fivethreeoneAutofill;
   final Value<int> customColorSeed;
   final Value<DateTime?> lastAutoBackupTime;
   final Value<String?> lastBackupStatus;
@@ -3097,6 +3132,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.fivethreeoneDeadliftTm = const Value.absent(),
     this.fivethreeonePressTm = const Value.absent(),
     this.fivethreeoneWeek = const Value.absent(),
+    this.fivethreeoneAutofill = const Value.absent(),
     this.customColorSeed = const Value.absent(),
     this.lastAutoBackupTime = const Value.absent(),
     this.lastBackupStatus = const Value.absent(),
@@ -3146,6 +3182,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.fivethreeoneDeadliftTm = const Value.absent(),
     this.fivethreeonePressTm = const Value.absent(),
     this.fivethreeoneWeek = const Value.absent(),
+    this.fivethreeoneAutofill = const Value.absent(),
     this.customColorSeed = const Value.absent(),
     this.lastAutoBackupTime = const Value.absent(),
     this.lastBackupStatus = const Value.absent(),
@@ -3208,6 +3245,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Expression<double>? fivethreeoneDeadliftTm,
     Expression<double>? fivethreeonePressTm,
     Expression<int>? fivethreeoneWeek,
+    Expression<bool>? fivethreeoneAutofill,
     Expression<int>? customColorSeed,
     Expression<DateTime>? lastAutoBackupTime,
     Expression<String>? lastBackupStatus,
@@ -3263,6 +3301,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       if (fivethreeonePressTm != null)
         'fivethreeone_press_tm': fivethreeonePressTm,
       if (fivethreeoneWeek != null) 'fivethreeone_week': fivethreeoneWeek,
+      if (fivethreeoneAutofill != null)
+        'fivethreeone_autofill': fivethreeoneAutofill,
       if (customColorSeed != null) 'custom_color_seed': customColorSeed,
       if (lastAutoBackupTime != null)
         'last_auto_backup_time': lastAutoBackupTime,
@@ -3318,6 +3358,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       Value<double?>? fivethreeoneDeadliftTm,
       Value<double?>? fivethreeonePressTm,
       Value<int>? fivethreeoneWeek,
+      Value<bool>? fivethreeoneAutofill,
       Value<int>? customColorSeed,
       Value<DateTime?>? lastAutoBackupTime,
       Value<String?>? lastBackupStatus,
@@ -3367,6 +3408,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           fivethreeoneDeadliftTm ?? this.fivethreeoneDeadliftTm,
       fivethreeonePressTm: fivethreeonePressTm ?? this.fivethreeonePressTm,
       fivethreeoneWeek: fivethreeoneWeek ?? this.fivethreeoneWeek,
+      fivethreeoneAutofill: fivethreeoneAutofill ?? this.fivethreeoneAutofill,
       customColorSeed: customColorSeed ?? this.customColorSeed,
       lastAutoBackupTime: lastAutoBackupTime ?? this.lastAutoBackupTime,
       lastBackupStatus: lastBackupStatus ?? this.lastBackupStatus,
@@ -3498,6 +3540,9 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     if (fivethreeoneWeek.present) {
       map['fivethreeone_week'] = Variable<int>(fivethreeoneWeek.value);
     }
+    if (fivethreeoneAutofill.present) {
+      map['fivethreeone_autofill'] = Variable<bool>(fivethreeoneAutofill.value);
+    }
     if (customColorSeed.present) {
       map['custom_color_seed'] = Variable<int>(customColorSeed.value);
     }
@@ -3573,6 +3618,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           ..write('fivethreeoneDeadliftTm: $fivethreeoneDeadliftTm, ')
           ..write('fivethreeonePressTm: $fivethreeonePressTm, ')
           ..write('fivethreeoneWeek: $fivethreeoneWeek, ')
+          ..write('fivethreeoneAutofill: $fivethreeoneAutofill, ')
           ..write('customColorSeed: $customColorSeed, ')
           ..write('lastAutoBackupTime: $lastAutoBackupTime, ')
           ..write('lastBackupStatus: $lastBackupStatus, ')
@@ -5335,6 +5381,14 @@ class $FiveThreeOneBlocksTable extends FiveThreeOneBlocks
           type: DriftSqlType.string,
           requiredDuringInsert: false,
           defaultValue: const Constant('fsl'));
+  static const VerificationMeta _tmBumpsMeta =
+      const VerificationMeta('tmBumps');
+  @override
+  late final GeneratedColumn<int> tmBumps = GeneratedColumn<int>(
+      'tm_bumps', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -5353,7 +5407,8 @@ class $FiveThreeOneBlocksTable extends FiveThreeOneBlocks
         isActive,
         completed,
         leaderSupplemental,
-        anchorSupplemental
+        anchorSupplemental,
+        tmBumps
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5462,6 +5517,10 @@ class $FiveThreeOneBlocksTable extends FiveThreeOneBlocks
           anchorSupplemental.isAcceptableOrUnknown(
               data['anchor_supplemental']!, _anchorSupplementalMeta));
     }
+    if (data.containsKey('tm_bumps')) {
+      context.handle(_tmBumpsMeta,
+          tmBumps.isAcceptableOrUnknown(data['tm_bumps']!, _tmBumpsMeta));
+    }
     return context;
   }
 
@@ -5505,6 +5564,8 @@ class $FiveThreeOneBlocksTable extends FiveThreeOneBlocks
           DriftSqlType.string, data['${effectivePrefix}leader_supplemental'])!,
       anchorSupplemental: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}anchor_supplemental'])!,
+      tmBumps: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}tm_bumps'])!,
     );
   }
 
@@ -5544,6 +5605,11 @@ class FiveThreeOneBlock extends DataClass
 
   /// Supplemental template run during the Anchor cycle ('fsl' for now)
   final String anchorSupplemental;
+
+  /// How many TM bumps have actually been applied to this block. Bumps are
+  /// skippable, so the position alone cannot tell whether one happened — this
+  /// is what makes "Back" able to undo the bump it really did apply.
+  final int tmBumps;
   const FiveThreeOneBlock(
       {required this.id,
       required this.created,
@@ -5561,7 +5627,8 @@ class FiveThreeOneBlock extends DataClass
       required this.isActive,
       this.completed,
       required this.leaderSupplemental,
-      required this.anchorSupplemental});
+      required this.anchorSupplemental,
+      required this.tmBumps});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -5592,6 +5659,7 @@ class FiveThreeOneBlock extends DataClass
     }
     map['leader_supplemental'] = Variable<String>(leaderSupplemental);
     map['anchor_supplemental'] = Variable<String>(anchorSupplemental);
+    map['tm_bumps'] = Variable<int>(tmBumps);
     return map;
   }
 
@@ -5624,6 +5692,7 @@ class FiveThreeOneBlock extends DataClass
           : Value(completed),
       leaderSupplemental: Value(leaderSupplemental),
       anchorSupplemental: Value(anchorSupplemental),
+      tmBumps: Value(tmBumps),
     );
   }
 
@@ -5650,6 +5719,7 @@ class FiveThreeOneBlock extends DataClass
           serializer.fromJson<String>(json['leaderSupplemental']),
       anchorSupplemental:
           serializer.fromJson<String>(json['anchorSupplemental']),
+      tmBumps: serializer.fromJson<int>(json['tmBumps']),
     );
   }
   @override
@@ -5673,6 +5743,7 @@ class FiveThreeOneBlock extends DataClass
       'completed': serializer.toJson<DateTime?>(completed),
       'leaderSupplemental': serializer.toJson<String>(leaderSupplemental),
       'anchorSupplemental': serializer.toJson<String>(anchorSupplemental),
+      'tmBumps': serializer.toJson<int>(tmBumps),
     };
   }
 
@@ -5693,7 +5764,8 @@ class FiveThreeOneBlock extends DataClass
           bool? isActive,
           Value<DateTime?> completed = const Value.absent(),
           String? leaderSupplemental,
-          String? anchorSupplemental}) =>
+          String? anchorSupplemental,
+          int? tmBumps}) =>
       FiveThreeOneBlock(
         id: id ?? this.id,
         created: created ?? this.created,
@@ -5717,6 +5789,7 @@ class FiveThreeOneBlock extends DataClass
         completed: completed.present ? completed.value : this.completed,
         leaderSupplemental: leaderSupplemental ?? this.leaderSupplemental,
         anchorSupplemental: anchorSupplemental ?? this.anchorSupplemental,
+        tmBumps: tmBumps ?? this.tmBumps,
       );
   FiveThreeOneBlock copyWithCompanion(FiveThreeOneBlocksCompanion data) {
     return FiveThreeOneBlock(
@@ -5753,6 +5826,7 @@ class FiveThreeOneBlock extends DataClass
       anchorSupplemental: data.anchorSupplemental.present
           ? data.anchorSupplemental.value
           : this.anchorSupplemental,
+      tmBumps: data.tmBumps.present ? data.tmBumps.value : this.tmBumps,
     );
   }
 
@@ -5775,7 +5849,8 @@ class FiveThreeOneBlock extends DataClass
           ..write('isActive: $isActive, ')
           ..write('completed: $completed, ')
           ..write('leaderSupplemental: $leaderSupplemental, ')
-          ..write('anchorSupplemental: $anchorSupplemental')
+          ..write('anchorSupplemental: $anchorSupplemental, ')
+          ..write('tmBumps: $tmBumps')
           ..write(')'))
         .toString();
   }
@@ -5798,7 +5873,8 @@ class FiveThreeOneBlock extends DataClass
       isActive,
       completed,
       leaderSupplemental,
-      anchorSupplemental);
+      anchorSupplemental,
+      tmBumps);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5819,7 +5895,8 @@ class FiveThreeOneBlock extends DataClass
           other.isActive == this.isActive &&
           other.completed == this.completed &&
           other.leaderSupplemental == this.leaderSupplemental &&
-          other.anchorSupplemental == this.anchorSupplemental);
+          other.anchorSupplemental == this.anchorSupplemental &&
+          other.tmBumps == this.tmBumps);
 }
 
 class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
@@ -5840,6 +5917,7 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
   final Value<DateTime?> completed;
   final Value<String> leaderSupplemental;
   final Value<String> anchorSupplemental;
+  final Value<int> tmBumps;
   const FiveThreeOneBlocksCompanion({
     this.id = const Value.absent(),
     this.created = const Value.absent(),
@@ -5858,6 +5936,7 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
     this.completed = const Value.absent(),
     this.leaderSupplemental = const Value.absent(),
     this.anchorSupplemental = const Value.absent(),
+    this.tmBumps = const Value.absent(),
   });
   FiveThreeOneBlocksCompanion.insert({
     this.id = const Value.absent(),
@@ -5877,6 +5956,7 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
     this.completed = const Value.absent(),
     this.leaderSupplemental = const Value.absent(),
     this.anchorSupplemental = const Value.absent(),
+    this.tmBumps = const Value.absent(),
   })  : created = Value(created),
         squatTm = Value(squatTm),
         benchTm = Value(benchTm),
@@ -5901,6 +5981,7 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
     Expression<DateTime>? completed,
     Expression<String>? leaderSupplemental,
     Expression<String>? anchorSupplemental,
+    Expression<int>? tmBumps,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5920,6 +6001,7 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
       if (completed != null) 'completed': completed,
       if (leaderSupplemental != null) 'leader_supplemental': leaderSupplemental,
       if (anchorSupplemental != null) 'anchor_supplemental': anchorSupplemental,
+      if (tmBumps != null) 'tm_bumps': tmBumps,
     });
   }
 
@@ -5940,7 +6022,8 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
       Value<bool>? isActive,
       Value<DateTime?>? completed,
       Value<String>? leaderSupplemental,
-      Value<String>? anchorSupplemental}) {
+      Value<String>? anchorSupplemental,
+      Value<int>? tmBumps}) {
     return FiveThreeOneBlocksCompanion(
       id: id ?? this.id,
       created: created ?? this.created,
@@ -5959,6 +6042,7 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
       completed: completed ?? this.completed,
       leaderSupplemental: leaderSupplemental ?? this.leaderSupplemental,
       anchorSupplemental: anchorSupplemental ?? this.anchorSupplemental,
+      tmBumps: tmBumps ?? this.tmBumps,
     );
   }
 
@@ -6016,6 +6100,9 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
     if (anchorSupplemental.present) {
       map['anchor_supplemental'] = Variable<String>(anchorSupplemental.value);
     }
+    if (tmBumps.present) {
+      map['tm_bumps'] = Variable<int>(tmBumps.value);
+    }
     return map;
   }
 
@@ -6038,7 +6125,8 @@ class FiveThreeOneBlocksCompanion extends UpdateCompanion<FiveThreeOneBlock> {
           ..write('isActive: $isActive, ')
           ..write('completed: $completed, ')
           ..write('leaderSupplemental: $leaderSupplemental, ')
-          ..write('anchorSupplemental: $anchorSupplemental')
+          ..write('anchorSupplemental: $anchorSupplemental, ')
+          ..write('tmBumps: $tmBumps')
           ..write(')'))
         .toString();
   }
@@ -6910,6 +6998,7 @@ typedef $$SettingsTableCreateCompanionBuilder = SettingsCompanion Function({
   Value<double?> fivethreeoneDeadliftTm,
   Value<double?> fivethreeonePressTm,
   Value<int> fivethreeoneWeek,
+  Value<bool> fivethreeoneAutofill,
   Value<int> customColorSeed,
   Value<DateTime?> lastAutoBackupTime,
   Value<String?> lastBackupStatus,
@@ -6959,6 +7048,7 @@ typedef $$SettingsTableUpdateCompanionBuilder = SettingsCompanion Function({
   Value<double?> fivethreeoneDeadliftTm,
   Value<double?> fivethreeonePressTm,
   Value<int> fivethreeoneWeek,
+  Value<bool> fivethreeoneAutofill,
   Value<int> customColorSeed,
   Value<DateTime?> lastAutoBackupTime,
   Value<String?> lastBackupStatus,
@@ -7103,6 +7193,10 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<int> get fivethreeoneWeek => $composableBuilder(
       column: $table.fivethreeoneWeek,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get fivethreeoneAutofill => $composableBuilder(
+      column: $table.fivethreeoneAutofill,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get customColorSeed => $composableBuilder(
@@ -7284,6 +7378,10 @@ class $$SettingsTableOrderingComposer
       column: $table.fivethreeoneWeek,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get fivethreeoneAutofill => $composableBuilder(
+      column: $table.fivethreeoneAutofill,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get customColorSeed => $composableBuilder(
       column: $table.customColorSeed,
       builder: (column) => ColumnOrderings(column));
@@ -7444,6 +7542,9 @@ class $$SettingsTableAnnotationComposer
   GeneratedColumn<int> get fivethreeoneWeek => $composableBuilder(
       column: $table.fivethreeoneWeek, builder: (column) => column);
 
+  GeneratedColumn<bool> get fivethreeoneAutofill => $composableBuilder(
+      column: $table.fivethreeoneAutofill, builder: (column) => column);
+
   GeneratedColumn<int> get customColorSeed => $composableBuilder(
       column: $table.customColorSeed, builder: (column) => column);
 
@@ -7535,6 +7636,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             Value<double?> fivethreeoneDeadliftTm = const Value.absent(),
             Value<double?> fivethreeonePressTm = const Value.absent(),
             Value<int> fivethreeoneWeek = const Value.absent(),
+            Value<bool> fivethreeoneAutofill = const Value.absent(),
             Value<int> customColorSeed = const Value.absent(),
             Value<DateTime?> lastAutoBackupTime = const Value.absent(),
             Value<String?> lastBackupStatus = const Value.absent(),
@@ -7584,6 +7686,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             fivethreeoneDeadliftTm: fivethreeoneDeadliftTm,
             fivethreeonePressTm: fivethreeonePressTm,
             fivethreeoneWeek: fivethreeoneWeek,
+            fivethreeoneAutofill: fivethreeoneAutofill,
             customColorSeed: customColorSeed,
             lastAutoBackupTime: lastAutoBackupTime,
             lastBackupStatus: lastBackupStatus,
@@ -7633,6 +7736,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             Value<double?> fivethreeoneDeadliftTm = const Value.absent(),
             Value<double?> fivethreeonePressTm = const Value.absent(),
             Value<int> fivethreeoneWeek = const Value.absent(),
+            Value<bool> fivethreeoneAutofill = const Value.absent(),
             Value<int> customColorSeed = const Value.absent(),
             Value<DateTime?> lastAutoBackupTime = const Value.absent(),
             Value<String?> lastBackupStatus = const Value.absent(),
@@ -7682,6 +7786,7 @@ class $$SettingsTableTableManager extends RootTableManager<
             fivethreeoneDeadliftTm: fivethreeoneDeadliftTm,
             fivethreeonePressTm: fivethreeonePressTm,
             fivethreeoneWeek: fivethreeoneWeek,
+            fivethreeoneAutofill: fivethreeoneAutofill,
             customColorSeed: customColorSeed,
             lastAutoBackupTime: lastAutoBackupTime,
             lastBackupStatus: lastBackupStatus,
@@ -8774,6 +8879,7 @@ typedef $$FiveThreeOneBlocksTableCreateCompanionBuilder
   Value<DateTime?> completed,
   Value<String> leaderSupplemental,
   Value<String> anchorSupplemental,
+  Value<int> tmBumps,
 });
 typedef $$FiveThreeOneBlocksTableUpdateCompanionBuilder
     = FiveThreeOneBlocksCompanion Function({
@@ -8794,6 +8900,7 @@ typedef $$FiveThreeOneBlocksTableUpdateCompanionBuilder
   Value<DateTime?> completed,
   Value<String> leaderSupplemental,
   Value<String> anchorSupplemental,
+  Value<int> tmBumps,
 });
 
 class $$FiveThreeOneBlocksTableFilterComposer
@@ -8858,6 +8965,9 @@ class $$FiveThreeOneBlocksTableFilterComposer
   ColumnFilters<String> get anchorSupplemental => $composableBuilder(
       column: $table.anchorSupplemental,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get tmBumps => $composableBuilder(
+      column: $table.tmBumps, builder: (column) => ColumnFilters(column));
 }
 
 class $$FiveThreeOneBlocksTableOrderingComposer
@@ -8926,6 +9036,9 @@ class $$FiveThreeOneBlocksTableOrderingComposer
   ColumnOrderings<String> get anchorSupplemental => $composableBuilder(
       column: $table.anchorSupplemental,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get tmBumps => $composableBuilder(
+      column: $table.tmBumps, builder: (column) => ColumnOrderings(column));
 }
 
 class $$FiveThreeOneBlocksTableAnnotationComposer
@@ -8987,6 +9100,9 @@ class $$FiveThreeOneBlocksTableAnnotationComposer
 
   GeneratedColumn<String> get anchorSupplemental => $composableBuilder(
       column: $table.anchorSupplemental, builder: (column) => column);
+
+  GeneratedColumn<int> get tmBumps =>
+      $composableBuilder(column: $table.tmBumps, builder: (column) => column);
 }
 
 class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
@@ -9034,6 +9150,7 @@ class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
             Value<DateTime?> completed = const Value.absent(),
             Value<String> leaderSupplemental = const Value.absent(),
             Value<String> anchorSupplemental = const Value.absent(),
+            Value<int> tmBumps = const Value.absent(),
           }) =>
               FiveThreeOneBlocksCompanion(
             id: id,
@@ -9053,6 +9170,7 @@ class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
             completed: completed,
             leaderSupplemental: leaderSupplemental,
             anchorSupplemental: anchorSupplemental,
+            tmBumps: tmBumps,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -9072,6 +9190,7 @@ class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
             Value<DateTime?> completed = const Value.absent(),
             Value<String> leaderSupplemental = const Value.absent(),
             Value<String> anchorSupplemental = const Value.absent(),
+            Value<int> tmBumps = const Value.absent(),
           }) =>
               FiveThreeOneBlocksCompanion.insert(
             id: id,
@@ -9091,6 +9210,7 @@ class $$FiveThreeOneBlocksTableTableManager extends RootTableManager<
             completed: completed,
             leaderSupplemental: leaderSupplemental,
             anchorSupplemental: anchorSupplemental,
+            tmBumps: tmBumps,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

@@ -47,6 +47,9 @@ class Settings extends Table {
   RealColumn get fivethreeoneDeadliftTm => real().nullable()();
   RealColumn get fivethreeonePressTm => real().nullable()();
   IntColumn get fivethreeoneWeek => integer().withDefault(const Constant(1))();
+  // Auto-fill 5/3/1 main lifts from the active block instead of last session
+  BoolColumn get fivethreeoneAutofill =>
+      boolean().withDefault(const Constant(true))();
   IntColumn get customColorSeed => integer()
       .withDefault(const Constant(0xFF673AB7))(); // Default: deep purple
   DateTimeColumn get lastAutoBackupTime => dateTime().nullable()();

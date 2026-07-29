@@ -40,16 +40,6 @@ class QueueBottomSheet extends StatelessWidget {
           ),
           child: Column(
             children: [
-              // Drag handle
-              Container(
-                margin: const EdgeInsets.only(top: space8, bottom: space4),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  borderRadius: brPill,
-                ),
-              ),
               // Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(space16, space4, space16, space8),

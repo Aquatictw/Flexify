@@ -223,7 +223,10 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
                                   ),
                             ),
                             Text(
-                              '${cycleNames[blockCycleType]} \u2014 Week $blockWeek',
+                              [
+                                cycleNames[blockCycleType],
+                                weekLabel(blockCycleType, blockWeek),
+                              ].where((part) => part.isNotEmpty).join(' \u2014 '),
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall
@@ -278,7 +281,11 @@ class _FiveThreeOneCalculatorState extends State<FiveThreeOneCalculator> {
 
                     // Block position header
                     Text(
-                      '${getDescriptiveLabel(blockCycleType, supplementals)} — Week $blockWeek',
+                      cyclePositionLabel(
+                        blockCycleType,
+                        blockWeek,
+                        supplementals,
+                      ),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),

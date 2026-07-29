@@ -100,8 +100,8 @@ void main() {
 
       expect(
         version,
-        equals(68),
-        reason: 'Fresh install should create v68 schema',
+        equals(70),
+        reason: 'Fresh install should create v70 schema',
       );
 
       // Verify all tables exist
@@ -376,6 +376,73 @@ void main() {
         blocks.single.anchorSupplemental,
         equals('fsl'),
         reason: 'Pre-v68 blocks ran FSL during the Anchor',
+      );
+
+      await db.close();
+    });
+
+    test('v70 backfills applied TM bumps from block position', () async {
+      final schema = await verifier.schemaAt(67);
+
+      // Cycle 3 (Anchor) — Leader 1 and Leader 2 each bumped on their way out.
+      schema.rawDatabase.execute(
+        'INSERT INTO five_three_one_blocks '
+        '(id, created, squat_tm, bench_tm, deadlift_tm, press_tm, unit, '
+        'current_cycle, current_week, is_active) '
+        "VALUES (1, 1000, 109, 84.4, 129, 54.4, 'kg', 3, 1, 1)",
+      );
+
+      final db = AppDatabase(schema.newConnection());
+
+      final blocks = await db.select(db.fiveThreeOneBlocks).get();
+      expect(
+        blocks.single.tmBumps,
+        equals(2),
+        reason: 'Both Leader cycles bumped before reaching the Anchor',
+      );
+
+      await db.close();
+    });
+
+    test('v69 renames Barbell Bench Press and dedupes plans', () async {
+      final schema = await verifier.schemaAt(67);
+
+      // Seed through the raw v67 database: AppDatabase migrates on its first
+      // query, so rows inserted through it would arrive after the rename.
+      schema.rawDatabase.execute(
+        "INSERT INTO plans (id, days) VALUES (1, 'Monday')",
+      );
+      // Both casings the rename has to cover: the shipped seed used sentence
+      // case, hand-entered rows used title case.
+      for (final name in ['Barbell Bench Press', 'Barbell bench press']) {
+        schema.rawDatabase.execute(
+          'INSERT INTO gym_sets (name, reps, weight, unit, created) '
+          "VALUES ('$name', 5, 100, 'kg', 1000)",
+        );
+      }
+      // Plan 1 already lists a separate 'Bench Press' — after the rename the
+      // two must collapse into one row.
+      for (final name in ['Barbell Bench Press', 'Bench Press']) {
+        schema.rawDatabase.execute(
+          'INSERT INTO plan_exercises (plan_id, exercise, enabled) '
+          "VALUES (1, '$name', 1)",
+        );
+      }
+
+      final db = AppDatabase(schema.newConnection());
+
+      final sets = await db.select(db.gymSets).get();
+      expect(
+        sets.map((s) => s.name).toSet(),
+        equals({'Bench Press'}),
+        reason: 'Both casings should rename to Bench Press',
+      );
+
+      final planExercises = await db.select(db.planExercises).get();
+      expect(
+        planExercises.map((e) => e.exercise).toList(),
+        equals(['Bench Press']),
+        reason: 'The duplicate Bench Press row should be dropped',
       );
 
       await db.close();

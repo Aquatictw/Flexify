@@ -168,6 +168,33 @@ List<Widget> getAppearanceSettings(
           ),
         ),
       ),
+    if ('5/3/1 auto-fill'.contains(term.toLowerCase()) ||
+        'five three one'.contains(term.toLowerCase()))
+      Tooltip(
+        message: 'Load Squat, Bench Press, Deadlift and Overhead Press from '
+            'the active block instead of last session, and cheer you on',
+        child: ListTile(
+          title: const Text('5/3/1 auto-fill'),
+          subtitle: const Text('Main lifts use training max weights'),
+          leading: settings.value.fivethreeoneAutofill
+              ? const Icon(Icons.local_fire_department)
+              : const Icon(Icons.local_fire_department_outlined),
+          onTap: () => db.settings.update().write(
+                SettingsCompanion(
+                  fivethreeoneAutofill:
+                      Value(!settings.value.fivethreeoneAutofill),
+                ),
+              ),
+          trailing: Switch(
+            value: settings.value.fivethreeoneAutofill,
+            onChanged: (value) => db.settings.update().write(
+                  SettingsCompanion(
+                    fivethreeoneAutofill: Value(value),
+                  ),
+                ),
+          ),
+        ),
+      ),
   ];
 }
 
