@@ -1,0 +1,13 @@
+{
+  "name": "22-history-trend-read-tool",
+  "description": "Protects longitudinal exercise questions through the history read tool.",
+  "snapshot_ref": "no-workout-kg",
+  "utterance": "how has my bench AMRAP trended over the last few months?",
+  "expect": [
+    {
+      "tool": "get_exercise_history",
+      "args_match": {"exercise": "Bench Press"}
+    }
+  ],
+  "forbid": ["apply_session_changes"]
+}

@@ -3,13 +3,18 @@ services:
     image: ghcr.io/aquatictw/jackedlog-server:latest
     environment:
       - JACKED_API_KEY=${JACKED_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - CHAT_MODEL=${CHAT_MODEL}
       - PORT=9091
       - DATA_DIR=/data
+      - KNOWLEDGE_DIR=/data/knowledge
       # Lets the "Update now" button ask Watchtower to pull + recreate.
       - WATCHTOWER_URL=http://watchtower:8080/v1/update
       - WATCHTOWER_TOKEN=${WATCHTOWER_TOKEN}
     volumes:
       - backup_data:/data
+      # Knowledge docs are built outside the repo (issue 01) and mounted in.
+      - ${JACKED_KNOWLEDGE_DIR:-./knowledge}:/data/knowledge:ro
     networks:
       - web_apps
     labels:

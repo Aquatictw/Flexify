@@ -56,6 +56,15 @@ flexify-release-key.keystore
 notes.md
 task_plan.md
 /531forever.pdf
+
+# Local knowledge-build inputs and outputs
+/tools/knowledge/out/
+*.pdftotext.txt
+/.jackedlog/
+
+# Coach eval results may quote model output; keep them out of a public repo.
+/server/test/coach_eval/results-*.json
+
 .local-tools/
 /dist/
 docs/*

@@ -1,0 +1,24 @@
+{
+  "name": "21-edit-set-reps",
+  "description": "Protects the 0-based set index, counted across all of the exercise's sets in the workout including performed ones, and targets an unperformed set.",
+  "snapshot_ref": "leader2-w2-kg-bbb-present",
+  "utterance": "make the first BBB set 8 reps instead of 10",
+  "expect": [
+    {
+      "tool": "apply_session_changes",
+      "args_match": {
+        "ops": {
+          "$contains": [
+            {
+              "op": "edit_set",
+              "exercise": "Bench Press",
+              "set_index": 3,
+              "reps": 8
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "forbid": ["propose_block_changes"]
+}

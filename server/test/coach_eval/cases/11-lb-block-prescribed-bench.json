@@ -1,0 +1,30 @@
+{
+  "name": "11-lb-block-prescribed-bench",
+  "description": "Protects prescribed pound work from model-side conversion or bare weights.",
+  "snapshot_ref": "leader1-w1-lb",
+  "utterance": "add today's prescribed bench work",
+  "expect": [
+    {
+      "tool": "apply_session_changes",
+      "args_match": {
+        "ops": {
+          "$contains": [
+            {
+              "op": "add_exercise",
+              "exercise": "Bench Press",
+              "sets": {
+                "$len": 3,
+                "$all": {
+                  "weight_spec": {
+                    "pct_of_prescribed": 0,
+                    "absolute": {"$absent": true}
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"choices":[{"message":{"role":"assistant","content":null,"tool_calls":[{"id":"call_1","type":"function","function":{"name":"apply_session_changes","arguments":"{\"ops\":[{\"op\":\"add_sets\",\"exercise\":\"Bench Press\",\"sets\":[{\"weight_spec\":{\"pct_of_tm\":0.9},\"reps\":5}]}]}"}}]}}]}

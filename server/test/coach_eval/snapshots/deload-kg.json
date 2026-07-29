@@ -1,0 +1,26 @@
+{
+  "block": {
+    "cycle": "7th Week Protocol",
+    "cycleIndex": 2,
+    "mainScheme": "Deload",
+    "supplemental": null,
+    "tmBumps": 2,
+    "tms": {"bench": 100, "deadlift": 180, "press": 65, "squat": 140},
+    "week": 1
+  },
+  "exerciseVocabulary": ["Bench Press", "Squat", "Deadlift", "Overhead Press", "Lat Pulldown", "Barbell Row", "Dumbbell Curl", "Triceps Pushdown", "Leg Press", "Face Pull", "Chin Up", "Incline Bench Press"],
+  "prescription": [
+    {
+      "exercise": "Squat",
+      "sets": [
+        {"amrap": false, "reps": 5, "weight": 97.5},
+        {"amrap": false, "reps": 5, "weight": 112.5},
+        {"amrap": false, "reps": 1, "weight": 125},
+        {"amrap": false, "reps": 1, "weight": 140}
+      ]
+    }
+  ],
+  "recent": {},
+  "unit": "kg",
+  "workout": {"exercises": [], "id": 520}
+}

@@ -1,0 +1,7 @@
+{
+  "name": "24-block-history-read-tool",
+  "description": "Protects cross-block progress questions through block history.",
+  "snapshot_ref": "no-workout-kg",
+  "utterance": "am I actually progressing across blocks?",
+  "expect": [{"tool": "get_block_history", "args_match": {}}]
+}

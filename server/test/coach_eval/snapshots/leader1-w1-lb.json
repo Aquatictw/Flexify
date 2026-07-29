@@ -1,0 +1,29 @@
+{
+  "block": {
+    "cycle": "Leader 1",
+    "cycleIndex": 0,
+    "mainScheme": "5's PRO",
+    "supplemental": "FSL 5x5",
+    "tmBumps": 0,
+    "tms": {"bench": 225, "deadlift": 405, "press": 145, "squat": 315},
+    "week": 1
+  },
+  "exerciseVocabulary": ["Bench Press", "Squat", "Deadlift", "Overhead Press", "Lat Pulldown", "Barbell Row", "Dumbbell Curl", "Triceps Pushdown", "Leg Press", "Face Pull", "Chin Up", "Incline Bench Press"],
+  "prescription": [
+    {
+      "exercise": "Bench Press",
+      "sets": [
+        {"amrap": false, "reps": 5, "weight": 145},
+        {"amrap": false, "reps": 5, "weight": 170},
+        {"amrap": false, "reps": 5, "weight": 190}
+      ]
+    }
+  ],
+  "recent": {
+    "Bench Press": [
+      {"date": "2026-07-22", "sets": ["5x140", "5x165", "8x185"]}
+    ]
+  },
+  "unit": "lb",
+  "workout": {"exercises": [], "id": 501}
+}

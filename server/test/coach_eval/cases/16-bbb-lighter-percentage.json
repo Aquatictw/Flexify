@@ -1,0 +1,24 @@
+{
+  "name": "16-bbb-lighter-percentage",
+  "description": "Protects an explicit BBB percentage override as TM-relative work.",
+  "snapshot_ref": "leader2-w2-kg",
+  "utterance": "add BBB bench at 50% instead of 60, 5 sets of 10",
+  "expect": [
+    {
+      "tool": "apply_session_changes",
+      "args_match": {
+        "ops": {
+          "$contains": [
+            {
+              "exercise": "Bench Press",
+              "sets": {
+                "$len": 5,
+                "$all": {"weight_spec": {"pct_of_tm": 0.5}, "reps": 10}
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

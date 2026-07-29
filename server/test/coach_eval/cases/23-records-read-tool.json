@@ -1,0 +1,12 @@
+{
+  "name": "23-records-read-tool",
+  "description": "Protects record questions through the records read tool.",
+  "snapshot_ref": "no-workout-kg",
+  "utterance": "what's my best set of 5 on squat?",
+  "expect": [
+    {
+      "tool": "get_records",
+      "args_match": {"exercise": "Squat"}
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "14-tm-test-prescribed-squat",
+  "description": "Protects the four-set TM Test prescription.",
+  "snapshot_ref": "tmtest-kg",
+  "utterance": "add the TM test squat sets",
+  "expect": [
+    {
+      "tool": "apply_session_changes",
+      "args_match": {
+        "ops": {
+          "$contains": [
+            {
+              "op": "add_exercise",
+              "exercise": "Squat",
+              "sets": {"$len": 4}
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

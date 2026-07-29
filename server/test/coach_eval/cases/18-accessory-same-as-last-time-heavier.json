@@ -1,0 +1,23 @@
+{
+  "name": "18-accessory-same-as-last-time-heavier",
+  "description": "Protects accessory progression as a positive last-session delta.",
+  "snapshot_ref": "accessory-history-kg",
+  "utterance": "lat pulldown, same as last time but 5% heavier",
+  "expect": [
+    {
+      "tool": "apply_session_changes",
+      "args_match": {
+        "ops": {
+          "$contains": [
+            {
+              "exercise": "Lat Pulldown",
+              "sets": {
+                "$all": {"weight_spec": {"pct_of_last_session": 0.05}}
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

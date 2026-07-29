@@ -1,0 +1,9 @@
+{
+  "name": "09-no-active-workout-tool-absent",
+  "description": "Protects session writes when no workout is active.",
+  "snapshot_ref": "no-workout-kg",
+  "utterance": "add 3x10 lat pulldown at 60kg",
+  "session_writes": false,
+  "expect": [],
+  "absent_tools": ["apply_session_changes"]
+}

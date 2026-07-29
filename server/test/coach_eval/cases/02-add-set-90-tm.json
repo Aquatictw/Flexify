@@ -1,0 +1,26 @@
+{
+  "name": "02-add-set-90-tm",
+  "description": "Protects adding a set to an existing exercise using TM-relative weight.",
+  "snapshot_ref": "leader2-w2-kg-bench-present",
+  "utterance": "make a new set at 90% TM × 5",
+  "expect": [
+    {
+      "tool": "apply_session_changes",
+      "args_match": {
+        "ops": {
+          "$contains": [
+            {
+              "op": "add_sets",
+              "exercise": "Bench Press",
+              "sets": {
+                "$len": 1,
+                "$all": {"weight_spec": {"pct_of_tm": 0.9}, "reps": 5}
+              }
+            }
+          ],
+          "$not": {"$contains": [{"op": "add_exercise"}]}
+        }
+      }
+    }
+  ]
+}

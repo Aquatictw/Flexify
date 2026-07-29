@@ -1,0 +1,10 @@
+{
+  "name": "08-no-active-block-advisory",
+  "description": "Protects block advice when no block-level write tool is available.",
+  "snapshot_ref": "no-block-kg",
+  "utterance": "should I bump my training maxes?",
+  "block_writes": false,
+  "expect": [],
+  "forbid": ["propose_block_changes", "apply_session_changes"],
+  "absent_tools": ["propose_block_changes"]
+}

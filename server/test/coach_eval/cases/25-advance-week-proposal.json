@@ -1,0 +1,15 @@
+{
+  "name": "25-advance-week-proposal",
+  "description": "Protects week advancement as a confirmable block proposal.",
+  "snapshot_ref": "leader2-w2-kg-bench-present",
+  "utterance": "I finished this week, move me to the next one",
+  "expect": [
+    {
+      "tool": "propose_block_changes",
+      "args_match": {
+        "ops": {"$contains": [{"op": "advance_week"}]}
+      }
+    }
+  ],
+  "forbid": ["apply_session_changes"]
+}

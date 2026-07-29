@@ -1,0 +1,10 @@
+{
+  "name": "06-heavy-drop-tm-midcycle",
+  "description": "Protects ambiguous mid-cycle TM advice from mutating the current session. Answering in prose, or reading history first, are both acceptable; silently rewriting the session is not.",
+  "snapshot_ref": "leader2-w2-kg",
+  "utterance": "this feels heavy, drop my TM",
+  "expect": [{"tool": "propose_block_changes", "args_match": {}}],
+  "allow_no_tool_calls": true,
+  "allow_read_only_calls": true,
+  "forbid": ["apply_session_changes"]
+}

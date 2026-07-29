@@ -1,0 +1,8 @@
+{
+  "name": "10-ssl-vs-bbb-not-configurable",
+  "description": "Protects the tool boundary; the prose claim that SSL is not configurable and FSL/BBB are offered is human-reviewed.",
+  "snapshot_ref": "no-workout-kg",
+  "utterance": "should I run SSL instead of BBB?",
+  "expect": [],
+  "forbid": ["apply_session_changes", "propose_block_changes"]
+}

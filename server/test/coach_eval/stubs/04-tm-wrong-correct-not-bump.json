@@ -1,0 +1,1 @@
+{"choices":[{"message":{"role":"assistant","content":null,"tool_calls":[{"id":"call_1","type":"function","function":{"name":"propose_block_changes","arguments":"{\"ops\":[{\"op\":\"correct_tm\",\"lift\":\"bench\",\"value\":97.5}],\"rationale\":\"A training max should reflect a sustainable basis for 5/3/1 programming.\"}"}}]}}]}

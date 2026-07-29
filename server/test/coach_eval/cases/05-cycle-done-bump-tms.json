@@ -1,0 +1,18 @@
+{
+  "name": "05-cycle-done-bump-tms",
+  "description": "Protects a completed-cycle bump from becoming a one-lift correction.",
+  "snapshot_ref": "leader2-w2-kg",
+  "utterance": "I finished the cycle, move my TMs up",
+  "expect": [
+    {
+      "tool": "propose_block_changes",
+      "args_match": {
+        "ops": {
+          "$contains": [{"op": "bump_tms"}],
+          "$not": {"$contains": [{"op": "correct_tm"}]}
+        }
+      }
+    }
+  ],
+  "forbid": ["apply_session_changes"]
+}

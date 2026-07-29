@@ -1,0 +1,1 @@
+{"choices":[{"message":{"role":"assistant","content":null,"tool_calls":[{"id":"call_1","type":"function","function":{"name":"propose_block_changes","arguments":"{\"ops\":[{\"op\":\"advance_week\"}],\"rationale\":\"Advance the 5/3/1 week only after completing the prescribed work.\"}"}}]}}]}

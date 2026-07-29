@@ -1,0 +1,24 @@
+{
+  "block": null,
+  "exerciseVocabulary": ["Bench Press", "Squat", "Deadlift", "Overhead Press", "Lat Pulldown", "Barbell Row", "Dumbbell Curl", "Triceps Pushdown", "Leg Press", "Face Pull", "Chin Up", "Incline Bench Press"],
+  "prescription": null,
+  "recent": {
+    "Lat Pulldown": [
+      {"date": "2026-07-22", "sets": ["10x60", "10x60", "10x60"]}
+    ]
+  },
+  "unit": "kg",
+  "workout": {
+    "exercises": [
+      {
+        "name": "Lat Pulldown",
+        "sets": [
+          {"done": true, "reps": 10, "weight": 60},
+          {"done": true, "reps": 10, "weight": 60},
+          {"done": true, "reps": 10, "weight": 60}
+        ]
+      }
+    ],
+    "id": 560
+  }
+}

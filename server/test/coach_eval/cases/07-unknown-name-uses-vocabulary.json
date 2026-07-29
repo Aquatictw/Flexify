@@ -1,0 +1,14 @@
+{
+  "name": "07-unknown-name-uses-vocabulary",
+  "description": "Protects colloquial exercise names by resolving to the exact vocabulary.",
+  "snapshot_ref": "leader2-w2-kg",
+  "utterance": "add some bench",
+  "expect": [
+    {
+      "tool": "apply_session_changes",
+      "args_match": {
+        "ops": {"$contains": [{"exercise": "Bench Press"}]}
+      }
+    }
+  ]
+}

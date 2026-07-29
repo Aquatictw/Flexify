@@ -1,0 +1,46 @@
+{
+  "block": {
+    "cycle": "Leader 2",
+    "cycleIndex": 1,
+    "mainScheme": "5's PRO",
+    "supplemental": "BBB 5x10",
+    "tmBumps": 1,
+    "tms": {"bench": 100, "deadlift": 180, "press": 65, "squat": 140},
+    "week": 2
+  },
+  "exerciseVocabulary": ["Bench Press", "Squat", "Deadlift", "Overhead Press", "Lat Pulldown", "Barbell Row", "Dumbbell Curl", "Triceps Pushdown", "Leg Press", "Face Pull", "Chin Up", "Incline Bench Press"],
+  "prescription": [
+    {
+      "exercise": "Bench Press",
+      "sets": [
+        {"amrap": false, "reps": 5, "weight": 70},
+        {"amrap": false, "reps": 5, "weight": 80},
+        {"amrap": false, "reps": 5, "weight": 90}
+      ]
+    }
+  ],
+  "recent": {
+    "Bench Press": [
+      {"date": "2026-07-22", "sets": ["5x65", "5x75", "8x85"]}
+    ]
+  },
+  "unit": "kg",
+  "workout": {
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": [
+          {"done": true, "reps": 5, "weight": 70},
+          {"done": true, "reps": 5, "weight": 80},
+          {"done": true, "reps": 5, "weight": 90},
+          {"done": false, "reps": 10, "weight": 60},
+          {"done": false, "reps": 10, "weight": 60},
+          {"done": false, "reps": 10, "weight": 60},
+          {"done": false, "reps": 10, "weight": 60},
+          {"done": false, "reps": 10, "weight": 60}
+        ]
+      }
+    ],
+    "id": 414
+  }
+}

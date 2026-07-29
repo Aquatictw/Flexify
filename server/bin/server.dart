@@ -9,11 +9,13 @@ import 'package:jackedlog_server/middleware/auth.dart';
 import 'package:jackedlog_server/middleware/cors.dart';
 import 'package:jackedlog_server/api/health_api.dart';
 import 'package:jackedlog_server/api/backup_api.dart';
+import 'package:jackedlog_server/api/chat_api.dart';
 import 'package:jackedlog_server/api/manage_page.dart';
 import 'package:jackedlog_server/api/dashboard_pages.dart';
 import 'package:jackedlog_server/api/update_api.dart';
 import 'package:jackedlog_server/services/backup_service.dart';
 import 'package:jackedlog_server/services/dashboard_service.dart';
+import 'package:jackedlog_server/services/knowledge_service.dart';
 import 'package:jackedlog_server/version.dart';
 
 void main() async {
@@ -28,10 +30,14 @@ void main() async {
   // Initialize services
   final backupService = BackupService(config.dataDir);
   final dashboardService = DashboardService(config.dataDir);
+  // Loaded once at boot: a missing/empty knowledge doc must fail startup, not
+  // silently ship an empty system prompt.
+  final knowledgeService = KnowledgeService.load(config.knowledgeDir);
 
   // Configure routes
   final router = Router();
   router.get('/api/health', healthHandler);
+  router.post('/api/chat', (req) => chatHandler(req, config, knowledgeService));
   router.post('/api/backup', (req) => uploadBackupHandler(req, backupService));
   router.get('/api/backups', (req) => listBackupsHandler(req, backupService));
   router.get(
@@ -87,4 +93,7 @@ void main() async {
   print('JackedLog Server v$serverVersion');
   print('Listening on port ${server.port}');
   print('Data directory: ${config.dataDir}');
+  print('Chat model: ${config.chatModel}');
+  print('Knowledge directory: ${config.knowledgeDir}');
+  print('Knowledge prompt: ${knowledgeService.promptLength} chars');
 }

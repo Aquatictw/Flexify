@@ -1,0 +1,23 @@
+{
+  "name": "15-bbb-volume-cut-remove-sets",
+  "description": "Protects a same-day BBB volume cut as session set removals.",
+  "snapshot_ref": "leader2-w2-kg-bbb-present",
+  "utterance": "cut my BBB down to 3 sets today, I'm beat",
+  "expect": [
+    {
+      "tool": "apply_session_changes",
+      "args_match": {
+        "ops": {
+          "$contains": [
+            {
+              "op": "remove_sets",
+              "exercise": "Bench Press",
+              "set_indices": {"$len": 2}
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "forbid": ["propose_block_changes"]
+}

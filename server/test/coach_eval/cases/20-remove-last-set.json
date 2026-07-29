@@ -1,0 +1,22 @@
+{
+  "name": "20-remove-last-set",
+  "description": "Protects dropping one prescribed set by exercise-local index.",
+  "snapshot_ref": "leader2-w2-kg-bench-present",
+  "utterance": "drop the last bench set, I'm done",
+  "expect": [
+    {
+      "tool": "apply_session_changes",
+      "args_match": {
+        "ops": {
+          "$contains": [
+            {
+              "op": "remove_sets",
+              "exercise": "Bench Press",
+              "set_indices": {"$len": 1}
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
