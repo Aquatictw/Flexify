@@ -7,20 +7,27 @@ Depends on: none (foundation)
 
 ## Goal
 
-Turn `531forever.pdf` into a ~48k-token prose-only knowledge document, plus two
-generated companions: a percentage reference derived from `schemes.dart`, and an
-app capability manifest. These three are concatenated into the system prompt by
-issue 02.
+Turn `531forever.pdf` into a compact, manually reviewed knowledge document,
+plus two generated companions: a percentage reference derived from
+`schemes.dart`, and an app capability manifest. These three are concatenated
+into the system prompt by issue 02.
 
 **The numeric set tables must not survive.** The book sets them in a script font
 and ClearScan mangles it — `rO"/o x 5` is 70% × 5, `'10"/o x 5+ CPR sef)` is
 90% × 5+ (PR set), `J)eodliff` is Deadlift. Feeding those to something that
 tells you what to load is a correctness hazard. Body prose OCRs cleanly.
 
+The page-strip tasks below describe the original implementation. As of
+2026-07-30 they are superseded by manual PDF review into
+`curated_knowledge.md`; the build no longer sends mechanically filtered OCR to
+the model.
+
 ## Where
 
 - New: `tools/knowledge/build_knowledge.dart` (or `.py` — a build script, not
   shipped code).
+- New: `tools/knowledge/curated_knowledge.md` — the tracked, OCR-corrected,
+  byte-stable source for `system.md`.
 - Output: written to a path outside the repo tree, referenced by
   `KNOWLEDGE_DIR` in `scripts/prod.env`.
 - Reads: `lib/fivethreeone/schemes.dart` constants for the generated reference.
@@ -59,16 +66,16 @@ tells you what to load is a correctness hazard. Body prose OCRs cleanly.
   (`bbb`, `fsl`) with `leaderSupplementalOptions` / `anchorSupplementalOptions`.
   State plainly that other templates from the book can be discussed but not
   configured as a block.
-- Report the final token estimate. *Resolved 2026-07-29:* landed at ~115k
-  measured tokens, well above the ~48k target. Investigated and accepted — see
-  PRD decision 8. The ~48k figure assumed the set tables dominated the book;
-  they are ~27% of it. No further trimming; Part 2 template prose is retained
-  deliberately.
+- Report the final token estimate. *Revised 2026-07-30:* the heuristic OCR
+  filter initially landed at ~85k measured OpenAI tokens. It was replaced with
+  a manually reviewed ~24.5k-token estimate that retains all template families,
+  restores concise assistance and Beginner Prep School guidance, and rejects
+  known OCR fragments during the build.
 
 ## Acceptance
 
-- Output contains zero occurrences of `"/o`, and zero of the mangled day-header
-  tokens listed above.
+- Output contains zero occurrences of `"/o`, zero of the mangled day-header
+  tokens listed above, and all 40 required template topics.
 - Output contains the Part 1 principles, the leader/anchor and 7th-week protocol
   prose, and the conditioning/recovery material.
 - `percentages.md` values match `schemes.dart` exactly — spot-check 5's PRO

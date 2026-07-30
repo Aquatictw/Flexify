@@ -140,6 +140,7 @@ dart run test/coach_eval/run.dart --stub-dir test/coach_eval/stubs
 | `openai/gpt-5.6-terra` | 2026-07-30 | 20/25 | PASS | Before the named-percentage and question-vs-instruction rules. Scored 24/25 on the sweep, but repeat runs put cases 02 and 19 at 2/4 each, so the sweep number was partly luck. |
 | `openai/gpt-5.6-luna` | 2026-07-30 | 21/25 | PASS | Same prompt as the terra row. Failures: 02, 10, 19 (all fixed by the prompt rules) and 17 (harness bug). |
 | `openai/gpt-5.6-luna` | 2026-07-30 | **25/25** | PASS | After the named-percentage and question-vs-instruction rules. 134.5s. Repeats: 02 4/4, 10 4/4, 17 4/4, 19 2/4. **Selected as the production model.** |
+| `openai/gpt-5.6-luna` | 2026-07-30 | **25/25** | PASS | Manually reviewed ~25k-token knowledge distillation plus the set-group indexing rule. 116.1s. The full request measured ~28–31k tokens depending on the offered tools, with ~30.5k cached on write-capable turns. |
 | `openai/gpt-5.6-terra` | — | not swept | — | Not re-swept after the prompt fix: luna already scored 25/25 at 40% of terra's input price, so the comparison could not change the choice. |
 | `openai/gpt-5.6-sol` | — | not run | — | Never evaluated. Skipped once luna passed at 1/10 of sol's input price. |
 
@@ -162,27 +163,30 @@ Planned models: `openai/gpt-5.6-luna` (in production), `anthropic/claude-sonnet-
 ### Cost
 
 The knowledge prefix dominates every turn, so run cost tracks the model's input
-price almost exactly. Prefix size is tokenizer-dependent: ~115k by Anthropic's
-count, ~85k by OpenAI's (measured from `prompt_tokens` on prod). The table below
-uses 115k, so the gpt-5.6 rows are conservative by about a third.
+price almost exactly. The original filtered-OCR prompt measured ~85k OpenAI
+tokens in production. The manually reviewed replacement measures ~28–31k total
+prompt tokens depending on the offered tools, with ~30.5k cached on
+write-capable turns. The table uses a conservative 31k input tokens.
 
 | Model | Input $/M | Cached read $/M | Cold turn | Warm turn |
 | ----- | --------- | --------------- | --------- | --------- |
-| `openai/gpt-5.6-luna` | 0.50 | 0.05 | ~$0.058 | ~$0.006 |
-| `openai/gpt-5.6-terra` | 1.25 | 0.125 | ~$0.144 | ~$0.014 |
-| `openai/gpt-5.6-sol` | 5.00 | 0.50 | ~$0.58 | ~$0.058 |
-| `anthropic/claude-sonnet-5` | — | — | ~$0.29 | ~$0.024 |
+| `openai/gpt-5.6-luna` | 0.50 | 0.05 | ~$0.016 | ~$0.002 |
+| `openai/gpt-5.6-terra` | 1.25 | 0.125 | ~$0.039 | ~$0.004 |
+| `openai/gpt-5.6-sol` | 5.00 | 0.50 | ~$0.155 | ~$0.016 |
+| `anthropic/claude-sonnet-5` | — | — | not remeasured | not remeasured |
 
-A full 25-case sweep was **$3–4** on `claude-sonnet-5` and well under **$1** on
-luna. Warm pricing only holds inside the provider's cache TTL, so a slow
-interactive session pays closer to the cold column. Prefer `--filter` while
-iterating.
+A full 25-case sweep was **$3–4** on `claude-sonnet-5` with the old prompt and
+is now well under **$1** on luna. Warm pricing only holds inside the provider's
+cache TTL, so a slow interactive session pays closer to the cold column.
+Prefer `--filter` while iterating.
 
-Caching is verified working in production. `[chat]` log lines from the deployed
-server read `prompt_tokens=85089 cached_tokens=85086` — a ~100% hit rate, which
-is why `_toolUseRules` must stay a plain non-interpolated const and the knowledge
-build must stay byte-deterministic. Any byte that moves in the prefix costs ~10x
-on the next turn. Grep it with:
+Caching is verified working. The old production prompt logged
+`prompt_tokens=85089 cached_tokens=85086`; the curated prompt's local production-
+model evaluation logged write-capable turns around
+`prompt_tokens=30969 cached_tokens=30475`. This is why `_toolUseRules` must stay
+a plain non-interpolated const and the knowledge build must stay
+byte-deterministic. Any byte that moves in the prefix costs ~10x on the next
+turn. Grep production with:
 
 ```sh
 ./scripts/prod-logs 200 | grep '\[chat\]'
