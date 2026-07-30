@@ -20,6 +20,12 @@ Future<void> showCoachSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    // The Plans tab runs its own nested Navigator, whose overlay sits *below*
+    // the home Stack's active-workout bar and pill nav — a sheet pushed there
+    // has its composer painted under both, and the modal barrier leaves the
+    // nav tappable. Every other modal in the app roots itself for the same
+    // reason, including the plate calculator in this same app bar.
+    useRootNavigator: true,
     builder: (context) => DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.4,
@@ -30,48 +36,34 @@ Future<void> showCoachSheet(
         return AnimatedPadding(
           duration: const Duration(milliseconds: 180),
           padding: EdgeInsets.only(bottom: bottomInset),
-          child: Material(
-            clipBehavior: Clip.antiAlias,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
-            child: Column(
-              children: [
-                const SizedBox(height: 8),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Coach',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ChangeNotifierProvider<CoachState>(
-                    create: (_) => CoachState(),
-                    child: CoachThread(
-                      workoutId: workoutId,
-                      onSessionChanged: onSessionChanged,
-                      scrollController: scrollController,
+          // No Material/rounding here: bottomSheetTheme already supplies the
+          // surface colour and the rounded top, and its showDragHandle draws
+          // the grabber. Re-adding either nests a second rounded panel and a
+          // second handle inside the real ones.
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                child: Row(
+                  children: [
+                    Text(
+                      'Coach',
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ChangeNotifierProvider<CoachState>(
+                  create: (_) => CoachState(),
+                  child: CoachThread(
+                    workoutId: workoutId,
+                    onSessionChanged: onSessionChanged,
+                    scrollController: scrollController,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
