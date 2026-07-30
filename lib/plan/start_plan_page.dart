@@ -4,8 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../coach/coach_sheet.dart';
+import '../coach/coach_state.dart';
 import '../database/database.dart';
 import '../database/query_helpers.dart';
+import '../fivethreeone/fivethreeone_state.dart';
+import '../fivethreeone/go_hard_notification.dart';
+import '../fivethreeone/main_lifts.dart';
+import '../fivethreeone/schemes.dart';
 import '../main.dart';
 import '../theme/tokens.dart';
 import '../widgets/plate_calculator.dart';
@@ -244,6 +249,70 @@ class _StartPlanPageState extends State<StartPlanPage> {
     }
   }
 
+  /// Folds a coach-applied session write into the visible workout.
+  ///
+  /// `_exerciseOrder` is built once, when the workout is opened or resumed, so
+  /// an exercise the coach adds has rows in `gym_sets` but no card until the
+  /// page is reopened — the write looks like it never happened. Cards that do
+  /// exist hold their own copy of the sets and re-read them off the refresh
+  /// token; a sequence this list has never seen needs an item of its own.
+  Future<void> _absorbCoachChanges(CoachSessionChange change) async {
+    final id = workoutId;
+    if (id == null) return;
+
+    final workoutData = await QueryHelpers.loadWorkoutResumeData(workoutId: id);
+    if (!mounted) return;
+
+    final knownSequences = _exerciseOrder.map((item) => item.sequence).toSet();
+    final newItems = <_ExerciseItem>[];
+    for (final set in workoutData.existingSets) {
+      if (!knownSequences.add(set.sequence)) continue;
+      final planExercise = _planExercisesMap.values
+          .where((exercise) => exercise.exercise == set.name)
+          .firstOrNull;
+      newItems.add(
+        planExercise != null
+            ? _ExerciseItem.plan(planExercise, sequence: set.sequence)
+            : _ExerciseItem.adHoc(set.name, sequence: set.sequence),
+      );
+    }
+    newItems.sort((a, b) => a.sequence.compareTo(b.sequence));
+
+    setState(() {
+      for (final item in newItems) {
+        _exerciseOrder.add(item);
+        expandedExercises.add(item.key);
+      }
+      _refreshCounter++;
+    });
+
+    _showGoHardFor(change.addedExercises);
+  }
+
+  /// Echoes the 5/3/1 prompt for a main lift the coach just prescribed.
+  ///
+  /// Auto-fill fires this from the card as it seeds the sets, but a coach add
+  /// writes those rows itself, so the card takes its "sets already exist" path
+  /// and the prompt would silently go missing.
+  void _showGoHardFor(List<String> addedExercises) {
+    if (addedExercises.isEmpty) return;
+    final block = context.read<FiveThreeOneState>().activeBlock;
+    if (block == null) return;
+    final mainLift = addedExercises
+        .where((name) => mainLiftTmKey(name) != null)
+        .firstOrNull;
+    if (mainLift == null) return;
+    showGoHardNotification(
+      context,
+      exerciseName: mainLift,
+      schemeLabel: cyclePositionLabel(
+        block.currentCycle,
+        block.currentWeek,
+        block.supplementals,
+      ),
+    );
+  }
+
   Future<void> _onReorder(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) newIndex--;
 
@@ -469,15 +538,17 @@ class _StartPlanPageState extends State<StartPlanPage> {
                   tooltip: 'Coach',
                   onPressed: workoutId == null
                       ? null
-                      : () => showCoachSheet(
+                      : () async {
+                          await showCoachSheet(
                             context,
                             workoutId: workoutId!,
-                            onSessionChanged: () {
-                              if (mounted) {
-                                setState(() => _refreshCounter++);
-                              }
-                            },
-                          ),
+                            onSessionChanged: _absorbCoachChanges,
+                          );
+                          // A turn keeps running after the sheet is dismissed,
+                          // and its listener is gone by then, so sweep up
+                          // whatever landed while it was closing.
+                          await _absorbCoachChanges(const CoachSessionChange());
+                        },
                 ),
                 IconButton(
                   icon: const Icon(Icons.calculate_outlined),

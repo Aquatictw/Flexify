@@ -72,9 +72,15 @@ are grouped by phase; each phase squashes to one commit.
 5. **State is pushed, not pulled.** Every request appends a compact session
    snapshot *after* the cached knowledge prefix. Read tools exist for deep
    history only.
-6. **Threads are short-lived.** One thread per `workout_id`, plus one rolling
-   ad-hoc thread for pre-workout questions. Continuity across weeks comes from
-   the database, not from scrollback. No compaction is ever implemented.
+6. **Threads are short-lived.** One thread per `workout_id`, plus ad-hoc threads
+   for pre-workout questions. Continuity across weeks comes from the database,
+   not from scrollback. No compaction is ever implemented.
+   *Revised 2026-07-30:* originally **one rolling** ad-hoc thread. The Coach tab
+   now keeps many, listed in a sidebar (`chat_threads`, schema v72). A thread is
+   still never compacted and still never mixed with another; only the count
+   changed. Workout threads stay out of the sidebar — their write tools target
+   the *live* session, so reopening one from the tab would put it in a context
+   it was never written in.
 7. **Full block authority, behind confirmation.** TM, cycle position and
    supplemental are all reachable via `propose_block_changes`, always confirmed.
 8. **Knowledge doc is prose-only, ~115k tokens.** All OCR'd numeric set tables
@@ -124,6 +130,8 @@ are grouped by phase; each phase squashes to one commit.
 
 - Adds one table, `chat_messages`; schema **v70 → v71**
   (`lib/database/database.dart:699`, manual migration only).
+- **v71 → v72** adds `chat_threads` plus a nullable `chat_messages.thread_id`,
+  backfilled one thread per pre-existing scope. Also purely additive.
 - Purely additive new table. `lib/export_data.dart` exports `gym_sets` columns
   only, so **previously exported data still re-imports unchanged** — the
   CLAUDE.md "confirm before proceeding" DB rule does not trigger.

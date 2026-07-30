@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../constants.dart';
 import 'bodyweight_entries.dart';
 import 'chat_messages.dart';
+import 'chat_threads.dart';
 import 'database_connection_native.dart';
 import 'defaults.dart';
 import 'fivethreeone_blocks.dart';
@@ -31,6 +32,7 @@ LazyDatabase openConnection() {
     Notes,
     BodyweightEntries,
     ChatMessages,
+    ChatThreads,
     FiveThreeOneBlocks,
   ],
 )
@@ -58,6 +60,18 @@ class AppDatabase extends _$AppDatabase {
           Index(
             'chat_messages',
             'CREATE INDEX IF NOT EXISTS chat_messages_workout_created ON chat_messages(workout_id, created)',
+          ),
+        );
+        await m.createIndex(
+          Index(
+            'chat_messages',
+            'CREATE INDEX IF NOT EXISTS chat_messages_thread_id ON chat_messages(thread_id, id)',
+          ),
+        );
+        await m.createIndex(
+          Index(
+            'chat_threads',
+            'CREATE INDEX IF NOT EXISTS chat_threads_workout_updated ON chat_threads(workout_id, updated)',
           ),
         );
 
@@ -666,6 +680,68 @@ class AppDatabase extends _$AppDatabase {
               .catchError((e) {});
         }
 
+        // from71To72: named coach threads, so the Coach tab can keep more than
+        // one ad-hoc conversation and switch between them. Additive — a new
+        // table plus one nullable column; `gym_sets` is untouched, so exported
+        // CSVs still re-import.
+        if (from < 72 && to >= 72) {
+          await m.database
+              .customStatement(
+                'CREATE TABLE IF NOT EXISTS chat_threads ('
+                'id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, '
+                'workout_id INTEGER, '
+                'title TEXT, '
+                'created INTEGER NOT NULL, '
+                'updated INTEGER NOT NULL)',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'ALTER TABLE chat_messages ADD COLUMN thread_id INTEGER',
+              )
+              .catchError((e) {});
+          // One thread per scope that already has messages. SQLite groups all
+          // NULL workout_ids together, which is exactly the old single rolling
+          // ad-hoc thread.
+          await m.database
+              .customStatement(
+                'INSERT INTO chat_threads (workout_id, title, created, updated) '
+                'SELECT workout_id, NULL, MIN(created), MAX(created) '
+                'FROM chat_messages WHERE thread_id IS NULL '
+                'GROUP BY workout_id',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'UPDATE chat_messages SET thread_id = (SELECT t.id '
+                'FROM chat_threads t WHERE t.workout_id IS chat_messages.workout_id) '
+                'WHERE thread_id IS NULL',
+              )
+              .catchError((e) {});
+          // Sidebar labels come from each thread's first user message, the same
+          // rule new threads title themselves by.
+          await m.database
+              .customStatement(
+                'UPDATE chat_threads SET title = (SELECT substr(m.content, 1, 60) '
+                'FROM chat_messages m WHERE m.thread_id = chat_threads.id '
+                "AND m.role = 'user' AND m.content IS NOT NULL "
+                'ORDER BY m.id LIMIT 1) WHERE title IS NULL',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'CREATE INDEX IF NOT EXISTS chat_messages_thread_id '
+                'ON chat_messages(thread_id, id)',
+              )
+              .catchError((e) {});
+          await m.database
+              .customStatement(
+                'CREATE INDEX IF NOT EXISTS chat_threads_workout_updated '
+                'ON chat_threads(workout_id, updated)',
+              )
+              .catchError((e) {});
+        }
+
         // Columns above were added with plain `ADD COLUMN <type>`, so rows
         // that predate them hold NULL while the Dart table declares them
         // NOT NULL — reading such a row throws on the null check. Backfill
@@ -728,5 +804,5 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 71;
+  int get schemaVersion => 72;
 }

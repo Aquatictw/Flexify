@@ -61,6 +61,7 @@ Widget appProviders(SettingsState state) => MultiProvider(
         ChangeNotifierProvider(create: (context) => SpotifyState()),
         ChangeNotifierProvider(create: (context) => FiveThreeOneState()),
         ChangeNotifierProvider(create: (context) => CoachState()),
+        ChangeNotifierProvider(create: (context) => WorkoutCoachState()),
       ],
       child: const App(),
     );

@@ -131,8 +131,13 @@ class _PlannedRow {
   double reps;
   String unit;
 
-  /// Requested AMRAP flag. `gym_sets` has no column for it, so it is reported
-  /// back in the tool result but not persisted.
+  /// Requested AMRAP flag, reported back in the tool result but deliberately
+  /// not stored.
+  ///
+  /// An AMRAP set is written at its floor rep count — "5+" is logged as 5 —
+  /// which is the same row the user then edits up to whatever they actually hit.
+  /// `gym_sets` gets no amrap column: the flag would only ever restate the
+  /// prescription, and the performed reps already carry the real answer.
   bool amrap;
 
   bool removed = false;

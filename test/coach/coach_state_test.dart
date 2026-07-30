@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart' hide isNull;
@@ -60,7 +61,10 @@ class _FakeTransport implements CoachTransport {
         tools: tools.map(Map<String, Object?>.from).toList(),
       ),
     );
-    final response = responses.isNotEmpty ? responses.removeAt(0) : always;
+    var response = responses.isNotEmpty ? responses.removeAt(0) : always;
+    // A Future response parks the turn mid-flight, which is how a test holds one
+    // conversation open while it works in another.
+    if (response is Future<Map<String, Object?>>) response = await response;
     if (response is Exception) throw response;
     return response! as Map<String, Object?>;
   }
@@ -304,6 +308,133 @@ void main() {
     );
   });
 
+  test('a new ad-hoc thread writes no row until its first message', () async {
+    final state = CoachState(snapshotBuilder: _snapshot);
+    await state.openThread(null);
+
+    expect(state.threadId, isNull);
+    expect(state.threads, isEmpty, reason: 'nothing to list yet');
+
+    await state.send(
+      'how do i pick a training max?',
+      transport: _FakeTransport(responses: [_reply('Start at 85%.')]),
+      turn: _noWorkoutTurn,
+    );
+
+    expect(state.threadId, isNot(null));
+    expect(state.threads, hasLength(1));
+    expect(
+      state.threads.single.title,
+      'how do i pick a training max?',
+      reason: 'the sidebar labels a thread by its first user message',
+    );
+  });
+
+  test('the sidebar lists ad-hoc threads newest first and switches between them',
+      () async {
+    final state = CoachState(snapshotBuilder: _snapshot);
+    await state.openThread(null);
+    await state.send(
+      'first question',
+      transport: _FakeTransport(responses: [_reply('first answer')]),
+      turn: _noWorkoutTurn,
+    );
+    final first = state.threadId!;
+
+    await state.startNewThread();
+    expect(state.messages, isEmpty);
+    await state.send(
+      'second question',
+      transport: _FakeTransport(responses: [_reply('second answer')]),
+      turn: _noWorkoutTurn,
+    );
+    final second = state.threadId!;
+
+    expect(
+      state.threads.map((thread) => thread.id),
+      <int>[second, first],
+      reason: 'most recent activity first',
+    );
+
+    await state.openThreadById(first);
+    expect(state.threadId, first);
+    expect(state.messages.map((row) => row.content), contains('first question'));
+    expect(
+      state.messages.map((row) => row.content),
+      isNot(contains('second question')),
+    );
+  });
+
+  test('workout threads stay out of the sidebar', () async {
+    final state = CoachState(snapshotBuilder: _snapshot);
+    await state.openThread(11);
+    await state.send(
+      'add the prescribed work',
+      transport: _FakeTransport(responses: [_reply('Done.')]),
+      turn: _noWorkoutTurn,
+    );
+    // A workout thread's write tools target the live session, so reopening it
+    // from the Coach tab would put it in a context it was never written in.
+    expect(state.threads, isEmpty);
+
+    await state.openThread(null);
+    expect(state.threads, isEmpty);
+  });
+
+  test('deleting a thread removes it and its messages', () async {
+    final state = CoachState(snapshotBuilder: _snapshot);
+    await state.openThread(null);
+    await state.send(
+      'doomed',
+      transport: _FakeTransport(responses: [_reply('ok')]),
+      turn: _noWorkoutTurn,
+    );
+    final threadId = state.threadId!;
+
+    await state.deleteThread(threadId);
+
+    expect(state.threads, isEmpty);
+    expect(state.threadId, isNull, reason: 'falls back to a fresh conversation');
+    expect(state.messages, isEmpty);
+    expect(await rows(), isEmpty);
+  });
+
+  test('reopening a workout thread mid-turn leaves the running turn alone',
+      () async {
+    final workout = await startWorkout();
+    final gate = Completer<void>();
+    final transport = _FakeTransport(
+      responses: [_reply(null, calls: [_toolCall('call_slow')]), _reply('Done')],
+    );
+    final state = CoachState(
+      snapshotBuilder: _snapshot,
+      toolInvoker: (_, __, ___) async {
+        await gate.future;
+        return <String, Object?>{'ok': true, 'applied': <Object?>[]};
+      },
+    );
+    await state.openThread(workout.id);
+    final turn = CoachTurn(block: buildBlock(), workout: workout, unit: 'kg');
+    final running = state.send('add sets', transport: transport, turn: turn);
+    await pumpEventQueue();
+    expect(state.busy, isTrue, reason: 'parked in the tool call');
+
+    // The sheet reopening while the turn is in flight must not reload the
+    // message list out from under the appends still to come.
+    await state.openThread(workout.id);
+    expect(state.messages, isNotEmpty, reason: 'not wiped by the reopen');
+    gate.complete();
+    await running;
+
+    expect(state.messages.map((row) => row.role), <String>[
+      'user',
+      'assistant',
+      'tool',
+      'assistant',
+    ]);
+    expect(state.messages.map((row) => row.content), contains('Done'));
+  });
+
   test('first transport failure rolls user row back into the composer',
       () async {
     final state = CoachState(snapshotBuilder: _snapshot);
@@ -324,11 +455,10 @@ void main() {
 
     expect(state.error, contains('Could not reach'));
     expect(state.canRetry, isTrue);
-    expect(state.draftRestore, 'restore me');
+    expect(state.draftText, 'restore me');
     expect(state.messages, isEmpty);
     expect(await rows(), isEmpty);
 
-    state.clearDraftRestore();
     final retryTransport = _FakeTransport(responses: [_reply('Recovered.')]);
     await state.retry(transport: retryTransport, turn: _noWorkoutTurn);
     expect(state.messages.map((row) => row.content), contains('restore me'));
@@ -417,5 +547,219 @@ void main() {
       state.messages.map((row) => row.content),
       <String>['on the couch', 'Ad-hoc answer'],
     );
+  });
+
+  test('an unanswered tool call is answered before the thread is resent',
+      () async {
+    final workout = await startWorkout();
+
+    // A turn interrupted between the tool call and its result: the provider
+    // rejects a transcript with a dangling call, which would wedge the thread
+    // for every later send.
+    final thread = await database.into(database.chatThreads).insertReturning(
+          ChatThreadsCompanion.insert(
+            workoutId: Value(workout.id),
+            created: DateTime.now(),
+            updated: DateTime.now(),
+          ),
+        );
+    await database.into(database.chatMessages).insert(
+          ChatMessagesCompanion.insert(
+            threadId: Value(thread.id),
+            workoutId: Value(workout.id),
+            role: 'assistant',
+            toolCalls: Value(jsonEncode(<Object?>[_toolCall('call_dropped')])),
+            created: DateTime.now(),
+          ),
+        );
+
+    final transport = _FakeTransport(responses: [_reply('Back on track')]);
+    final state = CoachState(snapshotBuilder: _snapshot);
+    await state.openThread(workout.id);
+    await state.send(
+      'try again',
+      transport: transport,
+      turn: CoachTurn(block: buildBlock(), workout: workout, unit: 'kg'),
+    );
+
+    final sent = transport.calls.single.messages;
+    final repair = sent.firstWhere(
+      (message) => message['tool_call_id'] == 'call_dropped',
+    );
+    expect(repair['role'], 'tool');
+    expect(repair['content'], contains('interrupted'));
+    // The repair rides along with the request without being stored.
+    expect(
+      (await rows()).where((row) => row.toolCallId == 'call_dropped'),
+      isEmpty,
+    );
+    expect(state.error, isNull);
+  });
+
+  test('a reply lands in the conversation it was sent from, not the open one',
+      () async {
+    final gate = Completer<Map<String, Object?>>();
+    final slow = _FakeTransport(responses: [gate.future]);
+    final state = CoachState(snapshotBuilder: _snapshot);
+    await state.openThread(null);
+
+    final running = state.send(
+      'first question',
+      transport: slow,
+      turn: _noWorkoutTurn,
+    );
+    await pumpEventQueue();
+    final first = state.threadId!;
+
+    // Switch away while the reply is still in flight.
+    await state.startNewThread();
+    expect(state.busy, isFalse, reason: 'the new conversation is idle');
+    expect(state.messages, isEmpty);
+
+    gate.complete(_reply('first answer'));
+    await running;
+
+    expect(
+      state.messages,
+      isEmpty,
+      reason: 'the reply belongs to the conversation it was asked in',
+    );
+    await state.openThreadById(first);
+    expect(
+      state.messages.map((row) => row.content),
+      <String>['first question', 'first answer'],
+    );
+  });
+
+  test('two conversations can run turns at once without mixing', () async {
+    final firstGate = Completer<Map<String, Object?>>();
+    final secondGate = Completer<Map<String, Object?>>();
+    final state = CoachState(snapshotBuilder: _snapshot);
+    await state.openThread(null);
+
+    final firstRun = state.send(
+      'question one',
+      transport: _FakeTransport(responses: [firstGate.future]),
+      turn: _noWorkoutTurn,
+    );
+    await pumpEventQueue();
+    final first = state.threadId!;
+    expect(state.busy, isTrue);
+
+    await state.startNewThread();
+    final secondRun = state.send(
+      'question two',
+      transport: _FakeTransport(responses: [secondGate.future]),
+      turn: _noWorkoutTurn,
+    );
+    await pumpEventQueue();
+    final second = state.threadId!;
+    expect(state.runningThreadIds, <int>{first, second});
+
+    // Out of order on purpose: the second conversation answers first.
+    secondGate.complete(_reply('answer two'));
+    await secondRun;
+    expect(
+      state.messages.map((row) => row.content),
+      <String>['question two', 'answer two'],
+    );
+    expect(state.runningThreadIds, <int>{first});
+
+    firstGate.complete(_reply('answer one'));
+    await firstRun;
+    expect(state.runningThreadIds, isEmpty);
+    expect(
+      state.messages.map((row) => row.content),
+      <String>['question two', 'answer two'],
+      reason: 'the first answer stayed out of the open conversation',
+    );
+
+    await state.openThreadById(first);
+    expect(
+      state.messages.map((row) => row.content),
+      <String>['question one', 'answer one'],
+    );
+  });
+
+  test('a half-written prompt stays with its own conversation', () async {
+    final state = CoachState(snapshotBuilder: _snapshot);
+    await state.openThread(null);
+    await state.send(
+      'saved question',
+      transport: _FakeTransport(responses: [_reply('saved answer')]),
+      turn: _noWorkoutTurn,
+    );
+    final first = state.threadId!;
+    state.draftText = 'half written';
+
+    await state.startNewThread();
+    expect(state.draftText, '', reason: 'a new conversation starts empty');
+    state.draftText = 'other draft';
+
+    await state.openThreadById(first);
+    expect(state.draftText, 'half written');
+  });
+
+  test('deleting a conversation stops the turn still running in it', () async {
+    final gate = Completer<Map<String, Object?>>();
+    final state = CoachState(
+      snapshotBuilder: _snapshot,
+      toolInvoker: (_, __, ___) async =>
+          <String, Object?>{'ok': true, 'applied': <Object?>[]},
+    );
+    await state.openThread(null);
+    final running = state.send(
+      'doomed question',
+      transport: _FakeTransport(
+        responses: [gate.future, _reply('never stored')],
+      ),
+      turn: _noWorkoutTurn,
+    );
+    await pumpEventQueue();
+    final threadId = state.threadId!;
+
+    await state.deleteThread(threadId);
+    gate.complete(_reply(null, calls: [_toolCall('orphan')]));
+    await running;
+
+    expect(await rows(), isEmpty, reason: 'no orphan rows for a dead thread');
+    expect(state.threads, isEmpty);
+  });
+
+  test('a disposed state still finishes the turn it is running', () async {
+    final workout = await startWorkout();
+    final transport = _FakeTransport(
+      responses: [
+        _reply(null, calls: [_toolCall('call_midflight')]),
+        _reply('Applied'),
+      ],
+    );
+    final state = CoachState(
+      snapshotBuilder: _snapshot,
+      toolInvoker: (_, __, ___) async => <String, Object?>{
+        'ok': true,
+        'applied': <Object?>[],
+      },
+    );
+    await state.openThread(workout.id);
+
+    // The in-workout sheet disposes its state the moment it closes, which can
+    // land mid-turn; the tool result must still reach the database or the
+    // thread is left with a dangling call.
+    state.dispose();
+    await state.send(
+      'add sets',
+      transport: transport,
+      turn: CoachTurn(block: buildBlock(), workout: workout, unit: 'kg'),
+    );
+
+    final persisted = await rows();
+    expect(persisted.map((row) => row.role), <String>[
+      'user',
+      'assistant',
+      'tool',
+      'assistant',
+    ]);
+    expect(persisted[2].toolCallId, 'call_midflight');
   });
 }

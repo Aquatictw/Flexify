@@ -2,13 +2,17 @@ import 'package:drift/drift.dart';
 
 /// One message in a coach conversation thread.
 ///
-/// Threads are short-lived: one per workout (`workoutId` set) plus a single
-/// rolling ad-hoc thread (`workoutId` null). Persisted so a thread survives
-/// Android killing the app mid-workout.
+/// Persisted so a thread survives Android killing the app mid-workout.
 class ChatMessages extends Table {
   IntColumn get id => integer().autoIncrement()();
 
-  /// Null = the rolling ad-hoc thread; set = the thread for that workout.
+  /// The `chat_threads` row this message belongs to — the authoritative scope
+  /// key. Nullable only because the v72 migration adds it to existing rows;
+  /// every row written since then sets it.
+  IntColumn get threadId => integer().nullable()();
+
+  /// Denormalised copy of the thread's workout, kept because every query that
+  /// predates threads reads it. [threadId] is what scopes a conversation.
   IntColumn get workoutId => integer().nullable()();
 
   /// 'user' | 'assistant' | 'tool'

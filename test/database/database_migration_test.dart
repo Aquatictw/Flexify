@@ -70,7 +70,7 @@ void main() {
   });
 
   group('Consolidated Migration Tests', () {
-    test('verifies only 7 strategic schema versions exist', () {
+    test('verifies only 8 strategic schema versions exist', () {
       final schemaDir = Directory('drift_schemas/db');
       final schemaFiles = schemaDir
           .listSync()
@@ -81,9 +81,9 @@ void main() {
 
       expect(
         schemaFiles.length,
-        equals(7),
-        reason:
-            'Should have exactly 7 schema files (v31, v48, v52, v57, v61, v67, v71)',
+        equals(8),
+        reason: 'Should have exactly 8 schema files '
+            '(v31, v48, v52, v57, v61, v67, v71, v72)',
       );
     });
 
@@ -100,8 +100,8 @@ void main() {
 
       expect(
         version,
-        equals(71),
-        reason: 'Fresh install should create v71 schema',
+        equals(72),
+        reason: 'Fresh install should create v72 schema',
       );
 
       // Verify all tables exist
@@ -482,6 +482,60 @@ void main() {
       // Existing data untouched by an additive migration.
       final sets = await db.select(db.gymSets).get();
       expect(sets.length, equals(1));
+      expect(sets.single.name, equals('Bench Press'));
+
+      await db.close();
+    });
+
+    test('v71 to v72 groups existing messages into named threads', () async {
+      final schema = await verifier.schemaAt(71);
+
+      // Two scopes that predate threads: the single rolling ad-hoc thread and
+      // one workout thread. They must come out as two separate chat_threads.
+      schema.rawDatabase.execute(
+        'INSERT INTO chat_messages (workout_id, role, content, created) VALUES '
+        "(NULL, 'user', 'should i switch to an fsl leader?', 1000), "
+        "(NULL, 'assistant', 'Run it as an anchor.', 1001), "
+        "(9, 'user', 'add the prescribed bench work', 2000)",
+      );
+      schema.rawDatabase.execute(
+        'INSERT INTO gym_sets (name, reps, weight, unit, created) '
+        "VALUES ('Bench Press', 5, 100, 'kg', 1000)",
+      );
+
+      final db = AppDatabase(schema.newConnection());
+
+      final threads = await (db.select(db.chatThreads)
+            ..orderBy([(row) => OrderingTerm(expression: row.id)]))
+          .get();
+      expect(threads.length, equals(2), reason: 'one per pre-thread scope');
+
+      final adHoc = threads.firstWhere((thread) => thread.workoutId == null);
+      final workoutThread = threads.firstWhere((thread) => thread.workoutId == 9);
+      expect(
+        adHoc.title,
+        equals('should i switch to an fsl leader?'),
+        reason: 'titled from its first user message',
+      );
+      expect(workoutThread.title, equals('add the prescribed bench work'));
+
+      final messages = await db.select(db.chatMessages).get();
+      expect(
+        messages.where((row) => row.threadId == adHoc.id).length,
+        equals(2),
+      );
+      expect(
+        messages.where((row) => row.threadId == workoutThread.id).length,
+        equals(1),
+      );
+      expect(
+        messages.every((row) => row.threadId != null),
+        isTrue,
+        reason: 'no message is left unscoped',
+      );
+
+      // Existing data untouched by an additive migration.
+      final sets = await db.select(db.gymSets).get();
       expect(sets.single.name, equals('Bench Press'));
 
       await db.close();

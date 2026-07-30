@@ -1,21 +1,37 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'coach_state.dart';
 import 'widgets/coach_thread.dart';
 
+/// How much of the screen the in-workout sheet takes, fixed.
+///
+/// It used to be a [DraggableScrollableSheet], which grew as the thread was
+/// scrolled — the height changing under a conversation you are reading is
+/// distracting, and it never reached full screen anyway.
+const double _sheetHeightFraction = 0.75;
+
+/// Floor on what is left for the thread once the keyboard has taken its cut.
+/// On a short screen a tall keyboard could otherwise eat the whole sheet.
+const double _minContent = 180;
+
 /// Opens the in-workout coach over the live session.
 ///
-/// The sheet runs on its own [CoachState], deliberately *not* the one the
-/// Coach tab is bound to: a single notifier can only hold one thread scope at
-/// a time, so sharing it would let the tab's ad-hoc thread and this workout
-/// thread fight over that scope while both are mounted (PRD decision 6 —
-/// two threads, never mixed).
+/// The sheet binds to the app-level [WorkoutCoachState] rather than creating a
+/// [CoachState] of its own — a turn keeps running after the sheet is dismissed,
+/// and a state that dies with the sheet takes the thinking indicator and every
+/// row written after that point with it. It is deliberately *not* the state the
+/// Coach tab is bound to: one notifier holds one thread scope at a time, so
+/// sharing it would let the tab's ad-hoc thread and this workout thread fight
+/// over that scope while both are mounted (PRD decision 6).
 Future<void> showCoachSheet(
   BuildContext context, {
   required int workoutId,
-  VoidCallback? onSessionChanged,
+  void Function(CoachSessionChange change)? onSessionChanged,
 }) {
+  final coach = context.read<WorkoutCoachState>();
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -26,47 +42,35 @@ Future<void> showCoachSheet(
     // nav tappable. Every other modal in the app roots itself for the same
     // reason, including the plate calculator in this same app bar.
     useRootNavigator: true,
-    builder: (context) => DraggableScrollableSheet(
-      initialChildSize: 0.85,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-        return AnimatedPadding(
+    builder: (context) {
+      final height =
+          MediaQuery.sizeOf(context).height * _sheetHeightFraction;
+      final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+      // No Material/rounding here: bottomSheetTheme already supplies the
+      // surface colour and the rounded top, and its showDragHandle draws the
+      // grabber. Re-adding either nests a second rounded panel and a second
+      // handle inside the real ones.
+      return SizedBox(
+        // Fixed, and the keyboard inset is applied *inside* it rather than
+        // around it. Padding the outside would lift the whole sheet by the
+        // keyboard's height, moving the top edge; padding the inside pulls the
+        // composer up off the keyboard while the top edge stays put.
+        height: height,
+        child: AnimatedPadding(
           duration: const Duration(milliseconds: 180),
-          padding: EdgeInsets.only(bottom: bottomInset),
-          // No Material/rounding here: bottomSheetTheme already supplies the
-          // surface colour and the rounded top, and its showDragHandle draws
-          // the grabber. Re-adding either nests a second rounded panel and a
-          // second handle inside the real ones.
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-                child: Row(
-                  children: [
-                    Text(
-                      'Coach',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: ChangeNotifierProvider<CoachState>(
-                  create: (_) => CoachState(),
-                  child: CoachThread(
-                    workoutId: workoutId,
-                    onSessionChanged: onSessionChanged,
-                    scrollController: scrollController,
-                  ),
-                ),
-              ),
-            ],
+          padding: EdgeInsets.only(
+            bottom: math.min(bottomInset, math.max(0, height - _minContent)),
           ),
-        );
-      },
-    ),
+          child: ChangeNotifierProvider<CoachState>.value(
+            value: coach,
+            child: CoachThread(
+              workoutId: workoutId,
+              onSessionChanged: onSessionChanged,
+              autofocus: true,
+            ),
+          ),
+        ),
+      );
+    },
   );
 }

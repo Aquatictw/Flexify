@@ -15,12 +15,23 @@ class CoachThread extends StatefulWidget {
     required this.workoutId,
     super.key,
     this.onSessionChanged,
-    this.scrollController,
+    this.composerFocus,
+    this.autofocus = false,
   });
 
   final int? workoutId;
-  final VoidCallback? onSessionChanged;
-  final ScrollController? scrollController;
+
+  /// The composer's focus node, when the host wants to drop the keyboard itself
+  /// — the Coach tab does, on a tab change or a conversation switch.
+  final FocusNode? composerFocus;
+
+  /// Focuses the composer as soon as the thread mounts, raising the keyboard.
+  /// On for the in-workout sheet, where you open the coach to type.
+  final bool autofocus;
+
+  /// Called after every applied session write, with what it changed, so the
+  /// screen behind the sheet can rebuild against the new rows.
+  final void Function(CoachSessionChange change)? onSessionChanged;
 
   @override
   State<CoachThread> createState() => _CoachThreadState();
@@ -29,6 +40,7 @@ class CoachThread extends StatefulWidget {
 class _CoachThreadState extends State<CoachThread> {
   CoachState? _coach;
   int _lastSessionRevision = 0;
+  Object? _lastConversationKey;
 
   // Cached so a rebuild (every notifyListeners during a turn) does not spin up
   // a fresh http.Client and connection pool each time.
@@ -55,6 +67,7 @@ class _CoachThreadState extends State<CoachThread> {
     final coach = context.read<CoachState>();
     _coach = coach;
     _lastSessionRevision = coach.sessionRevision;
+    _lastConversationKey = coach.conversationKey;
     coach.addListener(_handleCoachChange);
     coach.openThread(widget.workoutId);
   }
@@ -71,24 +84,49 @@ class _CoachThreadState extends State<CoachThread> {
 
   void _handleCoachChange() {
     final coach = _coach;
-    if (coach == null || coach.sessionRevision == _lastSessionRevision) return;
+    if (coach == null) return;
+    // Switching conversations must never carry the keyboard over: the composer
+    // you were typing in belongs to the conversation you left.
+    if (coach.conversationKey != _lastConversationKey) {
+      _lastConversationKey = coach.conversationKey;
+      final focus = widget.composerFocus;
+      if (focus != null && focus.hasFocus) focus.unfocus();
+    }
+    if (coach.sessionRevision == _lastSessionRevision) return;
     _lastSessionRevision = coach.sessionRevision;
-    widget.onSessionChanged?.call();
+    widget.onSessionChanged?.call(coach.lastSessionChange);
   }
 
-  CoachTurn _turn() => CoachTurn(
-        block: context.read<FiveThreeOneState>().activeBlock,
-        workout: context.read<WorkoutState>().activeWorkout,
-        unit: context.read<SettingsState>().value.strengthUnit,
-        completedBlocks: context.read<FiveThreeOneState>().getCompletedBlocks,
-      );
+  /// Resolves the turn's training context, waiting for the 5/3/1 block to load.
+  ///
+  /// Every provider is read before the await so nothing touches `context` after
+  /// an async gap.
+  Future<CoachTurn> _turn() async {
+    final fiveThreeOne = context.read<FiveThreeOneState>();
+    final workout = context.read<WorkoutState>().activeWorkout;
+    final unit = context.read<SettingsState>().value.strengthUnit;
+    await fiveThreeOne.ensureLoaded();
+    return CoachTurn(
+      block: fiveThreeOne.activeBlock,
+      workout: workout,
+      unit: unit,
+      completedBlocks: fiveThreeOne.getCompletedBlocks,
+    );
+  }
 
-  Future<void> _applyProposal(BlockProposal proposal) =>
-      context.read<CoachState>().applyProposal(
-            proposal: proposal,
-            fiveThreeOneState: context.read<FiveThreeOneState>(),
-            unit: context.read<SettingsState>().value.strengthUnit,
-          );
+  Future<void> _applyProposal(BlockProposal proposal) async {
+    final coach = context.read<CoachState>();
+    final fiveThreeOne = context.read<FiveThreeOneState>();
+    final unit = context.read<SettingsState>().value.strengthUnit;
+    // Block ops mutate the active block, so it must be loaded first. Reachable
+    // only after a turn (which already awaited), but cheap insurance.
+    await fiveThreeOne.ensureLoaded();
+    await coach.applyProposal(
+      proposal: proposal,
+      fiveThreeOneState: fiveThreeOne,
+      unit: unit,
+    );
+  }
 
   void _dismissProposal(BlockProposal proposal) {
     context.read<CoachState>().declineProposal(proposal);
@@ -125,25 +163,29 @@ class _CoachThreadState extends State<CoachThread> {
               messages: coach.messages,
               busy: coach.busy,
               error: coach.error,
-              scrollController: widget.scrollController,
               onApplyProposal: _applyProposal,
               onDismissProposal: _dismissProposal,
               onRetry: coach.canRetry
-                  ? () => coach.retry(transport: transport, turn: _turn())
+                  ? () async =>
+                      coach.retry(transport: transport, turn: await _turn())
                   : null,
             ),
           ),
         CoachComposer(
+          autofocus: widget.autofocus,
+          focusNode: widget.composerFocus,
           busy: coach.busy,
           enabled: transport != null,
-          restoreText: coach.draftRestore,
-          onRestoreConsumed: coach.clearDraftRestore,
+          draft: coach.draftText,
+          draftRevision: coach.draftRevision,
+          conversationKey: coach.conversationKey,
+          onDraftChanged: (text) => coach.draftText = text,
           onSend: transport == null
               ? (_) {}
-              : (text) => coach.send(
+              : (text) async => coach.send(
                     text,
                     transport: transport,
-                    turn: _turn(),
+                    turn: await _turn(),
                   ),
         ),
       ],

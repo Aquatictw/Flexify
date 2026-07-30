@@ -14,10 +14,22 @@ extension BlockSupplementalsX on FiveThreeOneBlock {
 
 class FiveThreeOneState extends ChangeNotifier {
   FiveThreeOneState() {
-    _loadActiveBlock().catchError((error) {
+    _initialLoad = _loadActiveBlock().catchError((error) {
       print('Warning: Error loading active 5/3/1 block: $error');
     });
   }
+
+  Future<void>? _initialLoad;
+
+  /// Awaits the constructor's first load of [activeBlock].
+  ///
+  /// This provider is registered lazily and every other consumer sits on a
+  /// 5/3/1, plan or notes screen, so the coach is often the first thing to read
+  /// it: the provider is constructed at the moment the user hits send, and a
+  /// synchronous [activeBlock] read then returns null while the query is still
+  /// in flight. The coach would tell a lifter mid-block that they have no
+  /// active 5/3/1 block. Await this before reading the block for a turn.
+  Future<void> ensureLoaded() => _initialLoad ?? Future<void>.value();
 
   FiveThreeOneBlock? _activeBlock;
 
