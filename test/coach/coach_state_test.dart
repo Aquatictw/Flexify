@@ -103,6 +103,10 @@ Future<Map<String, Object?>> _snapshot(CoachTurn turn) async =>
 
 const _noWorkoutTurn = CoachTurn(block: null, workout: null, unit: 'kg');
 
+List<String> _names(List<Map<String, Object?>> tools) => tools
+    .map((tool) => (tool['function']! as Map<String, Object?>)['name']! as String)
+    .toList(growable: false);
+
 void main() {
   late AppDatabase database;
 
@@ -159,7 +163,6 @@ void main() {
       turn: _noWorkoutTurn,
     );
 
-    expect(withoutWorkout.calls.single.tools, isEmpty);
     expect(
       jsonEncode(withoutWorkout.calls.single.tools),
       isNot(contains(applySessionChangesTool)),
@@ -175,9 +178,7 @@ void main() {
     );
 
     final tools = withWorkout.calls.single.tools;
-    expect(tools, hasLength(1));
-    final function = tools.single['function']! as Map<String, Object?>;
-    expect(function['name'], applySessionChangesTool);
+    expect(_names(tools), contains(applySessionChangesTool));
   });
 
   test('training max basis follows active block availability', () async {

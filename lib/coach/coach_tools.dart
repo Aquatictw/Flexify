@@ -1,3 +1,6 @@
+import 'block_tools.dart';
+import 'read_tools.dart';
+
 const String applySessionChangesTool = 'apply_session_changes';
 
 Map<String, Object?> _weightProperties(bool trainingMaxBasis) =>
@@ -192,29 +195,38 @@ Map<String, Object?> _tool(
       },
     };
 
+/// Assembles the tool set for one turn, tier by tier (PRD decision 2: the tool
+/// boundary is the authority boundary).
+///
+/// - Auto-apply session writes exist only while a workout is active.
+/// - The confirm-tier block tool exists only while a block is active; without
+///   one there is no training max, cycle position, or supplemental to change.
+/// - Read tools are unconditional. They mutate nothing, so they carry no
+///   authority tier and stay answerable with neither a workout nor a block.
 List<Map<String, Object?>> coachTools({
   required bool sessionWrites,
   required bool trainingMaxBasis,
-}) {
-  if (!sessionWrites) return <Map<String, Object?>>[];
-  return <Map<String, Object?>>[
-    _tool(
-      applySessionChangesTool,
-      'Auto-apply changes confined to prescribed, not-yet-performed sets '
-      'in the current workout. Never carry units or bare weights.',
-      <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['ops'],
-        'properties': <String, Object?>{
-          'ops': <String, Object?>{
-            'type': 'array',
-            'description': 'Apply one or more current-session operations.',
-            'minItems': 1,
-            'items': _sessionOp(trainingMaxBasis),
+}) =>
+    <Map<String, Object?>>[
+      if (sessionWrites)
+        _tool(
+          applySessionChangesTool,
+          'Auto-apply changes confined to prescribed, not-yet-performed sets '
+          'in the current workout. Never carry units or bare weights.',
+          <String, Object?>{
+            'type': 'object',
+            'additionalProperties': false,
+            'required': <String>['ops'],
+            'properties': <String, Object?>{
+              'ops': <String, Object?>{
+                'type': 'array',
+                'description': 'Apply one or more current-session operations.',
+                'minItems': 1,
+                'items': _sessionOp(trainingMaxBasis),
+              },
+            },
           },
-        },
-      },
-    ),
-  ];
-}
+        ),
+      if (trainingMaxBasis) proposeBlockChangesToolSchema(),
+      ...readTools(),
+    ];

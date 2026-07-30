@@ -3,6 +3,88 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../database/database.dart';
+import '../block_tools.dart';
+import 'proposal_card.dart';
+
+/// One rendered thread row, with the confirmation state already resolved.
+///
+/// Resolution happens once per build by reading the message list itself, so no
+/// mutable counter is needed and list-item keys stay `coach-<id>`.
+class _RenderedRow {
+  const _RenderedRow({
+    required this.message,
+    this.proposal,
+    this.status = ProposalCardStatus.pending,
+    this.hidden = false,
+  });
+
+  final ChatMessage message;
+  final BlockProposal? proposal;
+  final ProposalCardStatus status;
+
+  /// True for a confirmation outcome row: the card above already says
+  /// "Applied" or "Dismissed", so repeating it as a tool line is noise.
+  final bool hidden;
+}
+
+/// Pairs each `pending_confirmation` tool row with the outcome row that
+/// followed it, in order. Rows are append-only and an outcome can only be
+/// written after its card is tapped, so first-in-first-out matching is exact
+/// even with several proposals in one thread.
+List<_RenderedRow> _renderRows(List<ChatMessage> messages) {
+  final rows = <_RenderedRow>[];
+  final awaiting = <int>[];
+  for (final message in messages) {
+    if (message.role != 'tool') {
+      rows.add(_RenderedRow(message: message));
+      continue;
+    }
+    final result = _decode(message.content);
+    final status = result?['status'];
+    if (status == 'pending_confirmation') {
+      final raw = result?['proposal'];
+      if (raw is Map) {
+        BlockProposal? proposal;
+        try {
+          proposal = BlockProposal.fromJson(Map<String, Object?>.from(raw));
+        } catch (_) {
+          proposal = null;
+        }
+        if (proposal != null) {
+          awaiting.add(rows.length);
+          rows.add(_RenderedRow(message: message, proposal: proposal));
+          continue;
+        }
+      }
+    }
+    if ((status == 'applied' || status == 'declined') && awaiting.isNotEmpty) {
+      final index = awaiting.removeAt(0);
+      final pending = rows[index];
+      rows[index] = _RenderedRow(
+        message: pending.message,
+        proposal: pending.proposal,
+        status: status == 'applied'
+            ? ProposalCardStatus.applied
+            : ProposalCardStatus.dismissed,
+      );
+      rows.add(_RenderedRow(message: message, hidden: true));
+      continue;
+    }
+    rows.add(_RenderedRow(message: message));
+  }
+  return rows;
+}
+
+Map<String, Object?>? _decode(String? content) {
+  if (content == null || content.isEmpty) return null;
+  try {
+    final decoded = jsonDecode(content);
+    if (decoded is Map) return Map<String, Object?>.from(decoded);
+  } on FormatException {
+    return null;
+  }
+  return null;
+}
 
 class CoachMessageList extends StatefulWidget {
   const CoachMessageList({
@@ -12,6 +94,8 @@ class CoachMessageList extends StatefulWidget {
     required this.onRetry,
     super.key,
     this.scrollController,
+    this.onApplyProposal,
+    this.onDismissProposal,
   });
 
   final List<ChatMessage> messages;
@@ -19,6 +103,8 @@ class CoachMessageList extends StatefulWidget {
   final String? error;
   final VoidCallback? onRetry;
   final ScrollController? scrollController;
+  final Future<void> Function(BlockProposal proposal)? onApplyProposal;
+  final void Function(BlockProposal proposal)? onDismissProposal;
 
   @override
   State<CoachMessageList> createState() => _CoachMessageListState();
@@ -63,19 +149,27 @@ class _CoachMessageListState extends State<CoachMessageList> {
   @override
   Widget build(BuildContext context) {
     final extra = (widget.busy ? 1 : 0) + (widget.error == null ? 0 : 1);
+    final rows = _renderRows(widget.messages);
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: widget.messages.length + extra,
+      itemCount: rows.length + extra,
       itemBuilder: (context, index) {
-        if (index < widget.messages.length) {
-          final message = widget.messages[index];
+        if (index < rows.length) {
+          final row = rows[index];
           return KeyedSubtree(
-            key: ValueKey('coach-${message.id}'),
-            child: _MessageRow(message: message),
+            key: ValueKey('coach-${row.message.id}'),
+            child: _MessageRow(
+              message: row.message,
+              proposal: row.proposal,
+              proposalStatus: row.status,
+              hidden: row.hidden,
+              onApplyProposal: widget.onApplyProposal,
+              onDismissProposal: widget.onDismissProposal,
+            ),
           );
         }
-        var trailingIndex = index - widget.messages.length;
+        var trailingIndex = index - rows.length;
         if (widget.busy) {
           if (trailingIndex == 0) return const _ThinkingRow();
           trailingIndex--;
@@ -90,13 +184,43 @@ class _CoachMessageListState extends State<CoachMessageList> {
 }
 
 class _MessageRow extends StatelessWidget {
-  const _MessageRow({required this.message});
+  const _MessageRow({
+    required this.message,
+    required this.proposal,
+    required this.proposalStatus,
+    required this.hidden,
+    required this.onApplyProposal,
+    required this.onDismissProposal,
+  });
 
   final ChatMessage message;
+  final BlockProposal? proposal;
+  final ProposalCardStatus proposalStatus;
+  final bool hidden;
+  final Future<void> Function(BlockProposal proposal)? onApplyProposal;
+  final void Function(BlockProposal proposal)? onDismissProposal;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    if (hidden) return const SizedBox.shrink();
+    final pendingProposal = proposal;
+    if (pendingProposal != null) {
+      final answered = proposalStatus != ProposalCardStatus.pending;
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: ProposalCard(
+          proposal: pendingProposal,
+          status: proposalStatus,
+          onApply: answered || onApplyProposal == null
+              ? null
+              : () => onApplyProposal!(pendingProposal),
+          onDismiss: answered || onDismissProposal == null
+              ? null
+              : () => onDismissProposal!(pendingProposal),
+        ),
+      );
+    }
     if (message.role == 'user') {
       return Align(
         alignment: Alignment.centerRight,
@@ -177,6 +301,16 @@ class _ToolResult extends StatelessWidget {
       return _ToolLines(
         lines: <String>['⚠ $error'],
         color: scheme.error,
+      );
+    }
+
+    // Read tools answer with prose the model consumes; show it rather than
+    // the session-write summary below, which does not apply to them.
+    final text = result?['text'];
+    if (text is String && text.trim().isNotEmpty) {
+      return _ToolLines(
+        lines: text.trim().split('\n'),
+        color: scheme.onSurfaceVariant,
       );
     }
 

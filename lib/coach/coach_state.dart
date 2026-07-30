@@ -4,9 +4,12 @@ import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
 import '../database/database.dart';
+import '../fivethreeone/fivethreeone_state.dart';
 import '../main.dart';
+import 'block_tools.dart';
 import 'coach_tools.dart';
 import 'coach_transport.dart';
+import 'read_tools.dart';
 import 'session_snapshot.dart';
 import 'session_tools.dart';
 
@@ -16,11 +19,16 @@ class CoachTurn {
     required this.block,
     required this.workout,
     required this.unit,
+    this.completedBlocks,
   });
 
   final FiveThreeOneBlock? block;
   final Workout? workout;
   final String unit;
+
+  /// Injected `FiveThreeOneState.getCompletedBlocks`, used only by
+  /// `get_block_history` so this state class never reaches into a provider.
+  final Future<List<FiveThreeOneBlock>> Function()? completedBlocks;
 }
 
 typedef CoachSnapshotBuilder = Future<Map<String, Object?>> Function(
@@ -258,16 +266,31 @@ class CoachState extends ChangeNotifier {
   ) async {
     try {
       if (_toolInvoker != null) return await _toolInvoker(name, args, turn);
+      final vocabulary = _vocabulary();
+      if (readToolNames.contains(name)) {
+        return await runReadTool(
+          name: name,
+          arguments: args,
+          exerciseVocabulary: vocabulary,
+          settingsUnit: turn.unit,
+          completedBlocks: turn.completedBlocks,
+        );
+      }
+      if (name == proposeBlockChangesTool) {
+        // Returns a proposal for the confirmation card; it writes nothing.
+        return await proposeBlockChanges(
+          arguments: args,
+          block: turn.block,
+          exerciseVocabulary: vocabulary,
+          settingsUnit: turn.unit,
+        );
+      }
       if (name != applySessionChangesTool) {
         return <String, Object?>{
           'ok': false,
           'error': "Unknown tool '$name'.",
         };
       }
-      final rawVocabulary = _lastSnapshot?['exerciseVocabulary'];
-      final vocabulary = rawVocabulary is List
-          ? rawVocabulary.whereType<String>().toList(growable: false)
-          : <String>[];
       return await applySessionChanges(
         arguments: args,
         block: turn.block,
@@ -279,6 +302,52 @@ class CoachState extends ChangeNotifier {
       return <String, Object?>{'ok': false, 'error': '$exception'};
     }
   }
+
+  List<String> _vocabulary() {
+    final raw = _lastSnapshot?['exerciseVocabulary'];
+    return raw is List
+        ? raw.whereType<String>().toList(growable: false)
+        : <String>[];
+  }
+
+  /// Commits a proposal the user confirmed on the card, then reports the
+  /// outcome back into the thread so the model knows the block moved.
+  ///
+  /// This is the only path that writes block-level state; `propose_block_changes`
+  /// itself never does.
+  Future<Map<String, Object?>> applyProposal({
+    required BlockProposal proposal,
+    required FiveThreeOneState fiveThreeOneState,
+    required String unit,
+  }) async {
+    Map<String, Object?> result;
+    try {
+      result = await applyBlockProposal(
+        proposal: proposal,
+        fiveThreeOneState: fiveThreeOneState,
+        settingsUnit: unit,
+      );
+    } catch (exception) {
+      result = <String, Object?>{
+        'ok': false,
+        'status': 'failed',
+        'error': '$exception',
+      };
+    }
+    await _appendConfirmationOutcome(result);
+    if (result['ok'] == true) _sessionRevision++;
+    notifyListeners();
+    return result;
+  }
+
+  /// Records a declined proposal so the model stops re-offering it.
+  Future<void> declineProposal(BlockProposal proposal) async {
+    await _appendConfirmationOutcome(declinedBlockProposalResult(proposal));
+    notifyListeners();
+  }
+
+  Future<void> _appendConfirmationOutcome(Map<String, Object?> result) =>
+      _appendRow(role: 'tool', content: jsonEncode(result));
 
   Map<String, Object?> _messageOf(Map<String, Object?> reply) {
     final choices = reply['choices'];
@@ -319,9 +388,20 @@ class CoachState extends ChangeNotifier {
           if (row.toolCalls != null) 'tool_calls': jsonDecode(row.toolCalls!),
         };
       case 'tool':
+        final id = row.toolCallId;
+        // A confirmation outcome answers a tap, not an outstanding tool call —
+        // the proposal's own tool result was already sent under that id. It
+        // rides back as a user turn so the transcript stays well formed while
+        // the model still learns what the user decided.
+        if (id == null || id.isEmpty) {
+          return <String, Object?>{
+            'role': 'user',
+            'content': 'TOOL_RESULT\n${row.content ?? ''}',
+          };
+        }
         return <String, Object?>{
           'role': 'tool',
-          'tool_call_id': row.toolCallId ?? '',
+          'tool_call_id': id,
           'content': row.content ?? '',
         };
       default:
