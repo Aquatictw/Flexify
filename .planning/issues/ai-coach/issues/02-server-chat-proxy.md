@@ -1,6 +1,6 @@
 # 02 — Server `/api/chat` proxy endpoint
 
-Status: ready-for-agent
+Status: done
 
 Parent: [PRD](../PRD.md)
 Depends on: 01

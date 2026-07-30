@@ -161,8 +161,10 @@ Planned models: `openai/gpt-5.6-luna` (in production), `anthropic/claude-sonnet-
 
 ### Cost
 
-The 115k-token knowledge prefix dominates every turn, so run cost tracks the
-model's input price almost exactly:
+The knowledge prefix dominates every turn, so run cost tracks the model's input
+price almost exactly. Prefix size is tokenizer-dependent: ~115k by Anthropic's
+count, ~85k by OpenAI's (measured from `prompt_tokens` on prod). The table below
+uses 115k, so the gpt-5.6 rows are conservative by about a third.
 
 | Model | Input $/M | Cached read $/M | Cold turn | Warm turn |
 | ----- | --------- | --------------- | --------- | --------- |
@@ -175,6 +177,16 @@ A full 25-case sweep was **$3–4** on `claude-sonnet-5` and well under **$1** o
 luna. Warm pricing only holds inside the provider's cache TTL, so a slow
 interactive session pays closer to the cold column. Prefer `--filter` while
 iterating.
+
+Caching is verified working in production. `[chat]` log lines from the deployed
+server read `prompt_tokens=85089 cached_tokens=85086` — a ~100% hit rate, which
+is why `_toolUseRules` must stay a plain non-interpolated const and the knowledge
+build must stay byte-deterministic. Any byte that moves in the prefix costs ~10x
+on the next turn. Grep it with:
+
+```sh
+./scripts/prod-logs 200 | grep '\[chat\]'
+```
 
 ## Contract notes for Phase B
 

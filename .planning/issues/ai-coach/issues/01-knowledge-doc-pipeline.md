@@ -1,6 +1,6 @@
 # 01 — Knowledge doc build pipeline
 
-Status: ready-for-agent
+Status: done
 
 Parent: [PRD](../PRD.md)
 Depends on: none (foundation)

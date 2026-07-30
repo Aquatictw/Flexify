@@ -1,6 +1,6 @@
 # 05 — Session snapshot builder
 
-Status: ready-for-agent
+Status: done
 
 Parent: [PRD](../PRD.md)
 Depends on: none (foundation, phase B)

@@ -1,6 +1,6 @@
 # 08 — Read tools for deep history
 
-Status: ready-for-agent
+Status: done
 
 Parent: [PRD](../PRD.md)
 Depends on: 07

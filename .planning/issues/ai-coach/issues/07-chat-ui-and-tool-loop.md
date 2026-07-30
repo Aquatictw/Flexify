@@ -1,6 +1,6 @@
 # 07 — Chat UI + tool loop client
 
-Status: ready-for-agent
+Status: done
 
 Parent: [PRD](../PRD.md)
 Depends on: 04, 05, 06

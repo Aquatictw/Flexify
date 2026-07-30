@@ -1,6 +1,6 @@
 # 09 — `propose_block_changes` + confirmation card
 
-Status: ready-for-agent
+Status: done
 
 Parent: [PRD](../PRD.md)
 Depends on: 07

@@ -87,7 +87,28 @@ Config lives in `scripts/prod.env` (copy from `scripts/prod.env.example`).
 **`prod.env` is gitignored and must never be committed — this repo is public.**
 Never hardcode the server URL, API key, or SSH host anywhere tracked by git.
 
+### Host-side prerequisites (the coach needs these or the container won't boot)
+
+`OPENROUTER_API_KEY` and `CHAT_MODEL` are required env vars, and all three
+knowledge docs must be present, or `ServerConfig`/`KnowledgeService` throw at
+startup and the container crash-loops. On the host:
+
+- `OPENROUTER_API_KEY` and `CHAT_MODEL` go in the compose dir's `.env`.
+- The generated knowledge docs (`system.md`, `percentages.md`,
+  `capabilities.md`) go in a host directory bind-mounted read-only at
+  `/data/knowledge`. They are gitignored and not in the image, so they must be
+  copied to the host by hand — verify with `sha256sum`, because any byte change
+  invalidates the ~85k-token cached prompt prefix and costs ~10x per turn.
+
+**Watchtower only swaps the image; it reuses the existing container config.** A
+compose change (new env var, new mount) therefore needs `docker compose up -d`
+on the host — `prod-deploy` alone will not apply it. Do host prep *before*
+deploying: the old image ignores unknown env vars, so prepping first is safe,
+whereas deploying first crash-loops. The host compose file is hand-maintained
+and diverges from `server/docker-compose.yml` (port, external network) — edit it
+surgically, never overwrite it with the repo copy.
+
 
 ---
 
-*Last updated: 2026-07-06*
+*Last updated: 2026-07-30*

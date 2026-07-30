@@ -1,6 +1,6 @@
 # 04 — `chat_messages` table + migration v70→v71
 
-Status: ready-for-agent
+Status: done
 
 Parent: [PRD](../PRD.md)
 Depends on: none (foundation, phase B)
