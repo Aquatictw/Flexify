@@ -12,7 +12,7 @@ From `server/`:
 ```sh
 COACH_EVAL_BASE_URL=https://example.invalid \
 COACH_EVAL_API_KEY=redacted \
-COACH_EVAL_MODEL=openai/gpt-5.6-sol \
+COACH_EVAL_MODEL=openai/gpt-5.6-luna \
 dart run test/coach_eval/run.dart
 ```
 
@@ -54,7 +54,7 @@ payload['model'] ??= chatModel;
 After that server fix, a bash sweep is:
 
 ```bash
-for model in anthropic/claude-sonnet-5 openai/gpt-5.6-sol; do
+for model in openai/gpt-5.6-luna openai/gpt-5.6-terra; do
   COACH_EVAL_MODEL="$model" dart run test/coach_eval/run.dart \
     --json "/tmp/coach-eval-${model//\//-}.json"
 done
@@ -63,7 +63,7 @@ done
 The fish equivalent is:
 
 ```fish
-for model in anthropic/claude-sonnet-5 openai/gpt-5.6-sol
+for model in openai/gpt-5.6-luna openai/gpt-5.6-terra
   set label (string replace -a / - $model)
   env COACH_EVAL_MODEL=$model dart run test/coach_eval/run.dart \
     --json /tmp/coach-eval-$label.json
@@ -137,19 +137,44 @@ dart run test/coach_eval/run.dart --stub-dir test/coach_eval/stubs
 | `anthropic/claude-sonnet-5` | 2026-07-29 | 20/25 | PASS | Before the fraction/prescription prompt rules landed. 4 of the 5 failures were contract gaps, not model errors. |
 | `anthropic/claude-sonnet-5` | 2026-07-29 | 11/11 partial | PASS | Cases 01, 02, 04, 05, 06, 11, 13, 16, 17, 18, 19 after the fixes. |
 | `anthropic/claude-sonnet-5` | 2026-07-29 | **25/25** | PASS | Full run after the fraction/prescription prompt rules. 236.8s. |
-| `openai/gpt-5.6-sol` | 2026-07-29 | not run | — | Blocked: OpenRouter account out of credits (HTTP 402 on every case). Rerun once topped up. |
+| `openai/gpt-5.6-terra` | 2026-07-30 | 20/25 | PASS | Before the named-percentage and question-vs-instruction rules. Scored 24/25 on the sweep, but repeat runs put cases 02 and 19 at 2/4 each, so the sweep number was partly luck. |
+| `openai/gpt-5.6-luna` | 2026-07-30 | 21/25 | PASS | Same prompt as the terra row. Failures: 02, 10, 19 (all fixed by the prompt rules) and 17 (harness bug). |
+| `openai/gpt-5.6-luna` | 2026-07-30 | **25/25** | PASS | After the named-percentage and question-vs-instruction rules. 134.5s. Repeats: 02 4/4, 10 4/4, 17 4/4, 19 2/4. **Selected as the production model.** |
+| `openai/gpt-5.6-terra` | — | not swept | — | Not re-swept after the prompt fix: luna already scored 25/25 at 40% of terra's input price, so the comparison could not change the choice. |
+| `openai/gpt-5.6-sol` | — | not run | — | Never evaluated. Skipped once luna passed at 1/10 of sol's input price. |
+
+Case 19 (`add one more bench set at 85% TM`) is the one residual flake, at roughly
+2/4 on luna. It appends a *fourth* set, past the three the prescription covers, so
+`pct_of_prescribed` has no baseline for that position — and both gpt-5.6 variants
+sometimes reach for it anyway. This is contained rather than dangerous:
+`session_tools` passes `prescribed: null` past the end of the prescription and
+`resolveWeightSpec` returns a model-facing error naming the alternatives, so the
+turn costs an extra round trip and self-corrects instead of silently loading the
+wrong weight. Do not "fix" it by making `pct_of_prescribed` fall back to the last
+prescribed set; that would turn a recoverable error into a silent 95%-instead-of-85%
+bar.
 
 Do not fill this in with anything other than an actual sweep, and label
 partial runs as partial.
 
-Planned models: `anthropic/claude-sonnet-5`, `openai/gpt-5.6-sol`.
+Planned models: `openai/gpt-5.6-luna` (in production), `anthropic/claude-sonnet-5` (reference).
 
 ### Cost
 
-A full 25-case run costs roughly **$3–4** on `claude-sonnet-5`: the knowledge
-prefix is ~115k tokens, and while it caches well within the 5-minute TTL
-(~$0.024/turn warm), a cold turn is ~$0.29. Budget accordingly before a sweep —
-this is not a harness you rerun casually. Prefer `--filter` while iterating.
+The 115k-token knowledge prefix dominates every turn, so run cost tracks the
+model's input price almost exactly:
+
+| Model | Input $/M | Cached read $/M | Cold turn | Warm turn |
+| ----- | --------- | --------------- | --------- | --------- |
+| `openai/gpt-5.6-luna` | 0.50 | 0.05 | ~$0.058 | ~$0.006 |
+| `openai/gpt-5.6-terra` | 1.25 | 0.125 | ~$0.144 | ~$0.014 |
+| `openai/gpt-5.6-sol` | 5.00 | 0.50 | ~$0.58 | ~$0.058 |
+| `anthropic/claude-sonnet-5` | — | — | ~$0.29 | ~$0.024 |
+
+A full 25-case sweep was **$3–4** on `claude-sonnet-5` and well under **$1** on
+luna. Warm pricing only holds inside the provider's cache TTL, so a slow
+interactive session pays closer to the cold column. Prefer `--filter` while
+iterating.
 
 ## Contract notes for Phase B
 
@@ -176,3 +201,18 @@ this is not a harness you rerun casually. Prefer `--filter` while iterating.
   user-named percentages. Without this rule the model re-derived the scheme
   percentages from memory, which is exactly the recall path PRD decisions 3
   and 8 exist to avoid.
+- **A percentage the user names beats that preference.** Stated as an
+  unconditional rule, the line above made both gpt-5.6 variants answer
+  "a set at 90% TM" with `pct_of_prescribed: 0`, loading whatever was already
+  prescribed instead of the weight asked for. `_toolUseRules` now puts the
+  user-named case first and explains why `0` is wrong there.
+- `weight_spec` sits **inside `sets`** for `add_exercise` and `add_sets`, but at
+  the **op level** for `edit_set` (`sets` is not an `edit_set` field at all).
+  Case 17's matcher originally only accepted the `sets` shape, so a
+  schema-correct `edit_set` answer failed; it now accepts either via `$oneOf`.
+  Any new case asserting on a weight should do the same unless it means to pin
+  one op shape.
+- A question is not an instruction. "Should I run SSL instead of BBB?" once drew
+  a `propose_block_changes` switching the template to FSL — an unrequested
+  change, and to a template the user had not named. Cases 08/09/10 guard this
+  boundary with `forbid`.

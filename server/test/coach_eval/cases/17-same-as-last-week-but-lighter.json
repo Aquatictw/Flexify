@@ -1,6 +1,6 @@
 {
   "name": "17-same-as-last-week-but-lighter",
-  "description": "Protects relative last-session loading with a negative signed delta.",
+  "description": "Protects relative last-session loading with a negative signed delta. Either op shape counts: weight_spec sits inside sets for add_sets/add_exercise but at the op level for edit_set.",
   "snapshot_ref": "leader2-w2-kg",
   "utterance": "do the same bench as last week but lighter",
   "expect": [
@@ -10,12 +10,20 @@
         "ops": {
           "$contains": [
             {
-              "exercise": "Bench Press",
-              "sets": {
-                "$all": {
+              "$oneOf": [
+                {
+                  "exercise": "Bench Press",
+                  "sets": {
+                    "$all": {
+                      "weight_spec": {"pct_of_last_session": {"$lt": 0}}
+                    }
+                  }
+                },
+                {
+                  "exercise": "Bench Press",
                   "weight_spec": {"pct_of_last_session": {"$lt": 0}}
                 }
-              }
+              ]
             }
           ]
         }
